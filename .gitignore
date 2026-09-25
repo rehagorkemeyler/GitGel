@@ -7,3 +7,8 @@ dist/
 __pycache__/
 *.pyc
 etl/out/
+.venv/
+*.log
+coverage/
+.vite/
+etl/cache/
