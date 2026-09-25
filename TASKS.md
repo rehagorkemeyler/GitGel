@@ -1,10 +1,10 @@
 # GitGel Görev Listesi
 
-Her Claude Code oturumunda sıradaki işaretsiz görev yapılır, test edilir, işaretlenir ve commit edilir. [Görkem] etiketli adımları Görkem kendisi yapar, Claude Code ona adım adım talimat verir.
+Claude Code görevleri sırayla, onay beklemeden yapar: her görev test edilir, işaretlenir, commit edilir ve main'e push'lanır. [Görkem] etiketli adımları Görkem kendisi yapar; Claude Code "SENİN SIRAN" başlığıyla adım adım talimat verir, aynısını docs/GORKEM-TODO.md'ye yazar ve Görkem'e bağlı olmayan sıradaki göreve geçer.
 
 ## Aşama 0: Kurulum ve keşif
 
-- [ ] [Görkem] GitHub'da `gitgel` adında public bir repo aç, bu dosyaları (CLAUDE.md, VISION.md, TASKS.md, docs/research.md) içine koy
+- [x] [Görkem] GitHub'da `gitgel` adında public bir repo aç, bu dosyaları (CLAUDE.md, VISION.md, TASKS.md, docs/research.md) içine koy
 - [ ] Repo iskeleti: klasör yapısı, AGPL-3.0 LICENSE, README (Türkçe ve İngilizce kısa tanıtım), .gitignore
 - [ ] API keşfi: Metro İstanbul GetTimeTable ve GetStationBetweenTime POST gövdelerini deneme yoluyla bul. Tüm test edilen uç noktaların örnek yanıtlarını docs/api-samples/ altına kaydet. Bulunamazsa CLAUDE.md'deki yedek planı seç ve not düş
 - [ ] Marmaray ve M11 için veri kaynağını belirle (TCDD Taşımacılık tarife sayfası, OSM, eski GTFS), karar docs/research.md'ye yazılsın
@@ -27,6 +27,7 @@ Bitti sayılması için: doğrulayıcıdan hatasız geçen tek bir İstanbul GTF
 
 - [x] [Görkem] Oracle Cloud Always Free hesabı aç
 - [x] [Görkem] Ampere A1 Ubuntu 24.04 sunucu oluştur (4 OCPU, 24 GB, 100 GB disk, Milano bölgesi). Bağlantı: `ssh gitgel` (~/.ssh/config tanımlı, anahtar ~/.ssh/gitgel.key)
+- [ ] Otomatik dağıtım: GitHub Actions ile main'e her push'ta sunucuda `git pull` ve `docker compose up -d` (ayrı deploy anahtarı, repo secret'ları). İlk kurulum [Görkem]
 - [ ] Sunucu temel kurulumu: güncellemeler, güvenlik duvarı (sadece 22), otomatik güvenlik güncellemeleri, Docker, swap
 - [ ] infra/docker-compose.yml: motis + live servisleri
 - [ ] MOTIS'i İstanbul OSM kesiti ve bizim GTFS ile çalıştır
