@@ -5,7 +5,7 @@ Claude Code görevleri sırayla, onay beklemeden yapar: her görev test edilir, 
 ## Aşama 0: Kurulum ve keşif
 
 - [x] [Görkem] GitHub'da `gitgel` adında public bir repo aç, bu dosyaları (CLAUDE.md, VISION.md, TASKS.md, docs/research.md) içine koy
-- [ ] Repo iskeleti: klasör yapısı, AGPL-3.0 LICENSE, README (Türkçe ve İngilizce kısa tanıtım), .gitignore
+- [x] Repo iskeleti: klasör yapısı, AGPL-3.0 LICENSE, README (Türkçe ve İngilizce kısa tanıtım), .gitignore
 - [ ] API keşfi: Metro İstanbul GetTimeTable ve GetStationBetweenTime POST gövdelerini deneme yoluyla bul. Tüm test edilen uç noktaların örnek yanıtlarını docs/api-samples/ altına kaydet. Bulunamazsa CLAUDE.md'deki yedek planı seç ve not düş
 - [ ] Marmaray ve M11 için veri kaynağını belirle (TCDD Taşımacılık tarife sayfası, OSM, eski GTFS), karar docs/research.md'ye yazılsın
 - [ ] Vapur (Şehir Hatları, Turyol, Dentur) tarifeleri için kaynağı belirle
