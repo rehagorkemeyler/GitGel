@@ -1,0 +1,33 @@
+{
+ "Success": true,
+ "Error": null,
+ "Data": [
+  {
+   "BoardingStationId": 20,
+   "BoardingStationName": "Yenikapı",
+   "LineId": 0,
+   "LineName": "Yenikapı-Seyrantepe-Hacıosman Metro Hattı",
+   "FirstStationId": 0,
+   "FirstStation": "Yenikapı",
+   "LastStationId": 0,
+   "LastStation": "Hacıosman",
+   "LanguageText": {
+    "TR": "Yönü",
+    "EN": "Direction",
+    "AR": "اتجاه"
+   },
+   "TimeInfos": {
+    "Day": 0,
+    "DayName": null,
+    "Times": [
+     "08:05",
+     "08:15",
+     "08:25",
+     "08:35",
+     "08:45",
+     "08:55"
+    ]
+   }
+  }
+ ]
+}

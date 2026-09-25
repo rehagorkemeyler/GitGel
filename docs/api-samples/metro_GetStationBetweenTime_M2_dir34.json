@@ -1,0 +1,110 @@
+{
+ "Success": true,
+ "Error": null,
+ "Data": [
+  {
+   "DirectionId": 34,
+   "DirectionName": "Yenikapı->Hacıosman",
+   "LineId": 1,
+   "LineName": "M2 ISLETME",
+   "StationOrder": [
+    {
+     "Id": 20,
+     "StationName": "YENIKAPI",
+     "Order": 1,
+     "Time": 0
+    },
+    {
+     "Id": 21,
+     "StationName": "VEZNECILER",
+     "Order": 2,
+     "Time": 3
+    },
+    {
+     "Id": 22,
+     "StationName": "HALIC",
+     "Order": 3,
+     "Time": 5
+    },
+    {
+     "Id": 23,
+     "StationName": "SISHANE",
+     "Order": 4,
+     "Time": 7
+    },
+    {
+     "Id": 24,
+     "StationName": "TAKSIM",
+     "Order": 5,
+     "Time": 9
+    },
+    {
+     "Id": 25,
+     "StationName": "OSMANBEY",
+     "Order": 6,
+     "Time": 11
+    },
+    {
+     "Id": 26,
+     "StationName": "SISLI-MECIDIYEKOY",
+     "Order": 7,
+     "Time": 13
+    },
+    {
+     "Id": 27,
+     "StationName": "GAYRETTEPE",
+     "Order": 8,
+     "Time": 15
+    },
+    {
+     "Id": 28,
+     "StationName": "LEVENT",
+     "Order": 9,
+     "Time": 17
+    },
+    {
+     "Id": 29,
+     "StationName": "4.LEVENT",
+     "Order": 10,
+     "Time": 19
+    },
+    {
+     "Id": 30,
+     "StationName": "SANAYI MAHALLESI",
+     "Order": 11,
+     "Time": 21
+    },
+    {
+     "Id": 31,
+     "StationName": "SEYRANTEPE",
+     "Order": 12,
+     "Time": 23
+    },
+    {
+     "Id": 32,
+     "StationName": "ITU-AYAZAGA",
+     "Order": 13,
+     "Time": 23
+    },
+    {
+     "Id": 33,
+     "StationName": "ATATURK OTO SANAYI",
+     "Order": 14,
+     "Time": 25
+    },
+    {
+     "Id": 34,
+     "StationName": "DARUSSAFAKA",
+     "Order": 15,
+     "Time": 27
+    },
+    {
+     "Id": 35,
+     "StationName": "HACIOSMAN",
+     "Order": 16,
+     "Time": 29
+    }
+   ]
+  }
+ ]
+}

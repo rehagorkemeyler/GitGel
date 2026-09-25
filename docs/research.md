@@ -200,6 +200,10 @@ curl -s -X POST "https://api.ibb.gov.tr/iett/FiloDurum/SeferGerceklesme.asmx" \
 
 Yanıt, SOAP zarfının içinde metin olarak gömülü bir JSON dizisi. Ayrıştırma: XML'den GetHatOtoKonum_jsonResult içeriğini al, JSON olarak çöz.
 
+## 8.2 API keşfi sonucu (26 Eylül 2026)
+
+GetTimeTable ve GetStationBetweenTime gövdeleri deneme yoluyla bulundu, ayrıntılar ve örnekler docs/api-samples/README.md'de. Özet: `{"BoardingStationId": 20, "DirectionId": 34}` (DirectionId, GetDirectionById/{LineId}'den gelen gerçek kimlik). GetTimeTable DateTime verilmezse bugünün tüm seferlerini, verilirse o saatin seferlerini döndürüyor. GetStationBetweenTime yönün tüm istasyonlarını ilk istasyondan birikimli dakika olarak veriyor. Bu yüzden CLAUDE.md'deki yedek plana (FirstTime/LastTime + sıklık) gerek yok: raylı GTFS gerçek tarifeden üretilecek. api.ibb.gov.tr ağ geçidi isteklerin yaklaşık yarısında 503 veriyor, her istemci yeniden denemeli.
+
 ## 9. Açık sorular ve riskler
 
 1. Raylı sistemde gerçek canlı veri yok. Ürünün "Google'dan iyi" iddiası ilk sürümde canlı konuma değil; hıza, sadeliğe, İstanbul'a özel doğru rotaya, hizmet durumuna ve dürüst etiketlemeye dayanmalı.
