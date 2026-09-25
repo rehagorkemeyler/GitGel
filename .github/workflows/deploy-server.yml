@@ -1,0 +1,32 @@
+name: Deploy server
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-server
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+    steps:
+      - name: Skip until secrets are configured
+        if: env.DEPLOY_HOST == ''
+        run: echo "DEPLOY_HOST secret not set; skipping deploy."
+      - name: Deploy over SSH
+        if: env.DEPLOY_HOST != ''
+        env:
+          DEPLOY_KEY: ${{ secrets.DEPLOY_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$DEPLOY_KEY" > ~/.ssh/deploy_key && chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          # The key is restricted on the server to run infra/deploy.sh only.
+          ssh -i ~/.ssh/deploy_key -o BatchMode=yes ubuntu@"$DEPLOY_HOST" deploy
