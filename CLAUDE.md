@@ -6,13 +6,22 @@ GitGel is a free, open-source (AGPL-3.0), ad-free, account-free Istanbul public 
 
 1. Talk to Görkem in Turkish. Keep code, commits and code comments in English.
 2. He is not a full-time developer. When he must do something himself (install Docker, create an Oracle account, click in a web console), give short numbered steps with exact commands to copy and paste, and tell him what output to expect.
-3. One task per session. Pick the next unchecked item in TASKS.md, finish it, test it, check it off, commit. Do not start a second task unless asked.
+3. Work autonomously through TASKS.md in order, from start to finish, without waiting for approval. For each task: finish it, test it (build and tests must pass), check it off in TASKS.md, commit, push, then continue with the next one.
+6. When a step needs Görkem (running a command on his machine, clicking in a web console), do not stop. Write a "SENİN SIRAN" section in the chat with copy-paste commands and the expected output, append the same to docs/GORKEM-TODO.md, then move on to the next task that does not depend on him (for example build the UI against mock data while the server is not ready). When he pastes the output, continue from there.
+7. After each stage, give a Turkish summary of at most five sentences and keep going without asking.
+8. Ask Görkem only about real product or design decisions that VISION.md does not answer.
 4. Credits are limited. Do not read huge files in full (GTFS stop_times has millions of rows): use head, wc, sampling and scripts. Do not re-explore what docs/research.md already documents.
 5. Before adding any dependency, service or feature, check it against VISION.md "Asla olmayacaklar". If it conflicts, do not do it; tell him why.
 
+## Git workflow
+
+1. No pull requests and no waiting for review. Commit and push directly to `main`.
+2. If a push to `main` is rejected, push to your own branch, open a PR and merge it yourself (gh CLI, GitHub MCP tools or the REST API).
+3. Never push with failing build or tests.
+
 ## Server access
 
-The server is an Oracle Cloud Always Free VM (ARM64). Connect with `ssh -i ~/.ssh/gitgel.key ubuntu@<SERVER_IP>` (Görkem will give the IP). Everything server-side runs in Docker; images must support linux/arm64. Keep only port 22 open; public traffic arrives through Cloudflare Tunnel. Never commit keys, IPs or tokens.
+The server is an Oracle Cloud Always Free VM (ARM64, Milan). Görkem connects with `ssh gitgel` (~/.ssh/config, key ~/.ssh/gitgel.key). Claude does not have SSH access: after the one-time setup, server changes ship through the GitHub Actions deploy workflow (.github/workflows/deploy-server.yml), which on every push to `main` SSHes in with a dedicated deploy key stored as repo secrets, runs `git pull` and `docker compose up -d` in the repo's `infra/`. Anything that cannot go through that path goes to Görkem as "SENİN SIRAN". Everything server-side runs in Docker; images must support linux/arm64. Keep only port 22 open; public traffic arrives through Cloudflare Tunnel. Never commit keys, IPs or tokens.
 
 ## Architecture
 
