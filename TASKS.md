@@ -14,7 +14,7 @@ Bitti sayılması için: docs/api-samples/ dolu, her mod için veri kaynağı ka
 
 ## Aşama 1: Veri (ETL)
 
-- [ ] etl/iett: İETT GTFS'i indir ve temizle (ZIP'teki tam stop_times, noktalı virgül, çift kodlama, koordinat düzeltme)
+- [x] etl/iett: İETT GTFS'i indir ve temizle (ZIP'teki tam stop_times, noktalı virgül, çift kodlama, koordinat düzeltme)
 - [ ] etl/rail: Metro İstanbul API + OSM hat geometrisinden raylı sistem GTFS'i üret (stops, routes, trips, stop_times, shapes)
 - [ ] etl/other: Marmaray, M11, vapur ve eksik hatlar
 - [ ] etl/merge: hepsini tek GTFS'te birleştir, gtfs-validator ile doğrula
