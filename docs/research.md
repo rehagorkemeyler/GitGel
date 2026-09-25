@@ -204,6 +204,26 @@ Yanıt, SOAP zarfının içinde metin olarak gömülü bir JSON dizisi. Ayrışt
 
 GetTimeTable ve GetStationBetweenTime gövdeleri deneme yoluyla bulundu, ayrıntılar ve örnekler docs/api-samples/README.md'de. Özet: `{"BoardingStationId": 20, "DirectionId": 34}` (DirectionId, GetDirectionById/{LineId}'den gelen gerçek kimlik). GetTimeTable DateTime verilmezse bugünün tüm seferlerini, verilirse o saatin seferlerini döndürüyor. GetStationBetweenTime yönün tüm istasyonlarını ilk istasyondan birikimli dakika olarak veriyor. Bu yüzden CLAUDE.md'deki yedek plana (FirstTime/LastTime + sıklık) gerek yok: raylı GTFS gerçek tarifeden üretilecek. api.ibb.gov.tr ağ geçidi isteklerin yaklaşık yarısında 503 veriyor, her istemci yeniden denemeli.
 
+## 8.3 Mod bazında veri kaynağı kararları (26 Eylül 2026)
+
+| Mod | Tarife kaynağı | Durak ve geometri | Not |
+|---|---|---|---|
+| Otobüs, metrobüs (İETT) | İETT GTFS ZIP (data.ibb.gov.tr/dataset/iett-gtfs-verisi) | GTFS stops; shape yok, durak sırasından çizilir | Temizleme etl/iett'te |
+| Metro İstanbul hatları (18 hat: M1A, M1B, M2 to M9, T1, T3, T4, T5, F1, F4, TF1, TF2) | API GetTimeTable (gün ve yön bazında), GetStationBetweenTime (istasyon ofsetleri) | GetStationById + OSM route ilişkileri | Hafta içi, cumartesi, pazar için ayrı sorgu |
+| Marmaray | TCDD Taşımacılık web sayfası (makine okunur kaynak yok, buradan 502 veriyor). Karar: repo içinde elle tutulan `etl/other/manual/marmaray.yaml` (ilk ve son sefer, dönem bazında sıklık, istasyonlar arası süre, kaynak URL ve tarih). GTFS'e frequencies.txt ile girilir | İstasyonlar ve geometri OSM (route=train, Marmaray ilişkisi); eski çok operatörlü GTFS kontrol için | Tarife değişince YAML güncellenir; ETL YAML 180 günden eskiyse uyarır |
+| M11 | Metro İstanbul işletmiyor, API'de yok. Aynı yöntem: `etl/other/manual/m11.yaml` (06:00 to 00:00, sıklık, istasyon süreleri; kaynak: işletmeci sitesi ve basın) | OSM route=subway M11 ilişkisi | Halkalı to Arnavutköy kesimi Haziran 2026'da açıldı, OSM'de güncelliği kontrol edilmeli |
+| Diğer eksikler (T2 nostaljik, F2 Tünel, varsa M12) | Aynı elle tutulan YAML yöntemi | OSM | Düşük öncelik |
+| Vapur (Şehir Hatları, Turyol, Dentur, İDO) | Bkz. 8.4 | İBB deniz-ulasim-istasyonlari ve deniz-ulasim-hatlari-vektor-verisi (GeoJSON, 2025) + eski GTFS stops | |
+
+Genel ilke: işletmecinin kendi sitesi dış çağrıyı açıkça reddediyorsa (metro.istanbul AJAXSeferGetir gibi) atlatılmaz. Elle tutulan tarifeler "tarifeye göre" etiketiyle gösterilir, hiçbir zaman "canlı" değildir.
+
+## 8.4 Vapur kaynağı kararı (26 Eylül 2026)
+
+1. Eski çok operatörlü GTFS'te vapur verisi var ve 2024'te güncellenmiş: Şehir Hatları 69, Turyol 18, Dentur 8, İDO 5 hat, stop_times ve frequencies ile. Başlangıç tabanı bu olacak (cp1254 kodlu, dönüştürülecek).
+2. Güncel Şehir Hatları tarifesi sehirhatlari.istanbul'da, ama sitenin bot koruması bulut IP'lerine 403 veriyor. ETL her gece dener; olmazsa taban veri kullanılır. Görkem'in ya da sunucunun erişip erişemediği denenmeli.
+3. Turyol ve Dentur sitelerindeki tarife sayfaları yıl içinde az değişiyor; hat bazında elle tutulan `etl/other/manual/ferries_*.yaml` ile eski GTFS'in üzerine yazılır.
+4. Hat geometrisi İBB deniz-ulasim-hatlari-vektor-verisi GeoJSON'undan.
+
 ## 9. Açık sorular ve riskler
 
 1. Raylı sistemde gerçek canlı veri yok. Ürünün "Google'dan iyi" iddiası ilk sürümde canlı konuma değil; hıza, sadeliğe, İstanbul'a özel doğru rotaya, hizmet durumuna ve dürüst etiketlemeye dayanmalı.
