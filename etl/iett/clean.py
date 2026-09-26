@@ -41,13 +41,24 @@ RESOURCES = {
 BBOX = (40.5, 41.8, 27.5, 30.5)  # lat_min, lat_max, lon_min, lon_max
 
 # Segment travel time model. Rough on purpose: these times are shown as
-# "tarifeye göre" and can later be calibrated with live GPS.
+# "tarifeye göre". The live service measures real buses (stop-to-stop times
+# from GPS, /live/calibration) and calibration_factors() scales the model per
+# line and time of day when there are enough samples.
 # time = dwell + distance * detour / speed, where speed grows with hop length
 # (short urban hops are slow, long highway hops are fast).
 BUS = {"dwell": 12.0, "detour": 1.3, "v_min": 20.0, "v_max": 60.0}
 METROBUS = {"dwell": 30.0, "detour": 1.15, "v_min": 40.0, "v_max": 45.0}
 HOP_SLOW_M, HOP_FAST_M = 400.0, 3000.0
 METROBUS_LINES = {"34", "34A", "34AS", "34B", "34BZ", "34C", "34G", "34Z"}
+
+# GPS calibration. Buckets match live/src/calibration.ts: "wd"/"we" (weekday or
+# weekend service day) + part of day in Istanbul local hours.
+CAL_BUCKETS = [(6, 10, "am"), (10, 16, "mid"), (16, 20, "pm")]
+CAL_MIN_LINE = 8          # samples needed for a line-specific factor
+CAL_MIN_GLOBAL = 50       # samples needed for the all-bus factor of a bucket
+CAL_MAX_HOPS = 6          # ignore observed pairs further apart in the pattern
+CAL_RATIO = (0.25, 4.0)   # single observations outside this are noise
+CAL_RANGE = (0.5, 2.5)    # final factors are clamped to this
 
 
 def fix_mojibake(s: str) -> str:
@@ -174,8 +185,70 @@ def s_to_hms(s: pd.Series) -> pd.Series:
     )
 
 
+def cal_bucket(sec: np.ndarray, day_type: np.ndarray) -> np.ndarray:
+    h = (np.asarray(sec, dtype=float) // 3600) % 24
+    out = np.full(h.shape, "night", dtype=object)
+    for lo, hi, name in CAL_BUCKETS:
+        out[(h >= lo) & (h < hi)] = name
+    return np.char.add(np.char.add(np.asarray(day_type, dtype=str), "-"), out.astype(str)).astype(object)
+
+
+def calibration_factors(st: pd.DataFrame, seg: np.ndarray, start: pd.Series, line: pd.Series,
+                        code: pd.Series, rows: list[dict], day_type: pd.Series | None = None) -> tuple[np.ndarray, dict]:
+    """Per-row multipliers for the modelled hop times, from GPS observations.
+
+    st is sorted by trip and stop sequence; seg holds the modelled seconds of the
+    hop ending at each row, start the trip start (seconds) per trip_id, line the
+    line name and code the İETT stop code per row, day_type "wd"/"we" per trip_id
+    (default weekday). Each observation says: buses
+    of `line` in `bucket` took `median` seconds from stop `from` to stop `to`.
+    """
+    ones = np.ones(len(st))
+    if not rows:
+        return ones, {}
+    m = pd.DataFrame({"trip_id": st["trip_id"].to_numpy(), "line": line.to_numpy(), "code": code.to_numpy(),
+                      "el": pd.Series(seg, index=st.index).groupby(st["trip_id"]).cumsum().to_numpy(),
+                      "seq": st.groupby("trip_id").cumcount().to_numpy()})
+    # One trip per distinct stop pattern is enough to know the modelled time.
+    sig = m.groupby("trip_id", sort=False)["code"].agg(lambda c: "|".join(map(str, c)))
+    rep = sig.drop_duplicates().index
+    m = m[m["trip_id"].isin(rep)]
+    obs = pd.DataFrame(rows)
+    obs = obs[obs["n"] > 0]
+    a = m.merge(obs, left_on=["line", "code"], right_on=["line", "from"])
+    b = a.merge(m[["trip_id", "code", "el", "seq"]], left_on=["trip_id", "to"], right_on=["trip_id", "code"],
+                suffixes=("", "_b"))
+    b = b[(b["seq_b"] > b["seq"]) & (b["seq_b"] - b["seq"] <= CAL_MAX_HOPS)]
+    b = b.assign(model=b["el_b"] - b["el"])
+    b = b[b["model"] > 0]
+    if b.empty:
+        return ones, {}
+    g = b.groupby(["line", "from", "to", "bucket"]).agg(model=("model", "median"), obs=("median", "first"),
+                                                       n=("n", "first")).reset_index()
+    r = g["obs"] / g["model"]
+    g = g[(r >= CAL_RATIO[0]) & (r <= CAL_RATIO[1])]
+    g = g.assign(wo=g["obs"] * g["n"], wm=g["model"] * g["n"])
+
+    def factors(df: pd.DataFrame, keys: list[str], min_n: int) -> dict:
+        s = df.groupby(keys)[["wo", "wm", "n"]].sum()
+        s = s[s["n"] >= min_n]
+        return (s["wo"] / s["wm"]).clip(*CAL_RANGE).to_dict()
+
+    per_line = factors(g, ["line", "bucket"], CAL_MIN_LINE)
+    per_bucket = factors(g[~g["line"].isin(METROBUS_LINES)], ["bucket"], CAL_MIN_GLOBAL)
+    dt_ = st["trip_id"].map(day_type).fillna("wd") if day_type is not None else pd.Series("wd", index=st.index)
+    bucket = cal_bucket(st["trip_id"].map(start).to_numpy(), dt_.to_numpy())
+    lines = line.to_numpy()
+    f = np.array([per_line.get((ln, bk), 1.0 if ln in METROBUS_LINES else per_bucket.get(bk, 1.0))
+                  for ln, bk in zip(lines, bucket)])
+    info = {"calibration_pairs": len(g), "calibrated_lines": len({k[0] for k in per_line}),
+            "calibration_all_bus": {k: round(v, 2) for k, v in per_bucket.items()}}
+    return f, info
+
+
 def interpolate_times(st: pd.DataFrame, stops: pd.DataFrame, trips: pd.DataFrame,
-                      routes: pd.DataFrame) -> pd.DataFrame:
+                      routes: pd.DataFrame, calibration: list[dict] | None = None,
+                      info: dict | None = None, day_type: pd.Series | None = None) -> pd.DataFrame:
     """Fill arrival/departure times from the first stop's time using distance/speed."""
     t0 = st.dropna(subset=["departure_time"]).groupby("trip_id")["departure_time"].first()
     t0 = hms_to_s(t0)
@@ -192,6 +265,14 @@ def interpolate_times(st: pd.DataFrame, stops: pd.DataFrame, trips: pd.DataFrame
     is_mb = st["trip_id"].isin(set(trips.loc[trips["route_id"].isin(mb_routes), "trip_id"])).to_numpy()
     seg = np.where(is_mb, segment_seconds(d.to_numpy(), METROBUS), segment_seconds(d.to_numpy(), BUS))
     seg = np.where(first, 0.0, seg)
+    if calibration:
+        line = st["trip_id"].map(trips.set_index("trip_id")["route_id"]).map(
+            routes.drop_duplicates("route_id").set_index("route_id")["route_short_name"])
+        code = st["stop_id"].map(stops.drop_duplicates("stop_id").set_index("stop_id")["stop_code"])
+        f, cal_info = calibration_factors(st, seg, t0, line, code, calibration, day_type)
+        seg = seg * f
+        if info is not None:
+            info.update(cal_info)
     st["elapsed"] = pd.Series(seg, index=st.index).groupby(st["trip_id"]).cumsum()
 
     # Round to whole seconds, then force non-decreasing within a trip.
@@ -227,6 +308,15 @@ def download(cache: Path) -> None:
                 raise SystemExit(f"download failed and no previous copy: {name}")
 
 
+def load_calibration(path: Path) -> list[dict]:
+    """GPS stop-to-stop times collected by the live service; missing file means none yet."""
+    import json
+    try:
+        return json.loads(path.read_text())["rows"]
+    except (OSError, ValueError, KeyError):
+        return []
+
+
 def build(cache: Path, out: Path) -> dict:
     out.mkdir(parents=True, exist_ok=True)
     routes = parse_routes(read_text(cache / "routes.csv"))
@@ -246,7 +336,14 @@ def build(cache: Path, out: Path) -> dict:
     st["stop_sequence"] = st["stop_sequence"].astype(int)
     st = st[st["trip_id"].isin(trips["trip_id"])]
     n_raw = len(st)
-    st = interpolate_times(st, stops, trips, routes)
+    cal = pd.read_csv(cache / "calendar.csv", sep=";", dtype=str, encoding="utf-8-sig")
+    # Weekday or weekend service, for the GPS calibration buckets.
+    weekday = cal[["monday", "tuesday", "wednesday", "thursday", "friday"]].astype(int).sum(axis=1) > 0
+    service_day = pd.Series(np.where(weekday, "wd", "we"), index=cal["service_id"])
+    service_day = service_day[~service_day.index.duplicated()]
+    day_type = trips.set_index("trip_id")["service_id"].map(service_day)
+    cal_info: dict = {}
+    st = interpolate_times(st, stops, trips, routes, load_calibration(cache / "calibration.json"), cal_info, day_type)
 
     # Keep only trips with at least two stops, and stops that are used.
     counts = st.groupby("trip_id").size()
@@ -255,7 +352,6 @@ def build(cache: Path, out: Path) -> dict:
     routes = routes[routes["route_id"].isin(trips["route_id"])]
     stops = stops[stops["stop_id"].isin(st["stop_id"])]
 
-    cal = pd.read_csv(cache / "calendar.csv", sep=";", dtype=str, encoding="utf-8-sig")
     cal = cal[["service_id", "monday", "tuesday", "wednesday", "thursday", "friday",
                "saturday", "sunday", "start_date", "end_date"]]
     cal = cal[cal["service_id"].isin(trips["service_id"])]
@@ -275,7 +371,7 @@ def build(cache: Path, out: Path) -> dict:
     stats = {
         "routes": len(routes), "lines": routes["route_short_name"].nunique(),
         "stops": len(stops), "bad_stops_dropped": bad_stops, "trips": len(trips),
-        "stop_times_raw": n_raw, "stop_times": len(st),
+        "stop_times_raw": n_raw, "stop_times": len(st), **cal_info,
     }
     return stats
 

@@ -1,7 +1,7 @@
 import pandas as pd
 import pytest
 
-from iett.clean import (fix_coord, fix_mojibake, interpolate_times, parse_routes,
+from iett.clean import (fix_coord, fix_mojibake, hms_to_s, interpolate_times, parse_routes,
                         parse_stops, segment_seconds, BUS)
 
 
@@ -63,3 +63,28 @@ def test_interpolate_times_monotonic():
     assert times[0] == "23:59:00"
     assert times == sorted(times) and times[2] > "24:00:00"
     assert list(out["timepoint"]) == [1, 0, 0]
+
+
+def test_gps_calibration_scales_model():
+    stops = pd.DataFrame({"stop_id": ["a", "b", "c"], "stop_code": ["1", "2", "3"],
+                          "stop_lat": [41.0, 41.005, 41.01], "stop_lon": [29.0, 29.0, 29.0]})
+    st = pd.DataFrame({"trip_id": ["t", "t", "t", "u", "u", "u"], "stop_id": ["a", "b", "c"] * 2,
+                       "stop_sequence": [1, 2, 3] * 2,
+                       "departure_time": ["08:00:00", None, None, "13:00:00", None, None]})
+    trips = pd.DataFrame({"trip_id": ["t", "u"], "route_id": ["r", "r"]})
+    routes = pd.DataFrame({"route_id": ["r"], "route_short_name": ["15F"]})
+    plain = interpolate_times(st, stops, trips, routes)
+    model = hms_to_s(plain["arrival_time"]).to_numpy()
+    hop = model[1] - model[0]
+    # Morning buses on 15F took twice the modelled time from stop 1 to stop 3.
+    rows = [{"line": "15F", "from": "1", "to": "3", "bucket": "wd-am", "median": 4 * hop, "n": 10}]
+    info: dict = {}
+    out = interpolate_times(st, stops, trips, routes, rows, info)
+    t = hms_to_s(out["arrival_time"]).to_numpy()
+    assert abs((t[2] - t[0]) - 4 * hop) <= 1       # 08:00 trip: calibrated
+    assert abs((t[5] - t[3]) - 2 * hop) <= 1       # 13:00 trip: other bucket, few samples, unchanged
+    assert info["calibrated_lines"] == 1
+    # The same observation does not apply to weekend trips.
+    we = interpolate_times(st, stops, trips, routes, rows, {}, pd.Series({"t": "we", "u": "we"}))
+    t = hms_to_s(we["arrival_time"]).to_numpy()
+    assert abs((t[2] - t[0]) - 2 * hop) <= 1

@@ -82,3 +82,8 @@ Bitti sayılması için: noktalar hat üzerinde düzgün hareket ediyor, etiketl
 - [x] README'de ekran görüntüleri, kurulum ve katkı rehberi
 - [ ] [Görkem] Duyuru ve ilk kullanıcılar
 - [ ] [Görkem] Metro İstanbul'a canlı tren verisi için resmi talep (taslak hazır: docs/metro-istanbul-talep.md)
+
+## Aşama 3c: Doğruluk (26 Eylül 2026)
+
+- [x] Marmaray tarifesi: istasyon bazlı süreler, Cuma/Cumartesi gece seferleri, Pendik–Zeytinburnu kısa trenleri
+- [x] Otobüs durak saatlerini canlı GPS ile kalibre et (canlı servis toplar, gece ETL'i uygular)

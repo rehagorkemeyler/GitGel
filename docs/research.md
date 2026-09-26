@@ -224,6 +224,12 @@ Genel ilke: işletmecinin kendi sitesi dış çağrıyı açıkça reddediyorsa 
 3. Turyol ve Dentur sitelerindeki tarife sayfaları yıl içinde az değişiyor; hat bazında elle tutulan `etl/other/manual/ferries_*.yaml` ile eski GTFS'in üzerine yazılır.
 4. Hat geometrisi İBB deniz-ulasim-hatlari-vektor-verisi GeoJSON'undan.
 
+## 8.5 Marmaray tarifesi ve otobüs GPS kalibrasyonu (26 Eylül 2026)
+
+Marmaray: TCDD'nin ilk/son tren saatleri ve marmaray.istanbul'un Haziran 2026 tablosundaki istasyon bazlı son tren saatleri etl/other/manual/marmaray.yaml'a işlendi. Halkalı–Gebze 15 dakikada bir (Halkalı 05:58–23:28, Gebze 06:05–23:20, uçtan uca 107–108 dk), Cuma ve Cumartesi geceleri 30 dakikada bir 4 ek sefer (son 01:28 / 01:20), Ataköy–Pendik kısa trenleri ana trenlerin arasında (çekirdekte ~8 dk). 20:50'den sonra Pendik'ten kalkan kısa trenler Zeytinburnu'nda biter. Kısa trenlerin kesin ilk/son saatleri yayınlanmıyor; kalıba göre üretiliyor. Bütün Marmaray saatleri "tarifeye göre".
+
+Otobüs kalibrasyonu: İETT GTFS'inde yalnızca ilk durak saati var, ara duraklar hız modeliyle tahmin ediliyor. Canlı servis (live/src/calibration.ts) otobüs hatlarını sırayla örnekliyor (12 hatlık gruplar, 40 dakika, toplamda ~5 saniyede bir istek) ve uygulamanın istediği hatları da kullanıyor. Her aracın "en yakın durak" kodu değiştiğinde iki durak arası süreyi kaydediyor (hat, durak çifti, hafta içi/sonu ve saat dilimi: am 06–10, mid 10–16, pm 16–20, night). Araç kimliği saklanmıyor. /live/calibration bu medyanları veriyor; gece ETL'i indiriyor (yoksa bir önceki kopya) ve hat + saat dilimi başına model süresini ölçekliyor (en az 8 örnek; yoksa tüm otobüslerin o dilimdeki katsayısı, en az 50 örnek; katsayı 0.5–2.5 arasında). Metrobüs yalnızca kendi verisiyle kalibre edilir.
+
 ## 9. Açık sorular ve riskler
 
 1. Raylı sistemde gerçek canlı veri yok. Ürünün "Google'dan iyi" iddiası ilk sürümde canlı konuma değil; hıza, sadeliğe, İstanbul'a özel doğru rotaya, hizmet durumuna ve dürüst etiketlemeye dayanmalı.
