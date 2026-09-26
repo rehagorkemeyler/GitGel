@@ -25,6 +25,8 @@ jobs:
   etl:
     runs-on: ubuntu-latest
     timeout-minutes: 90
+    env:
+      DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
     defaults:
       run:
         working-directory: etl
@@ -72,3 +74,14 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh workflow run deploy-pages.yml --ref main || echo "deploy-pages.yml not present yet"
+      - name: Server pulls the new GTFS and reloads MOTIS
+        if: env.DEPLOY_HOST != ''
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_KEY: ${{ secrets.DEPLOY_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$DEPLOY_KEY" > ~/.ssh/deploy_key && chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          ssh -i ~/.ssh/deploy_key -o BatchMode=yes ubuntu@"$DEPLOY_HOST" update-data

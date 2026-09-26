@@ -12,3 +12,4 @@ etl/out/
 coverage/
 .vite/
 etl/cache/
+app/public/data/

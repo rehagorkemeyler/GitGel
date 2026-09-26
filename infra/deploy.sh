@@ -12,6 +12,8 @@ main() {
   esac
   git fetch --quiet origin main
   git reset --quiet --hard origin/main
+  # cloudflared joins once infra/.env (not in git) holds TUNNEL_TOKEN.
+  if grep -qs '^TUNNEL_TOKEN=.' infra/.env; then export COMPOSE_PROFILES=tunnel; fi
   if [ -f infra/docker-compose.yml ]; then
     docker compose -f infra/docker-compose.yml up -d --build --remove-orphans
     docker compose -f infra/docker-compose.yml ps
