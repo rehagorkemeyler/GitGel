@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react'
 import { MapView } from './map/MapView'
 import { BottomSheet } from './components/BottomSheet'
-import { Panel } from './components/Panel'
 import { Icon } from './components/Icon'
 import { HomePeek } from './screens/Home'
 import { SearchPanel } from './screens/SearchPanel'
@@ -9,18 +8,15 @@ import { Results } from './screens/Results'
 import { RouteDetail } from './screens/RouteDetail'
 import { Nearby } from './screens/Nearby'
 import { Lines } from './screens/Lines'
+import { Contact, Support } from './screens/Info'
 import { useGeolocation } from './lib/useGeolocation'
 import type { Place } from './lib/search'
 import type { Itinerary } from './lib/api'
-import { t, type StringKey } from './i18n'
+import { t } from './i18n'
 import './App.css'
 
 export type Screen = 'home' | 'search' | 'nearby' | 'lines' | 'contact' | 'support'
 
-const titles: Record<'contact' | 'support', StringKey> = {
-  contact: 'contact',
-  support: 'support',
-}
 
 export function App() {
   const [screen, setScreen] = useState<Screen>('home')
@@ -96,11 +92,8 @@ export function App() {
       )}
       {screen === 'nearby' && <Nearby position={geo.position} onLocate={geo.start} onBack={() => setScreen('home')} />}
       {screen === 'lines' && <Lines onBack={() => setScreen('home')} />}
-      {(screen === 'contact' || screen === 'support') && (
-        <Panel title={t(titles[screen])} onBack={() => setScreen('home')}>
-          <p>{t('comingSoon')}</p>
-        </Panel>
-      )}
+      {screen === 'contact' && <Contact onBack={() => setScreen('home')} />}
+      {screen === 'support' && <Support onBack={() => setScreen('home')} />}
     </>
   )
 }
