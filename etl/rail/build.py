@@ -271,7 +271,9 @@ def build(out: Path, osm: Path | None, today: dt.date, workers: int = 4, offline
                                            "stop_id": f"mi_{stations[i]['Id']}", "stop_sequence": k + 1})
 
     store.save()
-    start = today
+    # Start a day early: the nightly runs after midnight, and yesterday's service day
+    # still has trips after midnight (night buses, weekend night metro).
+    start = today - dt.timedelta(days=1)
     end = today + dt.timedelta(days=VALID_DAYS)
     calendar = [{"service_id": f"mi_{s}", **dict(zip(
         ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"], days)),

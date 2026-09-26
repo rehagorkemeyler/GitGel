@@ -63,3 +63,21 @@ def test_line_without_shape_uses_stop_to_stop_lines():
     assert b["stops"] == ["a", "b"] and not b["fitted"]
     assert len(b["shape"]) == 2
     assert abs(b["offsets"][-1] - 1112 / 1000 / 18 * 3600) < 5  # 18 km/h fallback
+
+
+def test_calendar_starts_a_day_early_for_night_trips(tmp_path):
+    """The nightly runs after midnight: yesterday's night trips (e.g. 185-6 at 02:00) must stay valid."""
+    import csv
+    import datetime as dt
+
+    from ankara.gtfs import build
+
+    stops = {"a": {"name": "A", "lat": 39.9, "lon": 32.85}, "b": {"name": "B", "lat": 39.91, "lon": 32.85}}
+    times = {"wk": [{"min": 1415, "note": None}, {"min": 120, "note": None}], "sat": [], "sun": []}
+    line = {"code": "185-6", "name": "X", "mode": "bus", "minutes": 30, "stops": [{"stop": "a"}, {"stop": "b"}],
+            "times": times, "shape": []}
+    build([line], stops, dt.date(2026, 9, 27), tmp_path)
+    cal = list(csv.DictReader(open(tmp_path / "calendar.txt")))
+    assert {c["start_date"] for c in cal} == {"20260926"}
+    st = list(csv.DictReader(open(tmp_path / "stop_times.txt")))
+    assert sorted({r["departure_time"] for r in st if r["stop_sequence"] == "1"}) == ["23:35:00", "26:00:00"]

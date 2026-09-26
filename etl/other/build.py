@@ -199,7 +199,7 @@ def build_ferries(today: dt.date) -> dict[str, list[dict]]:
         stops["parent_station"] = stops["parent_station"].where(stops["parent_station"].isna(), p(stops["parent_station"].fillna("")))
     freq["trip_id"] = p(freq["trip_id"])
     cal["service_id"] = p(cal["service_id"])
-    cal["start_date"] = today.strftime("%Y%m%d")
+    cal["start_date"] = (today - dt.timedelta(days=1)).strftime("%Y%m%d")  # yesterday's trips after midnight
     cal["end_date"] = (today + dt.timedelta(days=VALID_DAYS)).strftime("%Y%m%d")
     old_ag = g["agency"][g["agency"]["agency_id"].isin(FERRY_AGENCIES)].copy()
     old_ag["agency_id"] = old_ag["agency_id"].map(FERRY_AGENCIES)
@@ -233,7 +233,7 @@ def build(out: Path, osm: Path, today: dt.date) -> dict:
             tables[k] += v
     for sv in sorted({t["service_id"] for t in tables["trips"]}):
         tables["calendar"].append({"service_id": sv, **{d: int(sv == "oth_daily" or f"_{d[:3]}" in sv) for d in SERVICE_DAYS},
-                                   "start_date": today.strftime("%Y%m%d"),
+                                   "start_date": (today - dt.timedelta(days=1)).strftime("%Y%m%d"),
                                    "end_date": (today + dt.timedelta(days=VALID_DAYS)).strftime("%Y%m%d")})
     for k, v in build_ferries(today).items():
         tables[k] += v
