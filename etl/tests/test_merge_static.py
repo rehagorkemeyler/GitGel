@@ -2,7 +2,8 @@ import datetime as dt
 import zipfile
 
 from merge.build import merge
-from static.build import fold, title_tr
+from common.text import title_tr
+from static.build import fold
 
 
 def test_fold_and_title():

@@ -25,6 +25,8 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
+from common.text import title_tr
+
 BASE = "https://data.ibb.gov.tr/dataset/8540e256-6df5-4719-85bc-e64e91508ede/resource/"
 RESOURCES = {
     "agency.csv": "df13606d-194b-4587-b868-39ecdc5f8769/download/agency.csv",
@@ -104,7 +106,7 @@ def parse_routes(text: str) -> pd.DataFrame:
             "route_id": f[0],
             "agency_id": f[1],
             "route_short_name": fix_mojibake(f[2]).strip(),
-            "route_long_name": fix_mojibake(f[3]).strip(),
+            "route_long_name": title_tr(fix_mojibake(f[3]).strip()),
         })
     df = pd.DataFrame(rows).drop_duplicates("route_id")
     df["route_type"] = 3
@@ -134,7 +136,7 @@ def parse_stops(text: str) -> tuple[pd.DataFrame, int]:
         rows.append({
             "stop_id": f[0],
             "stop_code": f[1],
-            "stop_name": fix_mojibake(name).strip(),
+            "stop_name": title_tr(fix_mojibake(name).strip()),
             "stop_desc": f[desc_idx].strip() if desc_idx < len(f) else "",
             "stop_lat": round(lat, 7),
             "stop_lon": round(lon, 7),
@@ -227,7 +229,7 @@ def build(cache: Path, out: Path) -> dict:
     trips = pd.read_csv(cache / "trips.csv", sep=";", dtype=str, encoding="utf-8-sig")
     trips.columns = [c.strip() for c in trips.columns]
     trips = trips.dropna(subset=["trip_id", "route_id", "service_id"])
-    trips["trip_headsign"] = trips["trip_headsign"].map(fix_mojibake)
+    trips["trip_headsign"] = trips["trip_headsign"].map(fix_mojibake).map(title_tr)
     trips = trips[trips["route_id"].isin(routes["route_id"])]
 
     with zipfile.ZipFile(cache / "stop_times.zip") as z:

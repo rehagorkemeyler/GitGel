@@ -1,0 +1,149 @@
+.trip-ends {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s-2);
+}
+
+.ends {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--r-btn);
+  background: var(--surface-2);
+  overflow: hidden;
+}
+
+.end {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  padding: 0 var(--s-4);
+  text-align: left;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.end + .end {
+  border-top: 1px solid var(--border);
+}
+
+.end .placeholder {
+  color: var(--text-2);
+}
+
+.end-dot {
+  width: 10px;
+  height: 10px;
+  flex: none;
+  border-radius: 50%;
+  border: 2px solid var(--accent);
+}
+
+.end-dot.to {
+  background: var(--accent);
+}
+
+.close {
+  width: var(--touch);
+  font-size: var(--fs-l);
+  color: var(--text-2);
+  border-radius: var(--r-btn);
+}
+
+.pad {
+  padding: var(--s-4) 0;
+  margin: 0;
+}
+
+.retry {
+  padding: 0 var(--s-4);
+  border-radius: var(--r-btn);
+  background: var(--accent);
+  color: var(--accent-text);
+  font-weight: var(--fw-bold);
+}
+
+.options {
+  list-style: none;
+  margin: var(--s-3) 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+}
+
+.option {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  padding: var(--s-3) var(--s-4);
+  border-radius: var(--r-card);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  text-align: left;
+}
+
+.option:active {
+  opacity: 0.6;
+}
+
+.option-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.option-min {
+  font-size: var(--fs-l);
+  font-weight: var(--fw-bold);
+}
+
+.option-min small,
+.option-time,
+.option-meta,
+.option-next {
+  font-size: var(--fs-s);
+  font-weight: var(--fw-regular);
+  color: var(--text-2);
+}
+
+.option-rides {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-1);
+}
+
+.ride {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-1);
+}
+
+.ride-sep {
+  color: var(--text-2);
+}
+
+.option-meta {
+  display: flex;
+  gap: var(--s-3);
+  align-items: center;
+}
+
+.option-meta svg {
+  vertical-align: -2px;
+}
+
+.tag {
+  margin-left: auto;
+  padding: 0 var(--s-2);
+  border-radius: 6px;
+  border: 1px solid var(--border);
+}
+
+.tag.live {
+  color: var(--live);
+  border-color: var(--live);
+}

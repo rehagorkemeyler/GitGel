@@ -21,6 +21,8 @@ from pathlib import Path
 
 import pandas as pd
 
+from common.text import title_tr
+
 ETL = Path(__file__).resolve().parent.parent
 MODES = {0: "tram", 1: "metro", 2: "rail", 3: "bus", 4: "ferry", 6: "cablecar", 7: "funicular"}
 # Metrobüs is a bus route in GTFS, but the app shows it as its own mode.
@@ -37,21 +39,6 @@ def fold(s: str) -> str:
 
 def slug(s: str) -> str:
     return re.sub(r"[^a-z0-9]+", "-", fold(s)).strip("-") or "x"
-
-
-def title_tr(s: str) -> str:
-    """'KADIKÖY İSKELE' -> 'Kadıköy İskele' (Turkish-aware title case for İETT names)."""
-    if not s or s != s.upper():
-        return s
-    out = []
-    for w in s.split(" "):
-        if not w:
-            out.append(w)
-            continue
-        head, tail = w[0], w[1:]
-        tail = tail.replace("I", "ı").replace("İ", "i").lower()
-        out.append(head + tail)
-    return " ".join(out)
 
 
 def read(z: zipfile.ZipFile, name: str, **kw) -> pd.DataFrame:

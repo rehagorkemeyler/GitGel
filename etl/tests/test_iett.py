@@ -28,7 +28,7 @@ def test_parse_stops_handles_broken_rows():
     df, bad = parse_stops(text)
     assert bad == 1
     assert list(df["stop_id"]) == ["1", "2"]
-    assert df.iloc[1]["stop_name"] == "MARMARA ÜNİ / İKTİSAT FAKÜLTESİ"
+    assert df.iloc[1]["stop_name"] == "Marmara Üni / İktisat Fakültesi"
     assert df.iloc[1]["stop_desc"] == "direction: X"
 
 
@@ -41,7 +41,7 @@ def test_parse_routes_joins_broken_lines():
     )
     df = parse_routes(text)
     assert list(df["route_id"]) == ["1", "2"]
-    assert df.iloc[0]["route_long_name"] == "KADIKÖY - KİRAZLITEPE"
+    assert df.iloc[0]["route_long_name"] == "Kadıköy - Kirazlıtepe"
     assert df.iloc[1]["route_color"] == "E30613"  # metrobüs
 
 

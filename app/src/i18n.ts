@@ -21,6 +21,14 @@ const tr = {
   noResults: 'Sonuç yok. Yazımı kontrol et ya da başka bir yer dene.',
   dataUnavailable: 'Durak listesi şu an yüklenemedi. Biraz sonra tekrar dene.',
   from: 'Nereden?',
+  pickOrigin: 'Nereden çıkacağını seç ya da konumunu aç.',
+  searchingRoutes: 'Rotalar aranıyor…',
+  routingUnavailable: 'Rota servisine şu an ulaşılamıyor. Biraz sonra tekrar dene.',
+  retry: 'Tekrar dene',
+  noRoute: 'Bu saatte uygun bir rota bulunamadı.',
+  min: 'dk',
+  noTransfer: 'Aktarmasız',
+  transfers: 'aktarma',
 }
 
 export type StringKey = keyof typeof tr
@@ -46,6 +54,14 @@ const en: Record<StringKey, string> = {
   noResults: 'No results. Check the spelling or try another place.',
   dataUnavailable: 'The stop list could not be loaded right now. Try again shortly.',
   from: 'From where?',
+  pickOrigin: 'Choose where you start, or turn on your location.',
+  searchingRoutes: 'Finding routes…',
+  routingUnavailable: 'The route service cannot be reached right now. Try again shortly.',
+  retry: 'Try again',
+  noRoute: 'No suitable route at this time.',
+  min: 'min',
+  noTransfer: 'No transfer',
+  transfers: 'transfers',
 }
 
 export const lang: 'tr' | 'en' =
