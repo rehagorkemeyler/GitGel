@@ -66,6 +66,9 @@ const tr = {
   contribute: 'Koda katkı ver',
   supportNoStrings: 'Bu ekran sadece sen açtığında görünür, asla kendiliğinden açılmaz.',
   liveVehicles: 'araç haritada canlı (İETT GPS)',
+  serviceNotice: 'seferlerde aksama var',
+  scheduledHidden: 'Bu hatların tarifeye göre tren noktaları gizlendi.',
+  legend: 'Harita işaretleri',
 }
 
 export type StringKey = keyof typeof tr
@@ -136,6 +139,9 @@ const en: Record<StringKey, string> = {
   contribute: 'Contribute code',
   supportNoStrings: 'This screen only appears when you open it, never on its own.',
   liveVehicles: 'vehicles live on the map (İETT GPS)',
+  serviceNotice: 'service disruption',
+  scheduledHidden: 'Scheduled train dots for these lines are hidden.',
+  legend: 'Map symbols',
 }
 
 export const lang: 'tr' | 'en' =
