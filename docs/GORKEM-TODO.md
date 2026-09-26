@@ -126,3 +126,13 @@ Taslak: [docs/metro-istanbul-talep.md](metro-istanbul-talep.md). E-posta adresin
 ## 6. Duyuru (Aşama 5, en son)
 
 Tailscale/alan adı ve Pages adımları bitip uygulama telefonda çalışınca: README'deki ekran görüntüleriyle kısa bir tanıtım (Ekşi, Reddit r/istanbul, X, LinkedIn). Hata bildirimleri için GitHub Issues bağlantısını ekle.
+
+## 7. Ankara: konumu bilinmeyen duraklar (Aşama 6, karar)
+
+EGO'nun 10 799 durağından 6 197'sinin konumu OpenStreetMap'ten geliyor. Kalan ~4 600 durak (çoğu Yenimahalle, Batıkent, Sincan, Etimesgut tarafında) OSM'de durak numarasıyla işaretli değil, EGO da koordinat vermiyor. Liste: nightly ETL çıktısındaki `out/ankara/unmatched_stops.csv`. Seçenekler:
+
+1. **Canlı GPS'ten öğrenmek (önerim):** canlı servis zaten EGO'dan otobüs konumlarını çekiyor; her otobüsün "şu an hangi durakta" bilgisi de geliyor. Birkaç gün boyunca bu konumları toplayıp durak yerini çıkarırız. Tahmin değil, ölçüm. İETT'deki kalibrasyonla aynı yöntem.
+2. **Yaklaşık yerleştirme:** konumu bilinen iki komşu durağın arasına, güzergah üzerinde eşit aralıkla koymak. Hemen olur ama duraklar birkaç yüz metre kayık görünebilir.
+3. **OSM'ye katkı:** eksik durakları OpenStreetMap'e eklemek (herkese fayda, ama yavaş).
+
+Sohbete "1", "2" veya "3" yazman yeterli.
