@@ -29,8 +29,13 @@ main() {
     osmium extract -b 32.20,39.50,33.40,40.30 --strategy complete_ways --overwrite \
       "$base/input/central_anatolia.osm.pbf" -o "$base/input/ankara.osm.pbf"
   fi
+  # Mapping quirks that abort the MOTIS street import (ways leaving the regional
+  # download, a plaza of 38 area slices around one node) are removed first.
+  for c in istanbul ankara; do
+    python3 "$repo/infra/motis/clean-osm.py" "$base/input/$c.osm.pbf" "$base/input/$c.clean.osm.pbf"
+  done
   # MOTIS reads one OSM file: both cities in one.
-  osmium merge --overwrite "$base/input/istanbul.osm.pbf" "$base/input/ankara.osm.pbf" -o "$base/input/cities.osm.pbf"
+  osmium merge --overwrite "$base/input/istanbul.clean.osm.pbf" "$base/input/ankara.clean.osm.pbf" -o "$base/input/cities.osm.pbf"
 
   cp "$base/input/istanbul-gtfs.zip" "$base/input/cities.osm.pbf" "$repo/infra/motis/config.yml" "$new/"
   if [ -f "$base/input/ankara-gtfs.zip" ]; then
