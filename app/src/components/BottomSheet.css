@@ -16,6 +16,8 @@
   transition: transform var(--dur) var(--ease-spring);
   will-change: transform;
   touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
   z-index: 10;
 }
 
