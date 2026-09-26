@@ -5,8 +5,9 @@ import { stopTimes } from '../lib/api'
 import { groupDepartures, type DepartureGroup } from '../lib/departures'
 import { loadLines, type Line } from '../lib/data'
 import { hhmm } from '../lib/itinerary'
-import { MOTIS_STOP_PREFIX } from '../lib/config'
+import { CITY } from '../lib/city'
 import type { Station } from '../map/networkLayer'
+import { AnkaraArrivals } from '../components/AnkaraArrivals'
 import { t } from '../i18n'
 import './StationSheet.css'
 
@@ -37,9 +38,10 @@ export function StationSheet({
   }, [])
 
   useEffect(() => {
+    if (!CITY.routing) return
     let alive = true
     const load = () =>
-      stopTimes(MOTIS_STOP_PREFIX + station.id, new Date(), 40).then(
+      stopTimes(CITY.motisPrefix + station.id, new Date(), 40).then(
         (st) => alive && setGroups({ id: station.id, list: groupDepartures(st), error: false, at: Date.now() }),
         () => alive && setGroups({ id: station.id, list: null, error: true, at: Date.now() }),
       )
@@ -52,6 +54,8 @@ export function StationSheet({
   }, [station.id])
 
   const current = groups.id === station.id ? groups : null
+  // Ankara bus stops: "eg_12345" -> EGO stop number 12345 (rail stations use codes like M33).
+  const egoStop = CITY.ego ? /^eg_(\d{3,6})$/.exec(station.id)?.[1] : undefined
 
   return (
     <div className="station">
@@ -73,13 +77,17 @@ export function StationSheet({
           ×
         </button>
       </div>
-      <button className="directions" onClick={onDirections}>
-        <Icon name="route" size={20} />
-        {t('directions')}
-      </button>
+      {CITY.routing && (
+        <button className="directions" onClick={onDirections}>
+          <Icon name="route" size={20} />
+          {t('directions')}
+        </button>
+      )}
 
-      <h3 className="station-sub">{t('nextArrivals')}</h3>
-      {!current && <p className="muted">…</p>}
+      {egoStop && <AnkaraArrivals stop={egoStop} lines={lines} />}
+      {!CITY.routing && !egoStop && <p className="muted">{t('routingSoonAnkara')}</p>}
+      {CITY.routing && <h3 className="station-sub">{t('nextArrivals')}</h3>}
+      {CITY.routing && !current && <p className="muted">…</p>}
       {current?.error && <p className="muted">{t('routingUnavailable')}</p>}
       {current?.list && current.list.length === 0 && <p className="muted">{t('noDepartures')}</p>}
       <ul className="dep-groups">

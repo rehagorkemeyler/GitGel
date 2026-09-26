@@ -14,6 +14,7 @@ from __future__ import annotations
 import argparse
 import datetime as dt
 import json
+import math
 import re
 import unicodedata
 import zipfile
@@ -53,7 +54,7 @@ def hhmm(t: str) -> str:
     return f"{h % 24:02d}:{m:02d}"
 
 
-def build(gtfs: Path, out: Path) -> dict:
+def build(gtfs: Path, out: Path, bus_network: bool = False) -> dict:
     out.mkdir(parents=True, exist_ok=True)
     (out / "lines").mkdir(exist_ok=True)
     z = zipfile.ZipFile(gtfs)
@@ -175,6 +176,8 @@ def build(gtfs: Path, out: Path) -> dict:
     dump("search.json", search)
     dump("stations.json", merge_stations(stops_out, by_id))
     dump("network.geojson", network(z, routes, trips, rep, rep_st, stops))
+    if bus_network:
+        dump("bus-network.geojson", buses(z, routes, trips))
     meta = {"built": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"),
             "lines": len(lines_out), "stops": len(stops_out)}
     dump("meta.json", meta)
@@ -255,6 +258,55 @@ def network(z: zipfile.ZipFile, routes: pd.DataFrame, trips: pd.DataFrame, rep: 
     return {"type": "FeatureCollection", "features": feats}
 
 
+def simplify(pts: list[list[float]], tol_m: float) -> list[list[float]]:
+    """Douglas-Peucker on [lon, lat] points, tolerance in metres (flat approximation)."""
+    if len(pts) < 3:
+        return pts
+    kx = 111320 * math.cos(math.radians(pts[0][1]))
+    ky = 110540
+    keep = [False] * len(pts)
+    keep[0] = keep[-1] = True
+    stack = [(0, len(pts) - 1)]
+    while stack:
+        i, j = stack.pop()
+        ax, ay = pts[i][0] * kx, pts[i][1] * ky
+        bx, by = pts[j][0] * kx, pts[j][1] * ky
+        dx, dy = bx - ax, by - ay
+        L = math.hypot(dx, dy) or 1e-9
+        best, k = -1.0, -1
+        for m in range(i + 1, j):
+            px, py = pts[m][0] * kx, pts[m][1] * ky
+            d = abs(dy * (px - ax) - dx * (py - ay)) / L
+            if d > best:
+                best, k = d, m
+        if best > tol_m:
+            keep[k] = True
+            stack += [(i, k), (k, j)]
+    return [p for p, f in zip(pts, keep) if f]
+
+
+def buses(z: zipfile.ZipFile, routes: pd.DataFrame, trips: pd.DataFrame, tol_m: float = 15.0) -> dict:
+    """Bus routes as thin background lines: one simplified shape per line."""
+    shapes = read(z, "shapes.txt")
+    bus_routes = routes[routes["mode"] == "bus"]
+    used = trips[trips["route_id"].isin(bus_routes["route_id"]) & (trips["shape_id"] != "")]
+    used = used.drop_duplicates("line_id")
+    shapes["shape_pt_sequence"] = shapes["shape_pt_sequence"].astype(int)
+    by_shape = {k: g.sort_values("shape_pt_sequence") for k, g in shapes[shapes["shape_id"].isin(used["shape_id"])].groupby("shape_id")}
+    info = {r["line_id"]: r for _, r in bus_routes.iterrows()}
+    feats = []
+    for _, t in used.iterrows():
+        g = by_shape.get(t["shape_id"])
+        if g is None:
+            continue
+        coords = simplify([[round(float(x), 5), round(float(y), 5)] for x, y in zip(g["shape_pt_lon"], g["shape_pt_lat"])], tol_m)
+        if len(coords) >= 2:
+            r = info[t["line_id"]]
+            feats.append({"type": "Feature", "geometry": {"type": "LineString", "coordinates": coords},
+                          "properties": {"line": t["line_id"], "name": r["route_short_name"], "mode": "bus"}})
+    return {"type": "FeatureCollection", "features": feats}
+
+
 def _feature(r, coords) -> dict:
     return {"type": "Feature", "geometry": {"type": "LineString", "coordinates": coords},
             "properties": {"line": r["line_id"], "name": r["route_short_name"], "mode": r["mode"],
@@ -269,8 +321,9 @@ def main(argv=None) -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--gtfs", type=Path, default=ETL / "out" / "istanbul-gtfs.zip")
     ap.add_argument("--out", type=Path, default=ETL / "out" / "static")
+    ap.add_argument("--bus-network", action="store_true", help="also write bus-network.geojson (Ankara)")
     a = ap.parse_args(argv)
-    for k, v in build(a.gtfs, a.out).items():
+    for k, v in build(a.gtfs, a.out, a.bus_network).items():
         print(f"{k}: {v}")
 
 

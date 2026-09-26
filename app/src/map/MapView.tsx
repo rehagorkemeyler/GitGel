@@ -3,10 +3,10 @@ import * as maplibregl from 'maplibre-gl'
 import type { Map as MlMap } from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url'
-import { ISTANBUL_BOUNDS, ISTANBUL_CENTER } from '../lib/config'
+import { CITY } from '../lib/city'
 import { baseStyle, blankStyle } from './baseStyle'
 import { useColorScheme } from '../lib/useColorScheme'
-import { inIstanbul } from '../lib/useGeolocation'
+import { inCity } from '../lib/useGeolocation'
 import type { Itinerary } from '../lib/api'
 import { showRoute } from './routeLayer'
 import { LiveLayer } from './liveLayer'
@@ -71,11 +71,11 @@ export function MapView({ position, route = null, bottomInset = 0, vehicles, hid
     const m = new maplibregl.Map({
       container: container.current,
       style: blankStyle(scheme),
-      center: ISTANBUL_CENTER,
+      center: CITY.center,
       zoom: 11,
       maxBounds: [
-        [ISTANBUL_BOUNDS[0][0] - 1, ISTANBUL_BOUNDS[0][1] - 1],
-        [ISTANBUL_BOUNDS[1][0] + 1, ISTANBUL_BOUNDS[1][1] + 1],
+        [CITY.bounds[0][0] - 1, CITY.bounds[0][1] - 1],
+        [CITY.bounds[1][0] + 1, CITY.bounds[1][1] + 1],
       ],
       attributionControl: { compact: true },
       pitchWithRotate: false,
@@ -176,7 +176,7 @@ export function MapView({ position, route = null, bottomInset = 0, vehicles, hid
       el.setAttribute('aria-label', t('myLocation'))
       marker.current = new maplibregl.Marker({ element: el }).setLngLat(position).addTo(m)
       // Outside Istanbul the map stays on the city (tiles and data end at its edge).
-      if (!routeRef.current && inIstanbul(position)) m.jumpTo({ center: position, zoom: 15 })
+      if (!routeRef.current && inCity(position)) m.jumpTo({ center: position, zoom: 15 })
     } else {
       marker.current.setLngLat(position)
     }
