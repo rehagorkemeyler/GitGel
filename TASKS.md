@@ -67,4 +67,4 @@ Bitti sayılması için: noktalar hat üzerinde düzgün hareket ediyor, etiketl
 - [x] Hakkında ekranında tüm atıflar
 - [x] README'de ekran görüntüleri, kurulum ve katkı rehberi
 - [ ] [Görkem] Duyuru ve ilk kullanıcılar
-- [ ] [Görkem] Metro İstanbul'a canlı tren verisi için resmi talep (Claude Code taslak yazar)
+- [ ] [Görkem] Metro İstanbul'a canlı tren verisi için resmi talep (taslak hazır: docs/metro-istanbul-talep.md)
