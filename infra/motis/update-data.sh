@@ -10,8 +10,12 @@ main() {
   local new="$base/build-$(date +%Y%m%d%H%M)"
   mkdir -p "$base/input" "$new"
 
-  curl -fsSL --retry 5 -o "$base/input/istanbul-gtfs.zip" \
-    https://github.com/rehagorkemeyler/GitGel/releases/download/data-latest/istanbul-gtfs.zip
+  local rel=https://github.com/rehagorkemeyler/GitGel/releases/download/data-latest
+  curl -fsSL --retry 5 -o "$base/input/istanbul-gtfs.zip" "$rel/istanbul-gtfs.zip"
+  # Ankara is optional: a failed download keeps the last copy; none at all skips Ankara.
+  curl -fsSL --retry 5 -o "$base/input/ankara-gtfs.zip.part" "$rel/ankara-gtfs.zip" \
+    && mv "$base/input/ankara-gtfs.zip.part" "$base/input/ankara-gtfs.zip" \
+    || rm -f "$base/input/ankara-gtfs.zip.part"
   # OSM changes slowly: refresh at most once a week.
   if [ ! -f "$base/input/istanbul.osm.pbf" ] || [ -n "$(find "$base/input/istanbul.osm.pbf" -mtime +6)" ]; then
     curl -fsSL --retry 5 -o "$base/input/marmara.osm.pbf" \
@@ -19,8 +23,21 @@ main() {
     osmium extract -b 27.95,40.75,29.95,41.60 --strategy complete_ways --overwrite \
       "$base/input/marmara.osm.pbf" -o "$base/input/istanbul.osm.pbf"
   fi
+  if [ ! -f "$base/input/ankara.osm.pbf" ] || [ -n "$(find "$base/input/ankara.osm.pbf" -mtime +6)" ]; then
+    curl -fsSL --retry 5 -o "$base/input/central_anatolia.osm.pbf" \
+      https://download.openstreetmap.fr/extracts/europe/turkey/central_anatolia-latest.osm.pbf
+    osmium extract -b 32.20,39.50,33.40,40.30 --strategy complete_ways --overwrite \
+      "$base/input/central_anatolia.osm.pbf" -o "$base/input/ankara.osm.pbf"
+  fi
+  # MOTIS reads one OSM file: both cities in one.
+  osmium merge --overwrite "$base/input/istanbul.osm.pbf" "$base/input/ankara.osm.pbf" -o "$base/input/cities.osm.pbf"
 
-  cp "$base/input/istanbul-gtfs.zip" "$base/input/istanbul.osm.pbf" "$repo/infra/motis/config.yml" "$new/"
+  cp "$base/input/istanbul-gtfs.zip" "$base/input/cities.osm.pbf" "$repo/infra/motis/config.yml" "$new/"
+  if [ -f "$base/input/ankara-gtfs.zip" ]; then
+    cp "$base/input/ankara-gtfs.zip" "$new/"
+  else
+    sed -i '/# ankara-begin/,/# ankara-end/d' "$new/config.yml"
+  fi
   chmod -R a+rwX "$new"
   # Run as the server user so old builds can be deleted later without root.
   docker run --rm --user "$(id -u):$(id -g)" -v "$new:/work" -w /work "$image" /motis import -c config.yml -d data
