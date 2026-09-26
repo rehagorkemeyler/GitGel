@@ -38,6 +38,8 @@ type Props = {
   onStation?: (s: Station) => void
   /** Tap on a scheduled train ring. */
   onTrain?: (t: TrainInfo) => void
+  /** Tap on a live vehicle dot. */
+  onVehicle?: (v: Vehicle) => void
   /** Line to emphasise (line page). */
   focusLine?: string | null
   /** Opened line page: path and stops. `pathInNetwork` = the base layer already draws its track. */
@@ -46,7 +48,7 @@ type Props = {
   onReady?: (map: MlMap) => void
 }
 
-export function MapView({ position, route = null, bottomInset = 0, vehicles, hiddenLines, onRailCount, onStation, onTrain, focusLine = null, lineView = null, pathInNetwork = false, onReady }: Props) {
+export function MapView({ position, route = null, bottomInset = 0, vehicles, hiddenLines, onRailCount, onStation, onTrain, onVehicle, focusLine = null, lineView = null, pathInNetwork = false, onReady }: Props) {
   const container = useRef<HTMLDivElement>(null)
   const map = useRef<MlMap | null>(null)
   const marker = useRef<maplibregl.Marker | null>(null)
@@ -62,6 +64,8 @@ export function MapView({ position, route = null, bottomInset = 0, vehicles, hid
   onStationRef.current = onStation
   const onTrainRef = useRef(onTrain)
   onTrainRef.current = onTrain
+  const onVehicleRef = useRef(onVehicle)
+  onVehicleRef.current = onVehicle
   const insetRef = useRef(0)
   routeRef.current = route
   insetRef.current = bottomInset
@@ -89,6 +93,7 @@ export function MapView({ position, route = null, bottomInset = 0, vehicles, hid
     m.once('load', () => onReady?.(m))
     // setStyle (theme change) drops our layers: add the route back.
     live.current = new LiveLayer(m)
+    live.current.onVehicle = (v) => onVehicleRef.current?.(v)
     net.current = new NetworkLayer(m)
     net.current.onStation = (st) => onStationRef.current?.(st)
     rail.current = new RailLayer(m)

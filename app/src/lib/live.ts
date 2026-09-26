@@ -2,13 +2,33 @@ import { useEffect, useState } from 'react'
 import { LIVE_BASE } from './config'
 import { CITY } from './city'
 
-export type Vehicle = { id: string; lat: number; lon: number; line: string; headsign: string; at: string }
+export type Vehicle = {
+  id: string
+  lat: number
+  lon: number
+  line: string
+  headsign: string
+  at: string
+  // Ankara (EGO) extras
+  plate?: string | null
+  speed?: number | null
+  features?: string[]
+}
 export type LineStatus = { line: string; message: string; updated: string }
 export type Announcement = { title: string; text: string; lines: string[] }
 export type Status = { lines: LineStatus[]; announcements: Announcement[]; stale: boolean }
 
 // Ankara (EGO), see live/src/providers/ego.ts.
-type AnkaraVehicle = { id: string; line: string; lat: number; lon: number; plate: string | null; updatedAt: string }
+type AnkaraVehicle = {
+  id: string
+  line: string
+  lat: number
+  lon: number
+  plate: string | null
+  speed: number | null
+  features: string[]
+  updatedAt: string
+}
 export type AnkaraArrival = {
   line: string
   lineName: string
@@ -32,7 +52,17 @@ function lineVehicles(line: string): Promise<Vehicle[]> {
   const q = encodeURIComponent(line)
   if (CITY.ego)
     return get<{ vehicles: AnkaraVehicle[] }>(`/live/ankara/vehicles?line=${q}`).then((r) =>
-      r.vehicles.map((v) => ({ id: v.id, lat: v.lat, lon: v.lon, line: v.line, headsign: v.plate ?? '', at: v.updatedAt })),
+      r.vehicles.map((v) => ({
+        id: v.id,
+        lat: v.lat,
+        lon: v.lon,
+        line: v.line,
+        headsign: '',
+        at: v.updatedAt,
+        plate: v.plate,
+        speed: v.speed,
+        features: v.features,
+      })),
     )
   return get<{ vehicles: Vehicle[] }>(`/live/vehicles?line=${q}`).then((r) => r.vehicles)
 }

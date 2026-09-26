@@ -18,9 +18,17 @@ export class LiveLayer {
   private start = 0
   private frame = 0
   private reduce = matchMedia('(prefers-reduced-motion: reduce)').matches
+  private byId = new Map<string, Vehicle>()
+  onVehicle?: (v: Vehicle) => void
 
   constructor(map: MlMap) {
     this.map = map
+    map.on('click', 'live-dots', (e) => {
+      const v = this.byId.get(String(e.features?.[0]?.properties?.id))
+      if (v) this.onVehicle?.(v)
+    })
+    map.on('mouseenter', 'live-dots', () => (map.getCanvas().style.cursor = 'pointer'))
+    map.on('mouseleave', 'live-dots', () => (map.getCanvas().style.cursor = ''))
   }
 
   ensure() {
@@ -44,6 +52,7 @@ export class LiveLayer {
     const current = this.positions(this.progress())
     this.from = current
     this.to = new Map(vehicles.map((v) => [v.id, { lon: v.lon, lat: v.lat }]))
+    this.byId = new Map(vehicles.map((v) => [v.id, v]))
     for (const [id, p] of this.to) if (!this.from.has(id)) this.from.set(id, p)
     this.start = performance.now()
     cancelAnimationFrame(this.frame)
