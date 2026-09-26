@@ -39,8 +39,13 @@ export function StationSheet({
     loadLines().then((ls) => setLines(new Map(ls.map((l) => [l.id, l]))), () => {})
   }, [])
 
+  // Ankara bus stops: "eg_12345" -> EGO stop number 12345 (rail stations use codes like M33).
+  const egoStop = CITY.ego ? /^eg_(\d{3,6})$/.exec(station.id)?.[1] : undefined
+  // Ankara bus stops show EGO's own board (live + next trip per line) instead of the timetable list.
+  const timetable = CITY.routing && !egoStop
+
   useEffect(() => {
-    if (!CITY.routing) return
+    if (!timetable) return
     let alive = true
     const load = () =>
       stopTimes(CITY.motisPrefix + station.id, new Date(), 40).then(
@@ -53,11 +58,9 @@ export function StationSheet({
       alive = false
       clearInterval(timer)
     }
-  }, [station.id])
+  }, [station.id, timetable])
 
   const current = groups.id === station.id ? groups : null
-  // Ankara bus stops: "eg_12345" -> EGO stop number 12345 (rail stations use codes like M33).
-  const egoStop = CITY.ego ? /^eg_(\d{3,6})$/.exec(station.id)?.[1] : undefined
 
   return (
     <div className="station">
@@ -91,8 +94,8 @@ export function StationSheet({
 
       {egoStop && <AnkaraArrivals stop={egoStop} lines={lines} onLine={onLine} />}
       {!CITY.routing && !egoStop && <p className="muted">{t('routingSoonAnkara')}</p>}
-      {CITY.routing && <h3 className="station-sub">{t('nextArrivals')}</h3>}
-      {CITY.routing && !current && <p className="muted">…</p>}
+      {timetable && <h3 className="station-sub">{t('nextArrivals')}</h3>}
+      {timetable && !current && <p className="muted">…</p>}
       {current?.error && <p className="muted">{t('routingUnavailable')}</p>}
       {current?.list && current.list.length === 0 && <p className="muted">{t('noDepartures')}</p>}
       <ul className="dep-groups">

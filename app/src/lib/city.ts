@@ -45,7 +45,7 @@ export const CITIES: Record<CityId, City> = {
     motisPrefix: 'ankara_',
     iett: false,
     ego: true,
-    routing: false,
+    routing: true,
   },
 }
 
