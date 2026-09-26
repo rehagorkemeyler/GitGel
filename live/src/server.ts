@@ -3,6 +3,8 @@
 //   GET /live/vehicles?line=500T  İETT buses on one line (GPS, "live")
 //   GET /live/status              Metro İstanbul line problems + announcements
 //   GET /live/calibration         Bus stop-to-stop times measured from GPS (for the nightly ETL)
+//   GET /live/ankara/vehicles?line=185-7  Ankara buses on one line
+//   GET /live/ankara/arrivals?stop=11654  upcoming buses at one Ankara stop
 //   GET /live/health
 //
 // Every response is cached in memory and briefly by Cloudflare. When a source
@@ -12,6 +14,7 @@ import { createServer, type IncomingMessage, type ServerResponse } from 'node:ht
 import { Cache } from './cache.ts'
 import { Calibration, Sampler } from './calibration.ts'
 import { fetchLineVehicles, type Vehicle } from './iett.ts'
+import { getArrivalsByStop, getVehiclesByLine, NotImplemented, type AnkaraArrival, type AnkaraVehicle } from './providers/ego.ts'
 import { fetchAnnouncements, fetchStatus, type Announcement, type LineStatus } from './metro.ts'
 
 const PORT = Number(process.env.PORT ?? 8081)
@@ -28,6 +31,9 @@ const loadVehicles = (line: string) => () =>
     calibration.observe(v)
     return v
   })
+
+const ankaraVehicles = new Cache<AnkaraVehicle[]>(10_000, 5 * 60_000)
+const ankaraArrivals = new Cache<AnkaraArrival[]>(10_000, 2 * 60_000)
 const status = new Cache<{ lines: LineStatus[]; announcements: Announcement[] }>(60_000, 6 * 3600_000)
 
 function send(res: ServerResponse, code: number, body: unknown, maxAge = 0) {
@@ -53,6 +59,18 @@ export async function handle(req: IncomingMessage, res: ServerResponse) {
       const c = await vehicles.get(line, loadVehicles(line))
       return send(res, 200, { line, vehicles: c.value, fetchedAt: new Date(c.fetchedAt).toISOString(), stale: c.stale }, 10)
     }
+    if (path === '/live/ankara/vehicles') {
+      const line = (url.searchParams.get('line') ?? '').trim().toUpperCase()
+      if (!/^[0-9A-ZÇĞİÖŞÜ-]{1,10}$/.test(line)) return send(res, 400, { error: 'line' })
+      const c = await ankaraVehicles.get(line, () => getVehiclesByLine(line))
+      return send(res, 200, { line, vehicles: c.value, fetchedAt: new Date(c.fetchedAt).toISOString(), stale: c.stale }, 5)
+    }
+    if (path === '/live/ankara/arrivals') {
+      const stop = (url.searchParams.get('stop') ?? '').trim()
+      if (!/^[0-9]{3,6}$/.test(stop)) return send(res, 400, { error: 'stop' })
+      const c = await ankaraArrivals.get(stop, () => getArrivalsByStop(stop))
+      return send(res, 200, { stop, arrivals: c.value, fetchedAt: new Date(c.fetchedAt).toISOString(), stale: c.stale }, 5)
+    }
     if (path === '/live/status') {
       const lang = url.searchParams.get('lang') === 'en' ? 'en' : 'tr'
       const c = await status.get(lang, async () => {
@@ -65,7 +83,8 @@ export async function handle(req: IncomingMessage, res: ServerResponse) {
       return send(res, 200, { generatedAt: new Date().toISOString(), rows: calibration.summary() }, 600)
     }
     return send(res, 404, { error: 'not found' })
-  } catch {
+  } catch (e) {
+    if (e instanceof NotImplemented) return send(res, 501, { error: 'not implemented' }, 60)
     // Calm, generic message; the app shows its own text.
     return send(res, 503, { error: 'source unavailable' }, 5)
   }
