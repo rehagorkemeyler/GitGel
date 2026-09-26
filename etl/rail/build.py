@@ -15,6 +15,7 @@ import csv
 import datetime as dt
 import difflib
 import html
+import json
 import re
 import unicodedata
 from concurrent.futures import ThreadPoolExecutor
@@ -132,11 +133,68 @@ def fetch_day(api: MetroApi, station_id: int, direction_id: int, day: dt.date,
     return sorted(set(times))
 
 
+def today_service(today: dt.date) -> str:
+    return {5: "sat", 6: "sun"}.get(today.weekday(), "wk")
+
+
+class TimetableStore:
+    """Last good full-day timetable per direction and day type, kept between runs.
+
+    GetTimeTable returns a whole day in one call only for today, so each night
+    refreshes today's day type (weekday, Saturday or Sunday) and reuses the
+    stored others. Hourly calls are only a bootstrap for empty entries.
+    """
+
+    MAX_AGE_DAYS = 21
+
+    def __init__(self, path: Path):
+        self.path = path
+        self.data: dict = json.loads(path.read_text()) if path.exists() else {}
+
+    def get(self, direction_id: int, svc: str, today: dt.date) -> list[str] | None:
+        e = self.data.get(str(direction_id), {}).get(svc)
+        if not e or (today - dt.date.fromisoformat(e["date"])).days > self.MAX_AGE_DAYS:
+            return None
+        return e["times"]
+
+    def put(self, direction_id: int, svc: str, day: dt.date, times: list[str]) -> None:
+        self.data.setdefault(str(direction_id), {})[svc] = {"date": day.isoformat(), "times": times}
+
+    def save(self) -> None:
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        self.path.write_text(json.dumps(self.data, sort_keys=True))
+
+
+def fetch_today(api: MetroApi, station_id: int, direction_id: int) -> list[str]:
+    data = api.call("GetTimeTable", {"BoardingStationId": station_id, "DirectionId": direction_id})
+    return sorted({t for d in data for t in (d.get("TimeInfos", {}).get("Times") or [])})
+
+
+def day_times(api: MetroApi, store: TimetableStore, station_id: int, direction_id: int, svc: str,
+              day: dt.date, today: dt.date, pool: ThreadPoolExecutor) -> list[str]:
+    if svc == today_service(today):
+        try:
+            times = fetch_today(api, station_id, direction_id)
+            if times:
+                store.put(direction_id, svc, today, times)
+                return times
+        except RuntimeError:
+            pass
+    stored = store.get(direction_id, svc, today)
+    if stored:
+        return stored
+    times = fetch_day(api, station_id, direction_id, day, pool)
+    if times:
+        store.put(direction_id, svc, day, times)
+    return times
+
+
 def build(out: Path, osm: Path | None, today: dt.date, workers: int = 4, offline: bool = False) -> dict:
     out.mkdir(parents=True, exist_ok=True)
     api = MetroApi(ETL / "cache" / "rail" / "api" / today.isoformat(), offline=offline)
     lines = api.call("GetLines")
     dates = rep_dates(today)
+    store = TimetableStore(ETL / "cache" / "rail" / "timetables.json")
 
     osm_lines = load_route_lines(osm, {"subway", "tram", "funicular", "aerialway", "light_rail"}) if osm and osm.exists() else []
 
@@ -194,7 +252,7 @@ def build(out: Path, osm: Path | None, today: dt.date, workers: int = 4, offline
                         "shape_pt_sequence": k} for k, p in enumerate(geom)]
             stats["directions"] += 1
 
-            days = {svc: fetch_day(api, stations[idx[0]]["Id"], d["DirectionId"], day, pool)
+            days = {svc: day_times(api, store, stations[idx[0]]["Id"], d["DirectionId"], svc, day, today, pool)
                     for svc, day in dates.items()}
             if not any(days.values()):
                 stats["directions_without_times"].append(f"{name} {d['DirectionName']}")
@@ -210,6 +268,7 @@ def build(out: Path, osm: Path | None, today: dt.date, workers: int = 4, offline
                         stop_times.append({"trip_id": trip_id, "arrival_time": ts, "departure_time": ts,
                                            "stop_id": f"mi_{stations[i]['Id']}", "stop_sequence": k + 1})
 
+    store.save()
     start = today
     end = today + dt.timedelta(days=VALID_DAYS)
     calendar = [{"service_id": f"mi_{s}", **dict(zip(
