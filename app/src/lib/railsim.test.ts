@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest'
-import { positionAt, prepare } from './railsim'
+import { positionAndBearing, positionAt, prepare } from './railsim'
 import type { TripSegment } from './api'
 
 // Encoded (precision 5) straight line from (41.0, 29.0) to (41.0, 29.1).
@@ -49,4 +49,10 @@ it('interpolates along the segment', () => {
 it('skips buses and lines with reported problems', () => {
   expect(prepare([{ ...seg, mode: 'BUS' }], new Set())).toHaveLength(0)
   expect(prepare([seg], new Set(['M2']))).toHaveLength(0)
+})
+
+it('gives the direction of travel as a compass bearing', () => {
+  const [s] = prepare([seg], new Set())
+  const r = positionAndBearing(s, Date.parse('2026-09-29T05:01:00Z'))!
+  expect(r.bearing).toBeCloseTo(90, 0) // due east
 })

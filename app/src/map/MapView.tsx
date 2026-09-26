@@ -3,7 +3,8 @@ import * as maplibregl from 'maplibre-gl'
 import type { Map as MlMap } from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url'
-import { ISTANBUL_BOUNDS, ISTANBUL_CENTER, MAP_STYLE } from '../lib/config'
+import { ISTANBUL_BOUNDS, ISTANBUL_CENTER } from '../lib/config'
+import { baseStyle, blankStyle } from './baseStyle'
 import { useColorScheme } from '../lib/useColorScheme'
 import { inIstanbul } from '../lib/useGeolocation'
 import type { Itinerary } from '../lib/api'
@@ -69,7 +70,7 @@ export function MapView({ position, route = null, bottomInset = 0, vehicles, hid
     if (!container.current) return
     const m = new maplibregl.Map({
       container: container.current,
-      style: MAP_STYLE[scheme],
+      style: blankStyle(scheme),
       center: ISTANBUL_CENTER,
       zoom: 11,
       maxBounds: [
@@ -110,12 +111,20 @@ export function MapView({ position, route = null, bottomInset = 0, vehicles, hid
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const firstScheme = useRef(scheme)
+  // Base style per theme (fetched, recoloured for dark); our layers are re-added on 'style.load'.
   useEffect(() => {
-    if (scheme === firstScheme.current) return
-    firstScheme.current = scheme
-    styleReady.current = false
-    map.current?.setStyle(MAP_STYLE[scheme])
+    let alive = true
+    baseStyle(scheme).then(
+      (st) => {
+        if (!alive || !map.current) return
+        styleReady.current = false
+        map.current.setStyle(st)
+      },
+      () => {},
+    )
+    return () => {
+      alive = false
+    }
   }, [scheme])
 
   useEffect(() => {

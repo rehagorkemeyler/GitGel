@@ -29,6 +29,7 @@ export class NetworkLayer {
       if (s) this.onStation?.(s)
     }
     map.on('click', ST + '-dot', click)
+    map.on('click', ST + '-far', click)
     map.on('click', BUS + '-dot', click)
     for (const id of [ST + '-dot', BUS + '-dot']) {
       map.on('mouseenter', id, () => (map.getCanvas().style.cursor = 'pointer'))
@@ -55,7 +56,7 @@ export class NetworkLayer {
         source: NET,
         filter: ['!=', ['get', 'mode'], 'ferry'],
         layout: { 'line-cap': 'round', 'line-join': 'round' },
-        paint: { 'line-color': paper, 'line-opacity': 0.8, 'line-width': ['interpolate', ['linear'], ['zoom'], 10, 2.5, 15, 7] },
+        paint: { 'line-color': paper, 'line-opacity': 0.8, 'line-width': ['interpolate', ['linear'], ['zoom'], 10, 4, 15, 9] },
       })
     m.addLayer({
         id: NET,
@@ -64,7 +65,7 @@ export class NetworkLayer {
         layout: { 'line-cap': 'round', 'line-join': 'round' },
         paint: {
           'line-color': ['get', 'color'],
-          'line-width': ['interpolate', ['linear'], ['zoom'], 10, 1.5, 15, 4.5],
+          'line-width': ['interpolate', ['linear'], ['zoom'], 10, 2.5, 15, 6],
           'line-dasharray': ['case', ['==', ['get', 'mode'], 'ferry'], ['literal', [2, 2]], ['literal', [1, 0]]],
           // Ferry hops fade in with zoom so the Bosphorus is not a web of lines.
           'line-opacity': ['interpolate', ['linear'], ['zoom'], 11, ['case', ['==', ['get', 'mode'], 'ferry'], 0.12, 1], 14, ['case', ['==', ['get', 'mode'], 'ferry'], 0.45, 1]],
@@ -81,14 +82,28 @@ export class NetworkLayer {
         'icon-allow-overlap': true,
       },
     })
+    // Far away: small white dots on the line. Closer: mode icons (train, tram, ferry...).
+    m.addLayer({
+      id: ST + '-far',
+      type: 'circle',
+      source: ST,
+      minzoom: 10,
+      maxzoom: 12.5,
+      paint: {
+        'circle-radius': ['interpolate', ['linear'], ['zoom'], 10, 1.8, 12.5, 3.5],
+        'circle-color': paper,
+        'circle-stroke-color': ink,
+        'circle-stroke-width': 1,
+      },
+    })
     m.addLayer({
       id: ST + '-dot',
       type: 'symbol',
       source: ST,
-      minzoom: 10.5,
+      minzoom: 12.5,
       layout: {
         'icon-image': ['concat', 'gg-', ['get', 'glyph']],
-        'icon-size': ['interpolate', ['linear'], ['zoom'], 11, 0.5, 13, 0.75, 16, 1],
+        'icon-size': ['interpolate', ['linear'], ['zoom'], 12.5, 0.7, 16, 1],
         'icon-allow-overlap': true,
       },
     })
@@ -164,7 +179,7 @@ export class NetworkLayer {
     m.setPaintProperty(NET, 'line-opacity', f ? ['case', ['==', ['get', 'line'], f], 1, 0.12] : ['interpolate', ['linear'], ['zoom'], 11, ['case', ['==', ['get', 'mode'], 'ferry'], 0.12, 1], 14, ['case', ['==', ['get', 'mode'], 'ferry'], 0.45, 1]])
     const on: ExpressionSpecification = ['==', ['get', 'line'], f ?? '']
     m.setPaintProperty(NET, 'line-width', f
-      ? (['interpolate', ['linear'], ['zoom'], 10, ['case', on, 4, 1.5], 15, ['case', on, 7, 4.5]] as ExpressionSpecification)
-      : (['interpolate', ['linear'], ['zoom'], 10, 1.5, 15, 4.5] as ExpressionSpecification))
+      ? (['interpolate', ['linear'], ['zoom'], 10, ['case', on, 5, 2.5], 15, ['case', on, 9, 6]] as ExpressionSpecification)
+      : (['interpolate', ['linear'], ['zoom'], 10, 2.5, 15, 6] as ExpressionSpecification))
   }
 }

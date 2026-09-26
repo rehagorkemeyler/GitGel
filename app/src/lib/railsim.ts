@@ -58,3 +58,19 @@ export function positionAt(s: SimSegment, now: number): [number, number] | null 
   const f = (target - s.cum[i - 1]) / span
   return [s.pts[i - 1][0] + (s.pts[i][0] - s.pts[i - 1][0]) * f, s.pts[i - 1][1] + (s.pts[i][1] - s.pts[i - 1][1]) * f]
 }
+
+/** Position and compass bearing (degrees, 0 = north) at time `now`, or null. */
+export function positionAndBearing(s: SimSegment, now: number): { p: [number, number]; bearing: number } | null {
+  if (now < s.dep || now > s.arr || s.arr <= s.dep) return null
+  const target = ((now - s.dep) / (s.arr - s.dep)) * s.cum[s.cum.length - 1]
+  let i = 1
+  while (i < s.cum.length - 1 && s.cum[i] < target) i++
+  const a = s.pts[i - 1]
+  const b = s.pts[i]
+  const span = s.cum[i] - s.cum[i - 1] || 1
+  const f = (target - s.cum[i - 1]) / span
+  const dx = (b[0] - a[0]) * Math.cos((a[1] * Math.PI) / 180)
+  const dy = b[1] - a[1]
+  const bearing = ((Math.atan2(dx, dy) * 180) / Math.PI + 360) % 360
+  return { p: [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f], bearing }
+}
