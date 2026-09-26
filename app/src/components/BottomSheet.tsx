@@ -23,7 +23,7 @@ export function BottomSheet({ peek, children, expanded, onExpandedChange, label 
   const [peekH, setPeekH] = useState(0)
   const [sheetH, setSheetH] = useState(0)
   const [drag, setDrag] = useState<number | null>(null)
-  const start = useRef({ y: 0, t: 0, base: 0, lastY: 0, lastT: 0 })
+  const start = useRef({ y: 0, x: 0, t: 0, base: 0, active: false })
 
   useLayoutEffect(() => {
     const measure = () => {
@@ -46,23 +46,26 @@ export function BottomSheet({ peek, children, expanded, onExpandedChange, label 
     document.documentElement.style.setProperty('--map-bottom-inset', `${peekH}px`)
   }, [peekH])
 
+  // The whole sheet is a drag handle. A drag starts only after a clear vertical
+  // move, so taps on buttons inside still work; pointer capture begins then.
   const onPointerDown = useCallback(
     (e: React.PointerEvent) => {
       if (e.button !== 0) return
-      e.currentTarget.setPointerCapture(e.pointerId)
-      start.current = { y: e.clientY, t: e.timeStamp, base: baseY, lastY: e.clientY, lastT: e.timeStamp }
+      start.current = { y: e.clientY, x: e.clientX, t: e.timeStamp, base: baseY, active: true }
     },
     [baseY],
   )
 
   const onPointerMove = useCallback(
     (e: React.PointerEvent) => {
-      if (!e.currentTarget.hasPointerCapture(e.pointerId)) return
-      const dy = e.clientY - start.current.y
-      if (drag === null && Math.abs(dy) < 6) return
-      start.current.lastY = e.clientY
-      start.current.lastT = e.timeStamp
-      const next = start.current.base + dy
+      const s0 = start.current
+      if (!s0.active) return
+      const dy = e.clientY - s0.y
+      if (drag === null) {
+        if (Math.abs(dy) < 8 || Math.abs(dy) < Math.abs(e.clientX - s0.x)) return
+        e.currentTarget.setPointerCapture(e.pointerId)
+      }
+      const next = s0.base + dy
       // Rubber band past the ends.
       setDrag(next < 0 ? next / 4 : next > collapsedY ? collapsedY + (next - collapsedY) / 4 : next)
     },
@@ -71,8 +74,9 @@ export function BottomSheet({ peek, children, expanded, onExpandedChange, label 
 
   const onPointerUp = useCallback(
     (e: React.PointerEvent) => {
-      e.currentTarget.releasePointerCapture?.(e.pointerId)
+      start.current.active = false
       if (drag === null) return
+      e.currentTarget.releasePointerCapture?.(e.pointerId)
       const dt = Math.max(1, e.timeStamp - start.current.t)
       const v = (e.clientY - start.current.y) / dt
       const open = Math.abs(v) > VELOCITY ? v < 0 : drag < collapsedY / 2
@@ -88,14 +92,12 @@ export function BottomSheet({ peek, children, expanded, onExpandedChange, label 
       className={`sheet${drag !== null ? ' dragging' : ''}`}
       style={{ transform: `translate3d(0, ${y}px, 0)`, visibility: sheetH ? 'visible' : 'hidden' }}
       aria-label={label}
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerUp}
+      onPointerCancel={onPointerUp}
     >
-      <div
-        className="sheet-grip"
-        onPointerDown={onPointerDown}
-        onPointerMove={onPointerMove}
-        onPointerUp={onPointerUp}
-        onPointerCancel={onPointerUp}
-      >
+      <div className="sheet-grip">
         <button
           className="sheet-handle"
           aria-label={label}

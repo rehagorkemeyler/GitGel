@@ -16,24 +16,26 @@ type Props = {
   onOpen: (it: Itinerary) => void
 }
 
-type State = { status: 'loading' } | { status: 'error' } | { status: 'ok'; options: Itinerary[] }
+type State = { key: string } & ({ status: 'loading' } | { status: 'error' } | { status: 'ok'; options: Itinerary[] })
 
 export function Results({ from, to, onEditFrom, onEditTo, onClose, onOpen }: Props) {
-  const [state, setState] = useState<State>({ status: 'loading' })
   const [attempt, setAttempt] = useState(0)
+  const key = from ? `${from.lat},${from.lon}>${to.lat},${to.lon}#${attempt}` : ''
+  const [raw, setState] = useState<State>({ key: '', status: 'loading' })
+  // A new query shows "loading" once; the same query never flickers.
+  const state: State = raw.key === key ? raw : { key, status: 'loading' }
 
   useEffect(() => {
     if (!from) return
     let alive = true
     plan(from, to).then(
-      (its) => alive && setState({ status: 'ok', options: pickOptions(its) }),
-      () => alive && setState({ status: 'error' }),
+      (its) => alive && setState({ key, status: 'ok', options: pickOptions(its) }),
+      () => alive && setState({ key, status: 'error' }),
     )
     return () => {
       alive = false
-      setState({ status: 'loading' })
     }
-  }, [from, to, attempt])
+  }, [key]) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className="results-sheet">
