@@ -66,3 +66,53 @@
   padding: var(--s-2) 0;
   border-bottom: 1px solid var(--border);
 }
+
+.line-sheet .line-head {
+  margin-bottom: var(--s-3);
+}
+
+.line-long {
+  flex: 1;
+  min-width: 0;
+  font-weight: var(--fw-bold);
+}
+
+.first-last tr.today th,
+.first-last tr.today td {
+  color: var(--accent);
+}
+
+.pull-hint {
+  margin: var(--s-2) 0 0;
+  font-size: var(--fs-s);
+  text-align: center;
+}
+
+.stop-row {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--s-2);
+  text-align: left;
+}
+
+.line-stops li {
+  padding: 0;
+}
+
+.arrivals {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-1);
+  padding: 0 0 var(--s-3);
+  margin: 0;
+}
+
+.arrival-time {
+  padding: var(--s-1) var(--s-2);
+  border-radius: 6px;
+  background: var(--surface-2);
+  font-size: var(--fs-s);
+  font-variant-numeric: tabular-nums;
+}

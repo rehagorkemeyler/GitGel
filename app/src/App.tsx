@@ -9,6 +9,12 @@ import { Nearby } from './screens/Nearby'
 import { Lines } from './screens/Lines'
 import { Contact, Support } from './screens/Info'
 import { About } from './screens/About'
+import { StationSheet } from './screens/StationSheet'
+import { TrainSheet } from './screens/TrainSheet'
+import type { TrainInfo } from './map/railLayer'
+import { LineHeader, LineStops } from './screens/LineSheet'
+import { lineView, useLineDetail } from './lib/lineDetail'
+import type { Station } from './map/networkLayer'
 import { inIstanbul, useGeolocation, useStablePosition } from './lib/useGeolocation'
 import type { Place } from './lib/search'
 import type { Itinerary } from './lib/api'
@@ -33,7 +39,14 @@ export function App() {
   const [to, setTo] = useState<Place | null>(null)
   const [fromChoice, setFromChoice] = useState<Place | null>(null)
   const [open, setOpen] = useState<Itinerary | null>(null)
+  const [station, setStation] = useState<Station | null>(null)
+  const [train, setTrain] = useState<TrainInfo | null>(null)
+  const [lineId, setLineId] = useState<string | null>(null)
+  const [lineDir, setLineDir] = useState(0)
   const geo = useGeolocation()
+  const lineData = useLineDetail(lineId)
+  const view = useMemo(() => lineView(lineData.line, lineData.stops, lineDir), [lineData, lineDir])
+  const railModes = ['metro', 'rail', 'tram', 'funicular', 'cablecar']
   // Buses and Metrobüs of the open route: İETT publishes their GPS positions.
   const busLines = useMemo(
     () => (open?.legs ?? []).filter((l) => l.mode === 'BUS' && l.routeShortName).map((l) => l.routeShortName!),
@@ -80,6 +93,22 @@ export function App() {
           onRailCount={setRailCount}
           bottomInset={Math.round(window.innerHeight * 0.45)}
           onReady={setMap}
+          onStation={(st) => {
+            if (open || to) return // a route is on screen: keep it
+            setLineId(null)
+            setTrain(null)
+            setStation(st)
+            setExpanded(false)
+          }}
+          onTrain={(tr) => {
+            if (open || to) return
+            setStation(null)
+            setTrain(tr)
+            setExpanded(false)
+          }}
+          focusLine={lineId}
+          lineView={view}
+          pathInNetwork={!!lineData.line && railModes.includes(lineData.line.mode)}
         />
       </Suspense>
       {status && <StatusBand lines={status.lines} />}
@@ -123,7 +152,9 @@ export function App() {
         expanded={expanded}
         onExpandedChange={setExpanded}
         peek={
-          open ? (
+          lineId ? (
+            <LineHeader {...lineData} dir={lineDir} onDir={setLineDir} onClose={() => setLineId(null)} />
+          ) : open ? (
             <RouteDetail it={open} liveCount={vehicles.length} onBack={() => setOpen(null)} />
           ) : to ? (
             <Results
@@ -138,11 +169,28 @@ export function App() {
               }}
               onOpen={setOpen}
             />
+          ) : train ? (
+            <TrainSheet train={train} onClose={() => setTrain(null)} />
+          ) : station ? (
+            <StationSheet
+              station={station}
+              onClose={() => setStation(null)}
+              onDirections={() => {
+                setTo({ name: station.name, lat: station.lat, lon: station.lon, kind: 'stop' })
+                setStation(null)
+              }}
+              onLine={(id) => {
+                setLineDir(0)
+                setLineId(id)
+              }}
+            />
           ) : (
             <HomePeek go={(s) => (s === 'search' ? openSearch('to') : setScreen(s))} />
           )
         }
-      />
+      >
+        {lineId && <LineStops {...lineData} dir={lineDir} onDir={setLineDir} onClose={() => setLineId(null)} />}
+      </BottomSheet>
       {screen === 'search' && (
         <SearchPanel
           title={t(searchFor === 'to' ? 'whereTo' : 'from')}
@@ -159,7 +207,17 @@ export function App() {
         />
       )}
       {screen === 'nearby' && <Nearby position={geo.position} onLocate={geo.start} onBack={() => setScreen('home')} />}
-      {screen === 'lines' && <Lines onBack={() => setScreen('home')} />}
+      {screen === 'lines' && (
+        <Lines
+          onBack={() => setScreen('home')}
+          onOpen={(id) => {
+            setLineDir(0)
+            setLineId(id)
+            setExpanded(false)
+            setScreen('home')
+          }}
+        />
+      )}
       {screen === 'contact' && <Contact onBack={() => setScreen('home')} onAbout={() => setScreen('about')} />}
       {screen === 'about' && <About onBack={() => setScreen('contact')} />}
       {screen === 'support' && <Support onBack={() => setScreen('home')} />}
