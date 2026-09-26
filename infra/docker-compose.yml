@@ -22,6 +22,8 @@ services:
     build: ../live
     ports:
       - "127.0.0.1:8081:8081"
+    volumes:
+      - live-data:/data
     restart: unless-stopped
 
   cloudflared:
@@ -32,3 +34,6 @@ services:
     restart: unless-stopped
     profiles: ["tunnel"]
     network_mode: host
+
+volumes:
+  live-data:
