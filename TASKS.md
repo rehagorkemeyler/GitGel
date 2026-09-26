@@ -43,7 +43,7 @@ Bitti sayılması için: test yolculuklarının hepsi internetten erişilebilen 
 - [x] Ana ekran: tam ekran harita, konum izni, alt panel (Nereye, iki kare buton, iki küçük buton), sürüklenebilir panel animasyonu
 - [x] Arama: MOTIS geocoding + yerel istasyon indeksi, Türkçe karakter ve yazım hatası toleransı, son aramalar (localStorage)
 - [x] Rota sonuçları: 2 ila 3 kart, süre, aktarma, yürüme, hat renkleri
-- [ ] Rota detayı: adım adım, haritada çizim, sonraki kalkış
+- [x] Rota detayı: adım adım, haritada çizim, sonraki kalkış
 - [ ] Yakın duraklar ekranı
 - [ ] Hat ve sefer ara ekranı: hat listesi, hat sayfası
 - [ ] Bize ulaşın ve Destek olun ekranları

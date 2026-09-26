@@ -29,6 +29,11 @@ const tr = {
   min: 'dk',
   noTransfer: 'Aktarmasız',
   transfers: 'aktarma',
+  walkTo: 'yürü:',
+  destination: 'varış noktası',
+  direction: 'yönü',
+  stops: 'durak',
+  nextDepartures: 'Sonraki kalkışlar',
 }
 
 export type StringKey = keyof typeof tr
@@ -62,6 +67,11 @@ const en: Record<StringKey, string> = {
   min: 'min',
   noTransfer: 'No transfer',
   transfers: 'transfers',
+  walkTo: 'walk to',
+  destination: 'your destination',
+  direction: 'direction',
+  stops: 'stops',
+  nextDepartures: 'Next departures',
 }
 
 export const lang: 'tr' | 'en' =

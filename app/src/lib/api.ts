@@ -101,3 +101,20 @@ export const MODE_OF_LEG: Record<string, Mode | 'walk'> = {
   FUNICULAR: 'funicular',
   AERIAL_LIFT: 'cablecar',
 }
+
+export type StopTime = {
+  place: LegPlace
+  routeShortName?: string
+  headsign?: string
+  realTime?: boolean
+}
+
+/** Next departures at a stop (MOTIS groups nearby platforms of the same station). */
+export async function stopTimes(stopId: string, time: Date, n = 10): Promise<StopTime[]> {
+  const res = await get<{ stopTimes: StopTime[] }>('/api/v5/stoptimes', {
+    stopId,
+    time: time.toISOString(),
+    n: String(n),
+  })
+  return res.stopTimes ?? []
+}
