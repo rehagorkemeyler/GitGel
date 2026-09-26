@@ -50,7 +50,7 @@ export function App() {
   const lineData = useLineDetail(lineId)
   const view = useMemo(() => lineView(lineData.line, lineData.stops, lineDir), [lineData, lineDir])
   const railModes = ['metro', 'rail', 'tram', 'funicular', 'cablecar']
-  // Buses and Metrobüs of the open route: İETT publishes their GPS positions.
+  // Buses (and Metrobüs) of the open route: İETT or EGO publish their GPS positions.
   // Ankara: EGO publishes bus positions per line, so the open line page shows its buses too.
   const openBusLine = CITY.ego && lineData.line?.mode === 'bus' ? lineData.line.name : null
   const busLines = useMemo(
