@@ -18,6 +18,12 @@ services:
       timeout: 10s
       retries: 3
 
+  live:
+    build: ../live
+    ports:
+      - "127.0.0.1:8081:8081"
+    restart: unless-stopped
+
   cloudflared:
     image: cloudflare/cloudflared:latest
     command: ["tunnel", "--no-autoupdate", "run"]
