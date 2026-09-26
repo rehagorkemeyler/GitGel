@@ -1,0 +1,22 @@
+# M11 Gayrettepe - İstanbul Havalimanı - Halkalı. Not operated by Metro
+# İstanbul and not in its API. Values from operator announcements and press.
+id: m11
+checked: 2026-09-26
+sources:
+  - https://www.gokyuzuhaberci.com/halkali-istanbul-havalimani-metro-saatleri-2026-duraklar-ve-sefer-sikligi/
+  - https://en.wikipedia.org/wiki/M11_(Istanbul_Metro)
+agency: {agency_id: m11, agency_name: M11 İstanbul Havalimanı Metrosu, agency_url: "https://www.uab.gov.tr"}
+route: {route_short_name: M11, route_long_name: Gayrettepe - İstanbul Havalimanı - Halkalı, route_type: 1, route_color: "AB548F"}
+osm_relation: 15083964         # "M11: Gayrettepe → Halkalı"
+patterns:
+  - from: Gayrettepe
+    to: İstanbul Havalimanı
+    minutes: 35
+    periods:
+      - {start: "06:00", end: "06:59", headway: 15}
+      - {start: "07:00", end: "20:59", headway: 10}
+      - {start: "21:00", end: "23:59", headway: 15}
+  - from: İstanbul Havalimanı
+    to: Halkalı
+    minutes: 33
+    periods: [{start: "06:00", end: "23:59", headway: 20}]

@@ -1,0 +1,12 @@
+# T2 Taksim - Tünel nostalgic tram (Metro İstanbul, but missing from its API).
+id: t2
+checked: 2026-09-26
+sources: [https://www.metro.istanbul]
+agency: {agency_id: metro_istanbul, agency_name: Metro İstanbul, agency_url: "https://www.metro.istanbul"}
+route: {route_short_name: T2, route_long_name: Taksim - Tünel Nostaljik Tramvay, route_type: 0, route_color: "92AAA0"}
+osm_relation: 301617
+patterns:
+  - from: Taksim
+    to: Tünel
+    minutes: 14
+    periods: [{start: "07:00", end: "22:30", headway: 25}]
