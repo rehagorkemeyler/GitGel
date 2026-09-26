@@ -147,3 +147,9 @@
   color: var(--live);
   border-color: var(--live);
 }
+
+.when-row {
+  display: flex;
+  flex-direction: column;
+  margin-top: var(--s-3);
+}

@@ -1,0 +1,46 @@
+.when-chip {
+  align-self: flex-start;
+  min-height: 36px;
+  padding: 0 var(--s-3);
+  border-radius: 18px;
+  background: var(--surface-2);
+  font-size: var(--fs-s);
+  font-weight: var(--fw-bold);
+}
+
+.when-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  padding: var(--s-3);
+  border-radius: var(--r-card);
+  border: 1px solid var(--border);
+}
+
+.when-panel .segmented {
+  margin: 0;
+}
+
+.when-fields {
+  display: grid;
+  grid-template-columns: 3fr 2fr;
+  gap: var(--s-2);
+}
+
+.when-fields select,
+.when-fields input {
+  min-height: var(--touch);
+  padding: 0 var(--s-3);
+  border-radius: var(--r-btn);
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text);
+  font: inherit;
+}
+
+.when-done {
+  border-radius: var(--r-btn);
+  background: var(--accent);
+  color: var(--accent-text);
+  font-weight: var(--fw-bold);
+}
