@@ -5,6 +5,7 @@ import 'maplibre-gl/dist/maplibre-gl.css'
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url'
 import { ISTANBUL_BOUNDS, ISTANBUL_CENTER, MAP_STYLE } from '../lib/config'
 import { useColorScheme } from '../lib/useColorScheme'
+import { inIstanbul } from '../lib/useGeolocation'
 import type { Itinerary } from '../lib/api'
 import { showRoute } from './routeLayer'
 import { LiveLayer } from './liveLayer'
@@ -108,7 +109,8 @@ export function MapView({ position, route = null, bottomInset = 0, vehicles, hid
       el.className = 'me-dot'
       el.setAttribute('aria-label', t('myLocation'))
       marker.current = new maplibregl.Marker({ element: el }).setLngLat(position).addTo(m)
-      if (!routeRef.current) m.jumpTo({ center: position, zoom: 15 })
+      // Outside Istanbul the map stays on the city (tiles and data end at its edge).
+      if (!routeRef.current && inIstanbul(position)) m.jumpTo({ center: position, zoom: 15 })
     } else {
       marker.current.setLngLat(position)
     }

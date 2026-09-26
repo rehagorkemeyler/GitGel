@@ -18,7 +18,7 @@
   position: fixed;
   left: var(--s-4);
   right: var(--s-4);
-  top: calc(var(--s-4) + env(safe-area-inset-top));
+  top: calc(var(--s-3) + 36px + var(--s-2) + env(safe-area-inset-top));
   margin: 0 auto;
   max-width: 528px;
   padding: var(--s-3) var(--s-4);
@@ -72,4 +72,11 @@
 .dot.scheduled {
   border: 2.5px solid var(--text-2);
   background: var(--surface);
+}
+
+.notice {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--s-1);
 }

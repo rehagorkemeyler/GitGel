@@ -1,5 +1,5 @@
 import { Icon } from '../components/Icon'
-import { t } from '../i18n'
+import { lang, setLang, t } from '../i18n'
 import type { Screen } from '../App'
 import './Home.css'
 
@@ -17,7 +17,7 @@ export function HomePeek({ go, destination }: { go: (s: Screen) => void; destina
           <span>{t('nearby')}</span>
         </button>
         <button className="square" onClick={() => go('lines')}>
-          <Icon name="route" size={28} />
+          <Icon name="train" size={28} />
           <span>{t('lines')}</span>
         </button>
       </div>
@@ -27,6 +27,14 @@ export function HomePeek({ go, destination }: { go: (s: Screen) => void; destina
         </button>
         <button className="small" onClick={() => go('support')}>
           {t('support')}
+        </button>
+        <button
+          className="small lang"
+          onClick={() => setLang(lang === 'tr' ? 'en' : 'tr')}
+          aria-label={lang === 'tr' ? 'Switch to English' : 'Türkçeye geç'}
+        >
+          <Icon name="globe" size={16} />
+          {lang === 'tr' ? 'English' : 'Türkçe'}
         </button>
       </div>
     </div>

@@ -44,5 +44,28 @@ export function useGeolocation() {
     }
   }, [start])
 
-  return { ...state, start }
+  // Test location (for testers outside Istanbul). Lives until the page reloads.
+  const [override, setOverride] = useState<[number, number] | null>(null)
+  if (override) return { position: override, status: 'ok' as const, start, setOverride, isOverride: true }
+  return { ...state, start, setOverride, isOverride: false }
+}
+
+/** Same position until it moves more than `metres`: stops GPS jitter from re-running searches. */
+export function useStablePosition(position: [number, number] | null, metres = 150): [number, number] | null {
+  const [stable, setStable] = useState(position)
+  let next = stable
+  if (!position) next = null
+  else if (!stable) next = position
+  else {
+    const dLat = (position[1] - stable[1]) * 111_320
+    const dLon = (position[0] - stable[0]) * 111_320 * Math.cos((position[1] * Math.PI) / 180)
+    if (Math.hypot(dLat, dLon) > metres) next = position
+  }
+  // Adjusting state while rendering is React's recommended pattern for derived state.
+  if (next !== stable) setStable(next)
+  return next
+}
+
+export function inIstanbul(p: [number, number] | null): boolean {
+  return !!p && p[0] > 27.9 && p[0] < 30.0 && p[1] > 40.7 && p[1] < 41.7
 }
