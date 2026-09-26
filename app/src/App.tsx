@@ -4,6 +4,8 @@ import { BottomSheet } from './components/BottomSheet'
 import { Panel } from './components/Panel'
 import { Icon } from './components/Icon'
 import { HomePeek } from './screens/Home'
+import { SearchPanel } from './screens/SearchPanel'
+import type { Place } from './lib/search'
 import { useGeolocation } from './lib/useGeolocation'
 import { t, type StringKey } from './i18n'
 import './App.css'
@@ -22,6 +24,7 @@ export function App() {
   const [screen, setScreen] = useState<Screen>('home')
   const [expanded, setExpanded] = useState(false)
   const geo = useGeolocation()
+  const [to, setTo] = useState<Place | null>(null)
 
   return (
     <>
@@ -38,9 +41,19 @@ export function App() {
         label={t('whereTo')}
         expanded={expanded}
         onExpandedChange={setExpanded}
-        peek={<HomePeek go={setScreen} />}
+        peek={<HomePeek go={setScreen} destination={to?.name} />}
       />
-      {screen !== 'home' && (
+      {screen === 'search' && (
+        <SearchPanel
+          title={t('whereTo')}
+          onBack={() => setScreen('home')}
+          onPick={(p) => {
+            setTo(p)
+            setScreen('home')
+          }}
+        />
+      )}
+      {screen !== 'home' && screen !== 'search' && (
         <Panel title={t(titles[screen])} onBack={() => setScreen('home')}>
           <p>{t('comingSoon')}</p>
         </Panel>
