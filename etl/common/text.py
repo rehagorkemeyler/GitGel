@@ -3,7 +3,7 @@
 
 def title_tr(s: str) -> str:
     """'KADIKÖY İSKELE' -> 'Kadıköy İskele' (Turkish-aware title case for İETT names)."""
-    if not s or s != s.upper():
+    if not isinstance(s, str) or not s or s != s.upper():
         return s
     out = []
     for w in s.split(" "):
