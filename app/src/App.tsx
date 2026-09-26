@@ -13,7 +13,8 @@ import type { Place } from './lib/search'
 import type { Itinerary } from './lib/api'
 import { t } from './i18n'
 import { loadSearchIndex } from './lib/data'
-import { useLiveVehicles } from './lib/live'
+import { useLineStatus, useLiveVehicles } from './lib/live'
+import { StatusBand } from './components/StatusBand'
 import './App.css'
 
 // The map (MapLibre, the biggest chunk) loads in parallel; the panel is usable at once.
@@ -36,6 +37,9 @@ export function App() {
     [open],
   )
   const vehicles = useLiveVehicles(busLines)
+  const status = useLineStatus()
+  const hiddenLines = useMemo(() => status?.lines.map((l) => l.line) ?? [], [status])
+  const [railCount, setRailCount] = useState(0)
 
   // Warm the search index while the user looks at the map.
   useEffect(() => {
@@ -60,8 +64,30 @@ export function App() {
   return (
     <>
       <Suspense fallback={<div className="map" />}>
-        <MapView position={geo.position} route={open} vehicles={vehicles} bottomInset={Math.round(window.innerHeight * 0.45)} />
+        <MapView
+          position={geo.position}
+          route={open}
+          vehicles={vehicles}
+          hiddenLines={hiddenLines}
+          onRailCount={setRailCount}
+          bottomInset={Math.round(window.innerHeight * 0.45)}
+        />
       </Suspense>
+      {status && <StatusBand lines={status.lines} />}
+      {(railCount > 0 || vehicles.length > 0) && (
+        <div className="legend" aria-label={t('legend')}>
+          {vehicles.length > 0 && (
+            <span>
+              <i className="dot live" /> {t('live')}
+            </span>
+          )}
+          {railCount > 0 && (
+            <span>
+              <i className="dot scheduled" /> {t('scheduled')}
+            </span>
+          )}
+        </div>
+      )}
       <button className="locate" onClick={geo.start} aria-label={t('locateMe')}>
         <Icon name="locate" />
       </button>
