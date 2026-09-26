@@ -15,10 +15,10 @@ Bitti sayılması için: docs/api-samples/ dolu, her mod için veri kaynağı ka
 ## Aşama 1: Veri (ETL)
 
 - [x] etl/iett: İETT GTFS'i indir ve temizle (ZIP'teki tam stop_times, noktalı virgül, çift kodlama, koordinat düzeltme)
-- [ ] etl/rail: Metro İstanbul API + OSM hat geometrisinden raylı sistem GTFS'i üret (stops, routes, trips, stop_times, shapes)
+- [x] etl/rail: Metro İstanbul API + OSM hat geometrisinden raylı sistem GTFS'i üret (stops, routes, trips, stop_times, shapes)
 - [x] etl/other: Marmaray, M11, vapur ve eksik hatlar
-- [ ] etl/merge: hepsini tek GTFS'te birleştir, gtfs-validator ile doğrula
-- [ ] etl/static: uygulamanın ihtiyaç duyduğu küçük JSON'lar (hat listesi, renkler, istasyonlar, arama indeksi)
+- [x] etl/merge: hepsini tek GTFS'te birleştir, gtfs-validator ile doğrula
+- [x] etl/static: uygulamanın ihtiyaç duyduğu küçük JSON'lar (hat listesi, renkler, istasyonlar, arama indeksi)
 - [ ] GitHub Actions: her gece ETL'i çalıştır, çıktıyı yayınla
 
 Bitti sayılması için: doğrulayıcıdan hatasız geçen tek bir İstanbul GTFS'i her gece otomatik üretiliyor.

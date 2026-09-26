@@ -18,9 +18,10 @@ HEADERS = {"User-Agent": "GitGel-ETL (+https://github.com/rehagorkemeyler/GitGel
 
 
 class MetroApi:
-    def __init__(self, cache_dir: Path | None = None, tries: int = 12):
+    def __init__(self, cache_dir: Path | None = None, tries: int = 12, offline: bool = False):
         self.cache_dir = cache_dir
         self.tries = tries
+        self.offline = offline
         self.session = requests.Session()
         if cache_dir:
             cache_dir.mkdir(parents=True, exist_ok=True)
@@ -38,6 +39,8 @@ class MetroApi:
             if isinstance(cached, dict) and "__error__" in cached:
                 raise RuntimeError(f"{endpoint} {body}: {cached['__error__']} (cached)")
             return cached
+        if self.offline:
+            raise RuntimeError(f"{endpoint} {body}: not cached (offline)")
         last = None
         for i in range(self.tries):
             try:

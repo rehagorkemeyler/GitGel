@@ -132,9 +132,9 @@ def fetch_day(api: MetroApi, station_id: int, direction_id: int, day: dt.date,
     return sorted(set(times))
 
 
-def build(out: Path, osm: Path | None, today: dt.date, workers: int = 16) -> dict:
+def build(out: Path, osm: Path | None, today: dt.date, workers: int = 4, offline: bool = False) -> dict:
     out.mkdir(parents=True, exist_ok=True)
-    api = MetroApi(ETL / "cache" / "rail" / "api" / today.isoformat())
+    api = MetroApi(ETL / "cache" / "rail" / "api" / today.isoformat(), offline=offline)
     lines = api.call("GetLines")
     dates = rep_dates(today)
 
@@ -262,9 +262,10 @@ def main(argv=None) -> None:
     ap.add_argument("--out", type=Path, default=ETL / "out" / "rail")
     ap.add_argument("--osm", type=Path, default=ETL / "cache" / "osm" / "marmara.osm.pbf")
     ap.add_argument("--date", type=dt.date.fromisoformat, default=None)
+    ap.add_argument("--offline", action="store_true", help="use only cached API responses")
     a = ap.parse_args(argv)
     today = a.date or dt.datetime.now(dt.timezone(dt.timedelta(hours=3))).date()
-    for k, v in build(a.out, a.osm, today).items():
+    for k, v in build(a.out, a.osm, today, offline=a.offline).items():
         print(f"{k}: {v}")
 
 
