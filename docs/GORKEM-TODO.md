@@ -36,7 +36,40 @@ Mac'te Terminal'i aç ve sırayla yapıştır:
    ssh gitgel "free -h; df -h /; nproc; docker ps; sudo iptables -S INPUT | head -20"
    ```
 
-## 2. Alan adı ve Cloudflare Tunnel (Aşama 2)
+## 2A. Ücretsiz yol: Tailscale Funnel (şimdilik bunu yap)
+
+Alan adı almadan sunucuya sabit bir HTTPS adresi verir (`https://gitgel.XXXX.ts.net`). Sunucu bağlantıyı dışarı doğru kurar, 22 dışında port açılmaz. İleride alan adı alınca 2. bölüme geçeriz. 1. bölüm (secret'lar ve ilk dağıtım) bitmiş olmalı.
+
+1. https://login.tailscale.com adresinde "Sign up" ile ücretsiz hesap aç (GitHub ile giriş yeterli). Kurulum sihirbazı bir cihaz eklemeni isterse bu adımı atla ya da Mac'ine kur, fark etmez.
+2. Tailscale'i sunucuya kur ve bağla:
+
+   ```
+   ssh -t gitgel "curl -fsSL https://tailscale.com/install.sh | sh && sudo tailscale up --hostname=gitgel"
+   ```
+
+   Ekrana `https://login.tailscale.com/a/...` ile başlayan bir adres yazar. Bu adresi tarayıcıda aç ve "Connect" de. Terminalde `Success.` görmelisin.
+3. Yayını aç:
+
+   ```
+   ssh -t gitgel "sudo tailscale funnel --bg --set-path /live http://127.0.0.1:8081 && sudo tailscale funnel --bg http://127.0.0.1:8080"
+   ```
+
+   İlk seferde "Funnel is not enabled" deyip bir adres verebilir: o adresi tarayıcıda aç, "Enable" de, sonra komutu tekrar çalıştır.
+4. Adresi öğren:
+
+   ```
+   ssh gitgel "tailscale funnel status"
+   ```
+
+   `https://gitgel.XXXX.ts.net` ile başlayan satır senin adresin.
+5. https://github.com/rehagorkemeyler/GitGel/settings/variables/actions/new sayfasında iki değişken ekle (ikisinin değeri de aynı adres, sonunda `/` olmadan): Name `API_BASE`, Value `https://gitgel.XXXX.ts.net`. Sonra tekrar "New repository variable": Name `LIVE_BASE`, Value aynı adres.
+6. Sohbete 4. adımın çıktısını ve şunun çıktısını yapıştır (adresi kendi adresinle değiştir):
+
+   ```
+   curl -s "https://gitgel.XXXX.ts.net/live/status" | head -c 200
+   ```
+
+## 2. Alan adı ve Cloudflare Tunnel (sonra, alan adı alınca)
 
 Uygulama rotaları `api.<alan-adın>` adresinden alacak. Sunucuda 22 dışında port açılmaz; trafik Cloudflare Tunnel ile gelir. 1. adım (sunucu kurulumu) bitmiş olmalı.
 

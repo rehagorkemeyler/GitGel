@@ -56,3 +56,13 @@ test('cache shares one upstream call', async () => {
   await Promise.all([c.get('a', load), c.get('a', load)])
   assert.equal(calls, 1)
 })
+
+test('routes with and without the /live prefix', async () => {
+  const { handle } = await import('../src/server.ts')
+  for (const u of ['/live/health', '/health']) {
+    let code = 0
+    const res = { writeHead: (c: number) => { code = c }, end: () => {} }
+    await handle({ url: u, method: 'GET' } as never, res as never)
+    assert.equal(code, 200)
+  }
+})
