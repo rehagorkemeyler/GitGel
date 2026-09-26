@@ -29,9 +29,9 @@ Bitti sayılması için: doğrulayıcıdan hatasız geçen tek bir İstanbul GTF
 - [x] [Görkem] Ampere A1 Ubuntu 24.04 sunucu oluştur (4 OCPU, 24 GB, 100 GB disk, Milano bölgesi). Bağlantı: `ssh gitgel` (~/.ssh/config tanımlı, anahtar ~/.ssh/gitgel.key)
 - [ ] Otomatik dağıtım: GitHub Actions ile main'e her push'ta sunucuda `git pull` ve `docker compose up -d` (ayrı deploy anahtarı, repo secret'ları). İlk kurulum [Görkem]
 - [ ] Sunucu temel kurulumu: güncellemeler, güvenlik duvarı (sadece 22), otomatik güvenlik güncellemeleri, Docker, swap
-- [ ] infra/docker-compose.yml: motis + live servisleri
-- [ ] MOTIS'i İstanbul OSM kesiti ve bizim GTFS ile çalıştır
-- [ ] CLAUDE.md'deki test yolculuklarının hepsini MOTIS API'si ile dene, sonuçları docs/route-tests.md'ye yaz
+- [x] infra/docker-compose.yml: motis + live servisleri
+- [x] MOTIS'i İstanbul OSM kesiti ve bizim GTFS ile çalıştır
+- [x] CLAUDE.md'deki test yolculuklarının hepsini MOTIS API'si ile dene, sonuçları docs/route-tests.md'ye yaz (ilk koşu yerelde aynı imaj ve ayarla; sunucu hazır olunca scripts/route_tests.py ile tekrar)
 - [ ] [Görkem] Cloudflare'de alan adı ve Tunnel kur, api adresini sunucuya bağla
 - [ ] Sunucu gece yeni GTFS'i çekip MOTIS'i yeniden yüklesin
 
