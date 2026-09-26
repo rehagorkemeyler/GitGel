@@ -7,6 +7,7 @@ import { HomePeek } from './screens/Home'
 import { SearchPanel } from './screens/SearchPanel'
 import { Results } from './screens/Results'
 import { RouteDetail } from './screens/RouteDetail'
+import { Nearby } from './screens/Nearby'
 import { useGeolocation } from './lib/useGeolocation'
 import type { Place } from './lib/search'
 import type { Itinerary } from './lib/api'
@@ -15,8 +16,7 @@ import './App.css'
 
 export type Screen = 'home' | 'search' | 'nearby' | 'lines' | 'contact' | 'support'
 
-const titles: Record<Exclude<Screen, 'home' | 'search'>, StringKey> = {
-  nearby: 'nearby',
+const titles: Record<Exclude<Screen, 'home' | 'search' | 'nearby'>, StringKey> = {
   lines: 'lines',
   contact: 'contact',
   support: 'support',
@@ -94,7 +94,8 @@ export function App() {
           }}
         />
       )}
-      {screen !== 'home' && screen !== 'search' && (
+      {screen === 'nearby' && <Nearby position={geo.position} onLocate={geo.start} onBack={() => setScreen('home')} />}
+      {(screen === 'lines' || screen === 'contact' || screen === 'support') && (
         <Panel title={t(titles[screen])} onBack={() => setScreen('home')}>
           <p>{t('comingSoon')}</p>
         </Panel>

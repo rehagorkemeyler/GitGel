@@ -14,3 +14,6 @@ export const ISTANBUL_BOUNDS: [[number, number], [number, number]] = [
   [27.9, 40.7],
   [30.0, 41.7],
 ]
+
+// MOTIS prefixes stop ids with the dataset name from infra/motis/config.yml.
+export const MOTIS_STOP_PREFIX = 'istanbul_'
