@@ -211,19 +211,30 @@ def merge_stations(stops_out: list[dict], by_id: dict) -> list[dict]:
     for s in sorted(stops_out, key=lambda x: MODE_RANK.get(x["mode"], 9)):
         if s["mode"] not in STATION_MODES:
             continue
-        key = fold(s["name"]).replace(" marmaray", "").replace(" metro", "")
+        key = station_key(s["name"])
         hit = next((e for e in index.get(key, []) if abs(e["lat"] - s["lat"]) < 0.004 and abs(e["lon"] - s["lon"]) < 0.005), None)
         if hit:
             hit["ids"].append(s["id"])
             hit["lines"] += [l for l in s["lines"] if l not in hit["lines"]]
             continue
-        e = {"id": s["id"], "ids": [s["id"]], "name": s["name"], "lat": s["lat"], "lon": s["lon"], "mode": s["mode"],
-             "lines": list(s["lines"])}
+        e = {"id": s["id"], "ids": [s["id"]], "name": re.sub(r"\s+\d+$", "", s["name"]), "lat": s["lat"], "lon": s["lon"],
+             "mode": s["mode"], "lines": list(s["lines"])}
         index.setdefault(key, []).append(e)
         out.append(e)
     for e in out:
         e["lines"] = sorted(e["lines"], key=lambda l: (MODE_RANK.get(by_id[l]["mode"], 9), natural(by_id[l]["name"])))
+        # Transfer station: more than one rail line (ferries and Metrobüs do not count; both directions of a line count once: M4-D / M4-G).
+        e["transfer"] = len({re.sub(r"-[dg]$", "", l) for l in e["lines"] if by_id[l]["mode"] in RAIL}) > 1
     return out
+
+
+def station_key(name: str) -> str:
+    """Same station across lines and platforms: 'Gar(YHT) İstasyonu 1' ~ 'Gar(YHT) İstasyonu',
+    'Kadıköy Marmaray' ~ 'Kadıköy'."""
+    k = fold(name)
+    for w in (" marmaray", " metro", " istasyonu"):
+        k = k.replace(w, "")
+    return re.sub(r"\s+\d+$", "", k).strip()
 
 
 def network(z: zipfile.ZipFile, routes: pd.DataFrame, trips: pd.DataFrame, rep: pd.DataFrame,
