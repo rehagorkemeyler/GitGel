@@ -70,3 +70,12 @@ Uygulama https://rehagorkemeyler.github.io/GitGel/ adresinde yayınlanacak.
 4. 2 dakika sonra https://rehagorkemeyler.github.io/GitGel/ adresini telefonda aç. Harita ve "Nereye?" paneli görünmeli.
 
 Alan adı ve tünel (2. bölüm) bitince bir değişken daha ekleyeceğiz: https://github.com/rehagorkemeyler/GitGel/settings/variables/actions/new sayfasında Name `API_BASE`, Value `https://api.ALANADI` (ALANADI senin alan adın). Sonra 3. adımı tekrarla.
+
+## 4. Gerçek telefonda deneme (Aşama 3 sonu)
+
+3. bölüm bittikten sonra, elindeki en yavaş Android telefonda:
+
+1. Chrome ile https://rehagorkemeyler.github.io/GitGel/ adresini aç, menüden "Ana ekrana ekle".
+2. Uygulamayı kapat, ana ekrandan aç, "Nereye?"ye dokun, bir istasyon yaz, seç. Açılıştan rota kartları görünene kadar geçen süreyi say.
+3. Paneli parmakla yukarı aşağı sürükle; takılma var mı bak.
+4. Süreyi ve gözlemini sohbete yaz.

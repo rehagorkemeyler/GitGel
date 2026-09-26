@@ -30,3 +30,9 @@
   color: var(--text-2);
   z-index: 5;
 }
+
+.map {
+  position: absolute;
+  inset: 0;
+  background: var(--bg);
+}
