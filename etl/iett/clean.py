@@ -206,19 +206,25 @@ def interpolate_times(st: pd.DataFrame, stops: pd.DataFrame, trips: pd.DataFrame
 
 
 def download(cache: Path) -> None:
+    """Fetch the İETT files. If the portal is down, keep the last good download."""
     import requests
     cache.mkdir(parents=True, exist_ok=True)
     for name, path in RESOURCES.items():
-        for attempt in range(5):
+        for attempt in range(4):
             try:
-                r = requests.get(BASE + path, timeout=300)
+                r = requests.get(BASE + path, timeout=(30, 300))
                 r.raise_for_status()
-                (cache / name).write_bytes(r.content)
+                tmp = cache / (name + ".part")
+                tmp.write_bytes(r.content)
+                tmp.replace(cache / name)
                 break
             except Exception as e:  # noqa: BLE001
                 print(f"retry {name}: {e}", file=sys.stderr)
         else:
-            raise SystemExit(f"download failed: {name}")
+            if (cache / name).exists():
+                print(f"WARNING: {name} not downloaded, using the previous copy", file=sys.stderr)
+            else:
+                raise SystemExit(f"download failed and no previous copy: {name}")
 
 
 def build(cache: Path, out: Path) -> dict:

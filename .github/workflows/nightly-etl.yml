@@ -45,10 +45,21 @@ jobs:
         run: pip install -r requirements.txt
       - name: Unit tests
         run: python -m pytest -q tests
+      # Last good downloads, used when a portal is down (data.ibb.gov.tr sometimes times out).
+      - uses: actions/cache@v4
+        with:
+          path: |
+            etl/cache/iett
+            etl/cache/old_gtfs
+            etl/cache/osm
+          key: etl-downloads-${{ github.run_id }}
+          restore-keys: etl-downloads-
       - name: Download OSM and validator
         run: |
           mkdir -p cache/osm cache/tools
-          curl -fsSL --retry 5 -o cache/osm/marmara.osm.pbf https://download.openstreetmap.fr/extracts/europe/turkey/marmara-latest.osm.pbf
+          curl -fsSL --retry 5 -o cache/osm/marmara.osm.pbf.part https://download.openstreetmap.fr/extracts/europe/turkey/marmara-latest.osm.pbf \
+            && mv cache/osm/marmara.osm.pbf.part cache/osm/marmara.osm.pbf \
+            || test -f cache/osm/marmara.osm.pbf
           curl -fsSL --retry 5 -o cache/tools/gtfs-validator.jar https://github.com/MobilityData/gtfs-validator/releases/download/v8.0.1/gtfs-validator-8.0.1-cli.jar
       - name: İETT
         run: python -m iett.clean --download
