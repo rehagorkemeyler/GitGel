@@ -3,6 +3,10 @@
 Test trips from CLAUDE.md, run with `python3 scripts/route_tests.py URL < docs/route-tests.txt`.
 Departure: Tuesday 2026-09-29 08:00. Top 3 itineraries per trip (non-walking legs only).
 
+## Run 2: 2026-09-26, public API (Oracle server via Tailscale Funnel)
+
+All 10 trips return the same routes as run 1 from `https://gitgel.tail90b397.ts.net`. Stage 2 exit criterion met.
+
 ## Run 1: 2026-09-26, local MOTIS 2.11.3 (same image and infra/motis/config.yml as the server)
 
 Data: GTFS built by the ETL on 2026-09-26 (İETT + Metro İstanbul API + Marmaray/M11/T2/F2 YAML + ferries), OSM marmara extract clipped to Istanbul.
