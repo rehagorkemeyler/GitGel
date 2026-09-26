@@ -69,7 +69,7 @@ GetHatOtoKonum_json(HatKodu) returns kapino, enlem, boylam, hatkodu, guzergahkod
 
 Static GTFS: İETT GTFS on data.ibb.gov.tr (current but malformed: truncated stop_times CSV, use the ZIP; semicolon separated; double-encoded UTF-8; coordinates without decimal points; no shapes). The multi-operator GTFS (metro, Marmaray, ferries) is frozen since 2021 to 2023 and misses M11, M12, T5 and extensions: use only as reference. Rail GTFS must be generated from Metro İstanbul API + OSM. Marmaray and M11 are not operated by Metro İstanbul and need separate sources.
 
-Not allowed: Moovit endpoints (metro.istanbul's trip planner embeds moovitapp.com). Undocumented APIs are allowed only when Görkem explicitly approves them for a specific source.
+Not allowed: Moovit endpoints (metro.istanbul's trip planner embeds moovitapp.com).
 
 License: İBB Open Data License allows commercial and non-commercial reuse with attribution. Show attributions for İBB Açık Veri, Metro İstanbul, İETT, OpenStreetMap contributors, OpenFreeMap.
 
