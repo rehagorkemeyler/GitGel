@@ -11,6 +11,7 @@ import { Contact, Support } from './screens/Info'
 import { About } from './screens/About'
 import { StationSheet } from './screens/StationSheet'
 import { TrainSheet } from './screens/TrainSheet'
+import { VehicleSheet } from './screens/VehicleSheet'
 import type { TrainInfo } from './map/railLayer'
 import { LineHeader, LineStops } from './screens/LineSheet'
 import { lineView, useLineDetail } from './lib/lineDetail'
@@ -21,7 +22,7 @@ import type { Place } from './lib/search'
 import type { Itinerary } from './lib/api'
 import { t } from './i18n'
 import { loadJson, loadSearchIndex } from './lib/data'
-import { useLineStatus, useLiveVehicles } from './lib/live'
+import { useLineStatus, useLiveVehicles, type Vehicle } from './lib/live'
 import { StatusBand } from './components/StatusBand'
 import { LocationPicker } from './components/LocationPicker'
 import type { Map as MlMap } from 'maplibre-gl'
@@ -42,6 +43,7 @@ export function App() {
   const [open, setOpen] = useState<Itinerary | null>(null)
   const [station, setStation] = useState<Station | null>(null)
   const [train, setTrain] = useState<TrainInfo | null>(null)
+  const [bus, setBus] = useState<Vehicle | null>(null)
   const [lineId, setLineId] = useState<string | null>(null)
   const [lineDir, setLineDir] = useState(0)
   const geo = useGeolocation()
@@ -112,13 +114,22 @@ export function App() {
             if (open || to) return // a route is on screen: keep it
             setLineId(null)
             setTrain(null)
+            setBus(null)
             setStation(st)
             setExpanded(false)
           }}
           onTrain={(tr) => {
             if (open || to) return
             setStation(null)
+            setBus(null)
             setTrain(tr)
+            setExpanded(false)
+          }}
+          onVehicle={(v) => {
+            if (open || to) return
+            setStation(null)
+            setTrain(null)
+            setBus(v)
             setExpanded(false)
           }}
           focusLine={lineId}
@@ -190,12 +201,22 @@ export function App() {
       <BottomSheet
         label={t('whereTo')}
         contentKey={
-          lineId ? `line:${lineId}` : open ? `route:${open.startTime}` : to ? `to:${to.name}` : train ? `train:${train.id}` : station ? `st:${station.id}` : 'home'
+          bus ? `bus:${bus.id}` : lineId ? `line:${lineId}` : open ? `route:${open.startTime}` : to ? `to:${to.name}` : train ? `train:${train.id}` : station ? `st:${station.id}` : 'home'
         }
         expanded={expanded}
         onExpandedChange={setExpanded}
         peek={
-          lineId ? (
+          bus ? (
+            <VehicleSheet
+              vehicle={bus}
+              onClose={() => setBus(null)}
+              onLine={(id) => {
+                setBus(null)
+                setLineDir(0)
+                setLineId(id)
+              }}
+            />
+          ) : lineId ? (
             <LineHeader {...lineData} dir={lineDir} onDir={setLineDir} onClose={() => setLineId(null)} />
           ) : open ? (
             <RouteDetail it={open} liveCount={vehicles.length} onBack={() => setOpen(null)} />
@@ -232,7 +253,7 @@ export function App() {
           )
         }
       >
-        {lineId && <LineStops {...lineData} dir={lineDir} onDir={setLineDir} onClose={() => setLineId(null)} />}
+        {lineId && !bus && <LineStops {...lineData} dir={lineDir} onDir={setLineDir} onClose={() => setLineId(null)} />}
       </BottomSheet>
       {screen === 'search' && (
         <SearchPanel

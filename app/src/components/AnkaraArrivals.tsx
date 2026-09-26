@@ -7,7 +7,7 @@ import { t } from '../i18n'
 import './AnkaraArrivals.css'
 
 /** Ankara stop card: live EGO buses heading to this stop, soonest first. */
-export function AnkaraArrivals({ stop, lines }: { stop: string; lines: Map<string, Line> }) {
+export function AnkaraArrivals({ stop, lines, onLine }: { stop: string; lines: Map<string, Line>; onLine?: (id: string) => void }) {
   const state = useAnkaraArrivals(stop)
   const now = useNow(1000)
   const byName = new Map([...lines.values()].map((l) => [l.name, l]))
@@ -22,7 +22,15 @@ export function AnkaraArrivals({ stop, lines }: { stop: string; lines: Map<strin
       {state?.arrivals?.length === 0 && <p className="muted">{t('noLiveBuses')}</p>}
       <ul className="arrivals">
         {state?.arrivals?.map((a, i) => (
-          <li key={`${a.line}-${a.plate ?? i}`} className="arrival">
+          <li key={`${a.line}-${a.plate ?? i}`}>
+            <button
+              className="arrival"
+              onClick={() => {
+                const l = byName.get(a.line)
+                if (l) onLine?.(l.id)
+              }}
+              disabled={!onLine || !byName.get(a.line)}
+            >
             <LineChip name={a.line} line={byName.get(a.line)} />
             <span className="arrival-main">
               <span className="arrival-name">{byName.get(a.line)?.long_name || a.lineName}</span>
@@ -38,6 +46,7 @@ export function AnkaraArrivals({ stop, lines }: { stop: string; lines: Map<strin
               </span>
             </span>
             <span className={i === 0 ? 'arrival-eta first' : 'arrival-eta'}>{eta(a.etaSeconds - (now - state.at) / 1000)}</span>
+            </button>
           </li>
         ))}
       </ul>
