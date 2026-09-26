@@ -1,32 +1,53 @@
+/* Collapsed: a compact pill sized to its text. Expanded: a card. */
 .status-band {
   position: fixed;
   top: calc(var(--s-3) + env(safe-area-inset-top));
-  left: var(--s-4);
-  right: var(--s-4);
-  max-width: 528px;
-  margin: 0 auto;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: min(528px, calc(100vw - 2 * var(--s-4)));
   display: flex;
   flex-direction: column;
   gap: var(--s-2);
-  padding: var(--s-2) var(--s-4);
-  border-radius: var(--r-btn);
+  min-height: 36px;
+  padding: var(--s-2) var(--s-3);
+  border-radius: 18px;
   background: var(--warning-bg);
   color: var(--warning-text);
   border: 1px solid var(--border);
   box-shadow: var(--shadow);
   text-align: left;
   font-size: var(--fs-s);
+  line-height: 20px;
   z-index: 6;
 }
 
-.status-title {
-  font-weight: var(--fw-bold);
+.status-band.open {
+  width: calc(100vw - 2 * var(--s-4));
+  border-radius: var(--r-card);
+  padding: var(--s-3) var(--s-4);
 }
 
-.status-band:not(.open) .status-title {
+.status-title {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  font-weight: var(--fw-bold);
+  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
+}
+
+.status-title::before {
+  content: '';
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.status-text {
+  line-height: 1.4;
 }
 
 .muted-small {

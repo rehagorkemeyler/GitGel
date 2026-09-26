@@ -9,13 +9,15 @@ import { Nearby } from './screens/Nearby'
 import { Lines } from './screens/Lines'
 import { Contact, Support } from './screens/Info'
 import { About } from './screens/About'
-import { useGeolocation } from './lib/useGeolocation'
+import { inIstanbul, useGeolocation, useStablePosition } from './lib/useGeolocation'
 import type { Place } from './lib/search'
 import type { Itinerary } from './lib/api'
 import { t } from './i18n'
 import { loadSearchIndex } from './lib/data'
 import { useLineStatus, useLiveVehicles } from './lib/live'
 import { StatusBand } from './components/StatusBand'
+import { LocationPicker } from './components/LocationPicker'
+import type { Map as MlMap } from 'maplibre-gl'
 import './App.css'
 
 // The map (MapLibre, the biggest chunk) loads in parallel; the panel is usable at once.
@@ -41,6 +43,9 @@ export function App() {
   const status = useLineStatus()
   const hiddenLines = useMemo(() => status?.lines.map((l) => l.line) ?? [], [status])
   const [railCount, setRailCount] = useState(0)
+  const [map, setMap] = useState<MlMap | null>(null)
+  const [picking, setPicking] = useState(false)
+  const outside = !!geo.position && !inIstanbul(geo.position)
 
   // Warm the search index while the user looks at the map.
   useEffect(() => {
@@ -50,9 +55,11 @@ export function App() {
     })
   }, [])
 
+  // Route searches use a position that only changes after a real move (GPS jitters every second).
+  const stablePos = useStablePosition(geo.position)
   const me = useMemo<Place | null>(
-    () => (geo.position ? { name: t('myLocation'), kind: 'me', lon: geo.position[0], lat: geo.position[1] } : null),
-    [geo.position],
+    () => (stablePos ? { name: t('myLocation'), kind: 'me', lon: stablePos[0], lat: stablePos[1] } : null),
+    [stablePos],
   )
   // Follow the live position only while "my location" is the origin.
   const from = fromChoice ?? me
@@ -72,6 +79,7 @@ export function App() {
           hiddenLines={hiddenLines}
           onRailCount={setRailCount}
           bottomInset={Math.round(window.innerHeight * 0.45)}
+          onReady={setMap}
         />
       </Suspense>
       {status && <StatusBand lines={status.lines} />}
@@ -92,10 +100,23 @@ export function App() {
       <button className="locate" onClick={geo.start} aria-label={t('locateMe')}>
         <Icon name="locate" />
       </button>
-      {(geo.status === 'denied' || geo.status === 'unavailable') && (
-        <p className="notice" role="status">
-          {t(geo.status === 'denied' ? 'locationDenied' : 'locationUnavailable')}
-        </p>
+      {!picking && (outside || geo.status === 'denied' || geo.status === 'unavailable') && (
+        <div className="notice" role="status">
+          <span>{t(outside ? 'outsideIstanbul' : geo.status === 'denied' ? 'locationDenied' : 'locationUnavailable')}</span>
+          <button className="link" onClick={() => setPicking(true)}>
+            {t('pickLocation')}
+          </button>
+        </div>
+      )}
+      {picking && (
+        <LocationPicker
+          map={map}
+          onCancel={() => setPicking(false)}
+          onPick={(p) => {
+            geo.setOverride(p)
+            setPicking(false)
+          }}
+        />
       )}
       <BottomSheet
         label={t('whereTo')}
