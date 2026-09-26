@@ -237,7 +237,9 @@ EGO'nun kendi "EGO Cepte" uygulamasının JSON servisi anahtarsız çalışıyor
 - `FNC=Otobus&HAT={hat}`: hattaki bütün canlı otobüsler (DURAK verilmezse ETA yok, `saniye=999999`). `FNC=Otobus&HAT={hat}&DURAK={durak}` aynı listeyi o durağa ETA ile verir.
 - `FNC=Otobusler&DURAK={durak}`: duraktan geçecek hatlar; canlı satırlarda plaka, konum, hız (`hiz`), yön (`aci`), `saniye` (ETA), `durak_sira_no` ve `secili_durak_sira_no` (fark = kaç durak kaldı), `detay` ("Körüklü‚ Engelli", ayraç U+201A). Tarifeli satırlarda `arac_no="-"` ve yalnızca `sure` metni var.
 - `konum_tarihi` Ankara saati (`dd.MM.yyyy HH:mm:ss`, UTC+3). Geçmiş otobüs `saniye=999999`, `sure="Geçti"`.
-- Hat listesi ve sefer saatleri web sitesinde: POST `www.ego.gov.tr/AjaxData/HatListesi` ve POST `www.ego.gov.tr/HareketSaatleri` (`hat_no1=`). Bir hattın sıralı durak listesi için doğrudan uç nokta yok.
+- Hat, durak, tarife ve güzergah: `https://egocptsrvand.ego.gov.tr/hibrit/act.asp?LAN=tr&VER=4.0.7&FNC=...` (Android uygulamasının kullandığı yol; oturum gerekmiyor). `FNC=Hatlar&QUERY=` bütün hatları (665: EGO/ÖHO/ÖTA otobüs, metro, Ankaray, Başkentray) verir. `FNC=HatBilgileri&YOL=TRUE&KOD={hat}` tek çağrıda hat bilgisini (`sure` dk, `mesafe` km), sıralı durakları tam koordinatla (`table_durak`: `sira`, `kod`, `ad`, `lat`, `lng`), hafta içi/Cumartesi/Pazar kalkışlarını notlarıyla (`table_saat`) ve güzergah çizgisini (`yol`: "lon,lat,0" boşlukla ayrılmış) verir. `hibrit/action.asp?FNC=Durak&KOD={durak}` tek durağın koordinatını verir.
+- EGO Mac bu yolları ölü sanmıştı; eski APK'de (4.0.7) görünen `/hibrit/connect/androidConn.asp` çağrısı boş gövdeli POST'ta 411 verdiği için. Denedim: `Content-Length: 0` ile 200 dönüyor, ama `act.asp` / `action.asp` uç noktaları bu bağlantı olmadan da cevap veriyor.
+- EGO web sitesi (`www.ego.gov.tr/HareketSaatleri`) aynı hat ve tarife bilgisini HTML olarak veriyor ama koordinat ve güzergah yok; artık kullanılmıyor. OSM'de EGO durak numarası (`ref`) Ankara duraklarının yalnızca ~%57'sinde var.
 - Örnek cevaplar: `docs/api-samples/ankara/`.
 
 ## 9. Açık sorular ve riskler

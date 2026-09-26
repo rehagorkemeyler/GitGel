@@ -24,7 +24,7 @@ concurrency:
 jobs:
   etl:
     runs-on: ubuntu-latest
-    timeout-minutes: 150
+    timeout-minutes: 90
     env:
       DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
     defaults:
@@ -61,9 +61,6 @@ jobs:
           curl -fsSL --retry 5 -o cache/osm/marmara.osm.pbf.part https://download.openstreetmap.fr/extracts/europe/turkey/marmara-latest.osm.pbf \
             && mv cache/osm/marmara.osm.pbf.part cache/osm/marmara.osm.pbf \
             || test -f cache/osm/marmara.osm.pbf
-          curl -fsSL --retry 5 -o cache/osm/central_anatolia.osm.pbf.part https://download.openstreetmap.fr/extracts/europe/turkey/central_anatolia-latest.osm.pbf \
-            && mv cache/osm/central_anatolia.osm.pbf.part cache/osm/central_anatolia.osm.pbf \
-            || test -f cache/osm/central_anatolia.osm.pbf || echo "no Ankara OSM"
           curl -fsSL --retry 5 -o cache/tools/gtfs-validator.jar https://github.com/MobilityData/gtfs-validator/releases/download/v8.0.1/gtfs-validator-8.0.1-cli.jar
       - name: GPS calibration from the live service
         env:
@@ -86,12 +83,11 @@ jobs:
       - name: Marmaray, M11, ferries
         run: python -m other.build
       # Ankara is scraped here but must never block the Istanbul data: on failure
-      # the step is skipped and the last good pages in cache/ankara are reused tomorrow.
-      - name: Ankara (EGO line pages, OSM stops and routes, GTFS)
+      # the step is skipped and the last good answers in cache/ankara are reused tomorrow.
+      - name: Ankara (EGO Cepte lines, stops, timetables, shapes -> GTFS)
         continue-on-error: true
         run: |
-          python -m ankara.scrape --pause 1
-          python -m ankara.stops
+          python -m ankara.ego_api
           python -m ankara.gtfs --validate
           cp out/ankara/lines.json out/ankara-lines.json
       - name: Merge and validate

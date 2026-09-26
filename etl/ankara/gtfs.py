@@ -1,10 +1,10 @@
-"""Ankara GTFS from the scraped EGO pages, OSM stop coordinates and OSM routes.
+"""Ankara GTFS from the EGO Cepte line data (ankara.ego_api).
 
     python -m ankara.gtfs [--validate]   # -> out/ankara/gtfs/*.txt, out/ankara-gtfs.zip
 
 Timing model (everything here is "tarifeye göre"): EGO publishes departures
 from the first stop and one trip duration per line. Intermediate stops get
-times proportional to distance along the route shape. Stops without
+times proportional to distance along EGO's route geometry. Stops without
 coordinates are left out of the trip rather than guessed. Short-working notes
 ("...DEN BAŞLAR", "...DA BİTER") are not modelled yet; those trips run the
 full route.
@@ -21,15 +21,14 @@ from pathlib import Path
 
 import numpy as np
 
-from common.geo import _xy, cut, haversine_m, load_route_lines
+from common.geo import _xy, cut, haversine_m
 from common.text import title_tr
 from rail.build import SERVICES, VALID_DAYS, hms, write
 
 ETL = Path(__file__).resolve().parents[1]
 OUT = ETL / "out" / "ankara"
 P = "eg_"  # id prefix, keeps Ankara ids apart from Istanbul ones
-ROUTE_TYPE = {"bus": 3, "metro": 1, "ankaray": 1}
-OSM_ROUTES = {"bus": {"bus"}, "metro": {"subway", "light_rail"}, "ankaray": {"subway", "light_rail"}}
+ROUTE_TYPE = {"bus": 3, "metro": 1, "ankaray": 1, "suburban": 2}
 FALLBACK_KMH = 18.0
 NIGHT_END = 4 * 60  # a departure before 04:00 in a list that also has daytime times belongs to the evening before
 
@@ -52,7 +51,7 @@ def service_minutes(times: list[dict]) -> list[int]:
 
 
 class Line:
-    """One candidate OSM polyline with the numbers needed to project stops on it."""
+    """One route polyline with the numbers needed to project stops on it."""
 
     def __init__(self, line: np.ndarray):
         self.line = line
@@ -82,11 +81,13 @@ class Line:
 
 
 def piecewise(cand: Line, pts: list[tuple[float, float]], near: float = 60.0) -> tuple[list, int]:
-    """For each pair of consecutive stops, the OSM piece between them if one goes
-    forward with a plausible length, else None (straight). Returns (pieces, count of OSM pieces).
+    """For each pair of consecutive stops, the piece of the route line between them if
+    one goes forward with a plausible length, else None (straight). Returns (pieces,
+    count of line pieces).
 
-    Working pair by pair keeps local mapping errors (a reversed way, a gap, a loop
-    mapped twice) from spoiling the whole line."""
+    Loop and out-and-back routes pass the same street twice, so a stop can sit on
+    several passes; working pair by pair picks the pass that fits each hop and keeps
+    a local glitch in the geometry from spoiling the whole line."""
     pos = cand.positions(pts, near)
     pieces, n = [], 0
     for k in range(1, len(pts)):
@@ -101,21 +102,6 @@ def piecewise(cand: Line, pts: list[tuple[float, float]], near: float = 60.0) ->
         pieces.append((best[1], best[2]) if best else None)
         n += best is not None
     return pieces, n
-
-
-def candidates(rels: list[dict]) -> list[np.ndarray]:
-    """Lines to try for one EGO line.
-
-    An EGO line page usually lists a full round trip (A -> B -> A) while OSM maps
-    one relation per direction, so round trips are tried too: a relation followed
-    by another one, or by itself reversed (same streets back)."""
-    one = [c for r in rels for c in (r.get("line_in_order"), r["line"]) if c is not None and len(c) >= 2]
-    out = list(one)
-    if len(rels) <= 4:
-        for i, x in enumerate(one):
-            out.append(np.vstack([x, x[::-1]]))
-            out += [np.vstack([x, y]) for j, y in enumerate(one) if j != i]
-    return out
 
 
 def build_line(line: dict, stops: dict, candidates: list[np.ndarray]) -> dict | None:
@@ -149,25 +135,21 @@ def build_line(line: dict, stops: dict, candidates: list[np.ndarray]) -> dict | 
             "fitted": best_n >= 0.5 * (len(pts) - 1)}
 
 
-def build(lines: list[dict], stops: dict, rels: list[dict], today: dt.date, out: Path) -> dict:
+def build(lines: list[dict], stops: dict, today: dt.date, out: Path) -> dict:
     out.mkdir(parents=True, exist_ok=True)
-    by_ref: dict[str, list[dict]] = {}
-    for r in rels:
-        by_ref.setdefault(r["ref"], []).append(r)
-    rail = [r for r in rels if r["route"] in ("subway", "light_rail")]
 
     routes, trips, stop_times, shapes, used = [], [], [], [], set()
-    stats = {"lines": 0, "skipped": [], "osm_shape": 0, "straight_shape": 0}
+    stats = {"lines": 0, "skipped": [], "ego_shape": 0, "straight_shape": 0}
     for ln in lines:
         code, mode = ln["code"], ln.get("mode", "bus")
-        cands = candidates([r for r in (by_ref.get(code, []) if mode == "bus" else rail) if r["route"] in OSM_ROUTES[mode]])
-        b = build_line(ln, stops, cands)
+        shape = ln.get("shape") or []
+        b = build_line(ln, stops, [np.array(shape)] if len(shape) >= 2 else [])
         days = {d: service_minutes(ln["times"][d]) for d in SERVICES}
         if not b or not any(days.values()):
             stats["skipped"].append(code)
             continue
         stats["lines"] += 1
-        stats["osm_shape" if b["fitted"] else "straight_shape"] += 1
+        stats["ego_shape" if b["fitted"] else "straight_shape"] += 1
         rid = P + code
         routes.append({"route_id": rid, "agency_id": "ego", "route_short_name": code,
                        "route_long_name": name_tr(ln["name"]), "route_type": ROUTE_TYPE[mode]})
@@ -212,15 +194,12 @@ def zip_feed(src: Path, dst: Path) -> None:
 
 def main(argv=None) -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--osm", type=Path, default=ETL / "cache" / "osm" / "central_anatolia.osm.pbf")
     ap.add_argument("--validate", action="store_true")
     a = ap.parse_args(argv)
     today = dt.datetime.now(dt.timezone(dt.timedelta(hours=3))).date()
     lines = json.loads((OUT / "lines.json").read_text(encoding="utf-8"))
     stops = json.loads((OUT / "stops.json").read_text(encoding="utf-8"))
-    rels = [r for r in load_route_lines(a.osm, {"bus", "subway", "light_rail"}, in_order=True)
-            if 39.3 < r["line"][0][0] < 40.6 and 31.8 < r["line"][0][1] < 33.8]
-    stats = build(lines, stops, rels, today, OUT / "gtfs")
+    stats = build(lines, stops, today, OUT / "gtfs")
     zp = ETL / "out" / "ankara-gtfs.zip"
     zip_feed(OUT / "gtfs", zp)
     skipped = stats.pop("skipped")
