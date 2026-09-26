@@ -14,6 +14,13 @@ const tr = {
   comingSoon: 'Bu ekran hazırlanıyor.',
   live: 'canlı',
   scheduled: 'tarifeye göre',
+  searchPlaceholder: 'İstasyon, durak ya da adres',
+  myLocation: 'Konumum',
+  recent: 'Son aramalar',
+  clear: 'Temizle',
+  noResults: 'Sonuç yok. Yazımı kontrol et ya da başka bir yer dene.',
+  dataUnavailable: 'Durak listesi şu an yüklenemedi. Biraz sonra tekrar dene.',
+  from: 'Nereden?',
 }
 
 export type StringKey = keyof typeof tr
@@ -32,6 +39,13 @@ const en: Record<StringKey, string> = {
   comingSoon: 'This screen is being built.',
   live: 'live',
   scheduled: 'scheduled',
+  searchPlaceholder: 'Station, stop or address',
+  myLocation: 'My location',
+  recent: 'Recent searches',
+  clear: 'Clear',
+  noResults: 'No results. Check the spelling or try another place.',
+  dataUnavailable: 'The stop list could not be loaded right now. Try again shortly.',
+  from: 'From where?',
 }
 
 export const lang: 'tr' | 'en' =
