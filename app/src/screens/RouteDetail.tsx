@@ -1,4 +1,3 @@
-import { CITY } from '../lib/city'
 import { useEffect, useState } from 'react'
 import { Icon } from '../components/Icon'
 import { LineChip } from '../components/LineChip'
@@ -27,7 +26,7 @@ export function RouteDetail({ it, liveCount = 0, onBack }: { it: Itinerary; live
       </div>
       {liveCount > 0 && (
         <p className="live-note">
-          <span className="live-dot" aria-hidden /> {liveCount} {t(CITY.ego ? 'liveVehiclesEgo' : 'liveVehicles')}
+          <span className="live-dot" aria-hidden /> {liveCount} {t('liveVehicles')}
         </p>
       )}
       <ol className="steps">
