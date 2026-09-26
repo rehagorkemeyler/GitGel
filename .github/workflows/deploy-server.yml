@@ -29,4 +29,7 @@ jobs:
           printf '%s\n' "$DEPLOY_KEY" > ~/.ssh/deploy_key && chmod 600 ~/.ssh/deploy_key
           printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
           # The key is restricted on the server to run infra/deploy.sh only.
-          ssh -i ~/.ssh/deploy_key -o BatchMode=yes ubuntu@"$DEPLOY_HOST" deploy
+          # Tolerate stray spaces/newlines or a "user@" prefix in the secret.
+          host=$(printf '%s' "$DEPLOY_HOST" | tr -d '[:space:]'); host=${host##*@}
+          echo "host length: ${#host}"
+          ssh -i ~/.ssh/deploy_key -o BatchMode=yes ubuntu@"$host" deploy
