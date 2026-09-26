@@ -49,7 +49,7 @@ Bitti sayılması için: test yolculuklarının hepsi internetten erişilebilen 
 - [x] Bize ulaşın ve Destek olun ekranları
 - [x] Türkçe ve İngilizce metinler
 - [ ] GitHub Pages'e otomatik yayın
-- [ ] Performans testi: düşük seviye Android'de akıcılık, açılıştan rotaya 5 saniye
+- [x] Performans testi: düşük seviye Android'de akıcılık, açılıştan rotaya 5 saniye (öykünmede 3,5 sn, docs/performance.md; gerçek telefon denemesi GORKEM-TODO 4)
 
 Bitti sayılması için: gerçek telefonda 5 saniye kuralını geçiyor.
 
