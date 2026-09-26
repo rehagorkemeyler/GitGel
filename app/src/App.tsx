@@ -20,7 +20,7 @@ import { CITY, CITY_CHOSEN, switchCity } from './lib/city'
 import type { Place } from './lib/search'
 import type { Itinerary } from './lib/api'
 import { t } from './i18n'
-import { loadSearchIndex } from './lib/data'
+import { loadJson, loadSearchIndex } from './lib/data'
 import { useLineStatus, useLiveVehicles } from './lib/live'
 import { StatusBand } from './components/StatusBand'
 import { LocationPicker } from './components/LocationPicker'
@@ -68,6 +68,12 @@ export function App() {
   const outside = !!geo.position && !inCity(geo.position)
   // First visit outside the default city: ask for the city before offering a test location.
   const cityPrompt = choosingCity || (!CITY_CHOSEN && outside)
+
+  // Nightly data missing (first night of a new city, or Pages down): say so instead of an empty map.
+  const [dataMissing, setDataMissing] = useState(false)
+  useEffect(() => {
+    loadJson('meta.json').catch(() => setDataMissing(true))
+  }, [])
 
   // Warm the search index while the user looks at the map.
   useEffect(() => {
@@ -156,7 +162,12 @@ export function App() {
           </div>
         </div>
       )}
-      {!picking && !cityPrompt && (outside || geo.status === 'denied' || geo.status === 'unavailable') && (
+      {!picking && !cityPrompt && dataMissing && (
+        <div className="notice" role="status">
+          <span>{t('cityDataMissing')}</span>
+        </div>
+      )}
+      {!picking && !cityPrompt && !dataMissing && (outside || geo.status === 'denied' || geo.status === 'unavailable') && (
         <div className="notice" role="status">
           <span>
             {t(outside ? (CITY.id === 'ankara' ? 'outsideAnkara' : 'outsideIstanbul') : geo.status === 'denied' ? 'locationDenied' : 'locationUnavailable')}
