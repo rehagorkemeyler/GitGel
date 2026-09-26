@@ -1,6 +1,7 @@
-# MOTIS import config for Istanbul. Used by infra/motis/update-data.sh.
+# MOTIS import config for Istanbul and Ankara. Used by infra/motis/update-data.sh,
+# which drops the Ankara block when that night's Ankara GTFS is missing.
 # Map tiles are served by OpenFreeMap, so the MOTIS tile server is off.
-osm: istanbul.osm.pbf
+osm: cities.osm.pbf
 timetable:
   first_day: TODAY
   num_days: 60
@@ -27,6 +28,14 @@ timetable:
       default_bikes_allowed: false
       default_cars_allowed: false
       default_reservation_not_required: true
+    # ankara-begin
+    ankara:
+      path: ankara-gtfs.zip
+      extend_calendar: false
+      default_bikes_allowed: false
+      default_cars_allowed: false
+      default_reservation_not_required: true
+    # ankara-end
 elevators: false
 street_routing: true
 osr_footpath: false
