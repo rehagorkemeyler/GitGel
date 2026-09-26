@@ -26,3 +26,9 @@ def test_merge_unions_columns_and_drops_duplicate_keys(tmp_path):
         assert lines[0] == "stop_id,stop_name,stop_lat,stop_lon,stop_code"
         assert lines[1] == "1,A,41,29,"
         assert "feed_info.txt" in z.namelist()
+
+
+def test_service_minutes_puts_night_after_evening():
+    from static.build import service_minutes
+    assert sorted(["00:00:00", "06:00:00", "23:51:00", "01:30:00"], key=service_minutes) == \
+        ["06:00:00", "23:51:00", "00:00:00", "01:30:00"]

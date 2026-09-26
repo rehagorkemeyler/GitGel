@@ -1,0 +1,68 @@
+.line-group h2 {
+  margin: var(--s-4) 0 0;
+  font-size: var(--fs-s);
+  font-weight: var(--fw-bold);
+  color: var(--text-2);
+}
+
+.line-head {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  margin-bottom: var(--s-3);
+}
+
+.segmented {
+  display: flex;
+  gap: var(--s-1);
+  padding: var(--s-1);
+  border-radius: var(--r-btn);
+  background: var(--surface-2);
+  margin-bottom: var(--s-3);
+}
+
+.segmented button {
+  flex: 1;
+  min-width: 0;
+  border-radius: var(--r-sm);
+  font-size: var(--fs-s);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 0 var(--s-2);
+}
+
+.segmented button.on {
+  background: var(--surface);
+  font-weight: var(--fw-bold);
+  box-shadow: var(--shadow);
+}
+
+.first-last {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--fs-s);
+}
+
+.first-last th,
+.first-last td {
+  text-align: left;
+  padding: var(--s-1) 0;
+}
+
+.first-last td {
+  font-weight: var(--fw-bold);
+  font-size: var(--fs-m);
+}
+
+.line-stops {
+  margin: var(--s-3) 0 0;
+  padding: 0 0 0 var(--s-4);
+  border-left: 4px solid;
+  list-style: none;
+}
+
+.line-stops li {
+  padding: var(--s-2) 0;
+  border-bottom: 1px solid var(--border);
+}
