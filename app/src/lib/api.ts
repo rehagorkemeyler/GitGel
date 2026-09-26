@@ -74,13 +74,14 @@ export type Itinerary = {
   legs: Leg[]
 }
 
-export async function plan(from: Place, to: Place, time: Date = new Date()): Promise<Itinerary[]> {
+export async function plan(from: Place, to: Place, time: Date = new Date(), arriveBy = false): Promise<Itinerary[]> {
   const res = await get<{ itineraries: Itinerary[] }>(
     '/api/v5/plan',
     {
       fromPlace: `${from.lat},${from.lon}`,
       toPlace: `${to.lat},${to.lon}`,
       time: time.toISOString(),
+      arriveBy: String(arriveBy),
       numItineraries: '5',
     },
     15000,
