@@ -39,6 +39,7 @@ jobs:
         env:
           # Set these as repository variables (Settings > Secrets and variables > Actions > Variables).
           VITE_API_BASE: ${{ vars.API_BASE }}
+          VITE_LIVE_BASE: ${{ vars.LIVE_BASE }}
           VITE_CONTACT_EMAIL: ${{ vars.CONTACT_EMAIL }}
           VITE_DONATE_URL: ${{ vars.DONATE_URL }}
           VITE_BASE: ${{ vars.PAGES_BASE || '/GitGel/' }}

@@ -13,6 +13,7 @@ import type { Place } from './lib/search'
 import type { Itinerary } from './lib/api'
 import { t } from './i18n'
 import { loadSearchIndex } from './lib/data'
+import { useLiveVehicles } from './lib/live'
 import './App.css'
 
 // The map (MapLibre, the biggest chunk) loads in parallel; the panel is usable at once.
@@ -29,6 +30,12 @@ export function App() {
   const [fromChoice, setFromChoice] = useState<Place | null>(null)
   const [open, setOpen] = useState<Itinerary | null>(null)
   const geo = useGeolocation()
+  // Buses and Metrobüs of the open route: İETT publishes their GPS positions.
+  const busLines = useMemo(
+    () => (open?.legs ?? []).filter((l) => l.mode === 'BUS' && l.routeShortName).map((l) => l.routeShortName!),
+    [open],
+  )
+  const vehicles = useLiveVehicles(busLines)
 
   // Warm the search index while the user looks at the map.
   useEffect(() => {
@@ -53,7 +60,7 @@ export function App() {
   return (
     <>
       <Suspense fallback={<div className="map" />}>
-        <MapView position={geo.position} route={open} bottomInset={Math.round(window.innerHeight * 0.45)} />
+        <MapView position={geo.position} route={open} vehicles={vehicles} bottomInset={Math.round(window.innerHeight * 0.45)} />
       </Suspense>
       <button className="locate" onClick={geo.start} aria-label={t('locateMe')}>
         <Icon name="locate" />
@@ -69,7 +76,7 @@ export function App() {
         onExpandedChange={setExpanded}
         peek={
           open ? (
-            <RouteDetail it={open} onBack={() => setOpen(null)} />
+            <RouteDetail it={open} liveCount={vehicles.length} onBack={() => setOpen(null)} />
           ) : to ? (
             <Results
               from={from}
