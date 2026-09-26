@@ -118,7 +118,7 @@ def fetch_old(cache: Path) -> dict[str, pd.DataFrame]:
     for name, path in OLD_FILES.items():
         f = cache / f"{name}.csv"
         if not f.exists():
-            r = requests.get(OLD_GTFS + path, timeout=300)
+            r = requests.get(OLD_GTFS + path, timeout=(30, 300))
             r.raise_for_status()
             f.write_bytes(r.content)
         raw = f.read_bytes()
