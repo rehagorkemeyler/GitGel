@@ -1,22 +1,129 @@
-# Marmaray. No machine-readable source exists; values come from TCDD
-# Taşımacılık's "günlük tren saatleri" page and press summaries of it.
-# Update when TCDD changes the timetable (ETL warns after 180 days).
+# Marmaray. No machine-readable source exists. First and last trains come from
+# TCDD Taşımacılık (published on its "günlük tren saatleri" page); the per-station
+# times of the last weekday train and the service pattern are taken from
+# marmaray.istanbul's June 2026 table, which copies TCDD's first/last trains.
+# Intermediate trains are generated from the stated headways, so everything is
+# labelled "tarifeye göre". Update when TCDD changes the timetable (ETL warns
+# after 180 days).
 id: marmaray
 checked: 2026-09-26
 sources:
   - https://www.tcddtasimacilik.gov.tr/marmaray/tr/gunluk_tren_saatleri
-  - https://www.birgun.net/haber/marmaray-saatleri-2026-halkali-gebze-marmaray-sefer-saatleri-509724
+  - https://marmaray.istanbul/marmaray-saatleri/
 agency: {agency_id: tcdd, agency_name: TCDD Taşımacılık, agency_url: "https://www.tcddtasimacilik.gov.tr/marmaray"}
 route: {route_short_name: Marmaray, route_long_name: Halkalı - Gebze, route_type: 2, route_color: "0072BC"}
 osm_relation: 9987139          # "Marmaray: Halkalı - Gebze": stations and geometry
-line_minutes: 115              # Halkalı -> Gebze end to end
+line_minutes: 108              # fallback only; stop_times below give per-station minutes
+# Clock times of the last weekday train at each station, per direction (key: terminal).
+# Only differences matter. Terminal arrivals (Gebze, Halkalı) are +2 / +3 min after the
+# previous station, as the source lists departures only.
+stop_times:
+  Gebze:
+    Halkalı: "23:28"
+    Mustafa Kemal: "23:31"
+    Küçükçekmece: "23:33"
+    Florya: "23:36"
+    Akvaryum: "23:38"
+    Yeşilköy: "23:41"
+    Yeşilyurt: "23:43"
+    Ataköy: "23:46"
+    Bakırköy: "23:49"
+    Yenimahalle: "23:51"
+    Zeytinburnu: "23:54"
+    Kazlıçeşme: "23:56"
+    Yenikapı: "00:00"
+    Sirkeci: "00:03"
+    Üsküdar: "00:07"
+    Ayrılık Çeşmesi: "00:11"
+    Söğütlü Çeşme: "00:14"
+    Feneryolu: "00:16"
+    Göztepe: "00:18"
+    Erenköy: "00:20"
+    Suadiye: "00:23"
+    Bostancı: "00:25"
+    Küçükyalı: "00:28"
+    İdealtepe: "00:30"
+    Süreyya Plajı: "00:32"
+    Maltepe: "00:34"
+    Cevizli: "00:37"
+    Atalar: "00:39"
+    Başak: "00:41"
+    Kartal: "00:43"
+    Yunus: "00:46"
+    Pendik: "00:49"
+    Kaynarca: "00:52"
+    Tersane: "00:54"
+    Güzelyalı: "00:56"
+    Aydıntepe: "00:58"
+    İçmeler: "01:00"
+    Tuzla: "01:03"
+    Çayırova: "01:06"
+    Fatih: "01:09"
+    Osmangazi: "01:11"
+    Darıca: "01:13"
+    Gebze: "01:15"
+  Halkalı:
+    Gebze: "23:20"
+    Darıca: "23:22"
+    Osmangazi: "23:24"
+    Fatih: "23:26"
+    Çayırova: "23:28"
+    Tuzla: "23:32"
+    İçmeler: "23:35"
+    Aydıntepe: "23:37"
+    Güzelyalı: "23:39"
+    Tersane: "23:41"
+    Kaynarca: "23:43"
+    Pendik: "23:46"
+    Yunus: "23:49"
+    Kartal: "23:52"
+    Başak: "23:54"
+    Atalar: "23:56"
+    Cevizli: "23:58"
+    Maltepe: "00:01"
+    Süreyya Plajı: "00:03"
+    İdealtepe: "00:05"
+    Küçükyalı: "00:07"
+    Bostancı: "00:10"
+    Suadiye: "00:12"
+    Erenköy: "00:15"
+    Göztepe: "00:17"
+    Feneryolu: "00:19"
+    Söğütlü Çeşme: "00:22"
+    Ayrılık Çeşmesi: "00:25"
+    Üsküdar: "00:29"
+    Sirkeci: "00:33"
+    Yenikapı: "00:36"
+    Kazlıçeşme: "00:40"
+    Zeytinburnu: "00:42"
+    Yenimahalle: "00:45"
+    Bakırköy: "00:47"
+    Ataköy: "00:49"
+    Yeşilyurt: "00:52"
+    Yeşilköy: "00:54"
+    Akvaryum: "00:57"
+    Florya: "00:59"
+    Küçükçekmece: "01:02"
+    Mustafa Kemal: "01:05"
+    Halkalı: "01:08"
 patterns:
+  # Main line every 15 min. Friday and Saturday nights: four extra trains every 30 min.
   - from: Halkalı
     to: Gebze
-    periods: [{start: "05:58", end: "22:58", headway: 15}]
-    reverse_periods: [{start: "06:05", end: "22:50", headway: 15}]
+    periods:
+      - {start: "05:58", end: "23:28", headway: 15}
+      - {start: "23:58", end: "01:28", headway: 30, days: [friday, saturday]}
+    reverse_periods:
+      - {start: "06:05", end: "23:20", headway: 15}
+      - {start: "23:50", end: "01:20", headway: 30, days: [friday, saturday]}
+  # Short trains between Ataköy and Pendik, half-way between main trains, giving
+  # a train about every 8 min on the core. Exact first/last short trains are not
+  # published; these follow the stated pattern.
   - from: Ataköy
     to: Pendik
-    # Extra trains between Ataköy and Pendik, offset from the main pattern.
-    periods: [{start: "06:06", end: "22:36", headway: 15}]
-    reverse_periods: [{start: "06:13", end: "22:43", headway: 15}]
+    periods: [{start: "06:08", end: "22:38", headway: 15}]
+    reverse_periods: [{start: "06:08", end: "20:38", headway: 15}]
+  # From 20:50 on, trains starting at Pendik end at Zeytinburnu.
+  - from: Zeytinburnu
+    to: Pendik
+    reverse_periods: [{start: "20:53", end: "22:38", headway: 15}]

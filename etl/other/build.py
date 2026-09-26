@@ -46,10 +46,37 @@ def departures(periods: list[dict]) -> list[int]:
     out = []
     for p in periods:
         m, end = minutes(p["start"]), minutes(p["end"])
+        if end < m:  # runs past midnight: GTFS times above 24:00
+            end += 24 * 60
         while m <= end:
             out.append(m)
             m += p["headway"]
     return sorted(set(out))
+
+
+SERVICE_DAYS = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
+
+
+def service_id(period: dict) -> str:
+    """Periods run every day unless they list their days (for example Friday and Saturday nights)."""
+    days = period.get("days")
+    return "oth_daily" if not days else "oth_" + "_".join(d[:3] for d in days)
+
+
+def station_minutes(cfg: dict, stops: list[dict], along: np.ndarray) -> dict[int, np.ndarray]:
+    """Official clock times of one train per direction (key: its terminal stop index) turned into
+    minutes from the first stop; stops the source does not list are interpolated by distance."""
+    out = {}
+    for term, times in (cfg.get("stop_times") or {}).items():
+        known: dict[int, float] = {}
+        base = None
+        for name, t in times.items():
+            m = minutes(t)
+            base = m if base is None else base
+            known[find_stop(name, stops)] = (m - base) % (24 * 60)
+        idx = sorted(known, key=lambda i: along[i])
+        out[find_stop(term, stops)] = np.interp(along, [along[i] for i in idx], [known[i] for i in idx])
+    return out
 
 
 def find_stop(name: str, stops: list[dict]) -> int:
@@ -89,22 +116,31 @@ def build_manual(cfg: dict, rel: dict, today: dt.date, warnings: list[str]) -> d
     out["stops"] = [{"stop_id": i, "stop_name": s["name"], "stop_lat": round(s["lat"], 7),
                      "stop_lon": round(s["lon"], 7)} for i, s in zip(sid, stops)]
     full_len = abs(along[-1] - along[0]) or 1
+    timed = station_minutes(cfg, stops, along)
 
     for pi, p in enumerate(cfg["patterns"]):
         ia, ib = find_stop(p["from"], stops), find_stop(p["to"], stops)
         span = abs(along[ib] - along[ia]) or 1
         run = p.get("minutes") or cfg["line_minutes"] * span / full_len
-        for di, (i0, i1, periods) in enumerate([(ia, ib, p["periods"]),
-                                                (ib, ia, p.get("reverse_periods", p["periods"]))]):
+        for di, (i0, i1, periods) in enumerate([(ia, ib, p.get("periods", [])),
+                                                (ib, ia, p.get("reverse_periods", p.get("periods", [])))]):
+            if not periods:
+                continue
             idx = list(range(i0, i1 + 1)) if i0 < i1 else list(range(i0, i1 - 1, -1))
-            offs = [abs(along[i] - along[i0]) / span * run * 60 for i in idx]
+            # Official per-stop minutes of a train heading the same way, else proportional to distance.
+            table = next((m for m in timed.values() if m[i1] > m[i0]), None)
+            if table is not None:
+                offs = [(table[i] - table[i0]) * 60 for i in idx]
+            else:
+                offs = [abs(along[i] - along[i0]) / span * run * 60 for i in idx]
             shape_id = f"{route_id}_{pi}_{di}"
             geom = shape_for_stops([line], [(stops[i]["lat"], stops[i]["lon"]) for i in idx], max_offset_m=600)
             out["shapes"] += [{"shape_id": shape_id, "shape_pt_lat": round(x[0], 6), "shape_pt_lon": round(x[1], 6),
                                "shape_pt_sequence": k} for k, x in enumerate(geom)]
-            for m in departures(periods):
-                tid = f"{shape_id}_{m:04d}"
-                out["trips"].append({"route_id": route_id, "service_id": "oth_daily", "trip_id": tid,
+            trips = sorted({(m, service_id(per)) for per in periods for m in departures([per])})
+            for m, sv in trips:
+                tid = f"{shape_id}_{m:04d}" + ("" if sv == "oth_daily" else sv[3:])
+                out["trips"].append({"route_id": route_id, "service_id": sv, "trip_id": tid,
                                      "trip_headsign": stops[i1]["name"], "direction_id": di, "shape_id": shape_id})
                 out["stop_times"] += [{"trip_id": tid, "arrival_time": hms(m * 60 + o), "departure_time": hms(m * 60 + o),
                                        "stop_id": sid[i], "stop_sequence": k + 1} for k, (i, o) in enumerate(zip(idx, offs))]
@@ -195,9 +231,10 @@ def build(out: Path, osm: Path, today: dt.date) -> dict:
             continue
         for k, v in build_manual(cfg, rel, today, warnings).items():
             tables[k] += v
-    tables["calendar"].append({"service_id": "oth_daily", "monday": 1, "tuesday": 1, "wednesday": 1, "thursday": 1,
-                               "friday": 1, "saturday": 1, "sunday": 1, "start_date": today.strftime("%Y%m%d"),
-                               "end_date": (today + dt.timedelta(days=VALID_DAYS)).strftime("%Y%m%d")})
+    for sv in sorted({t["service_id"] for t in tables["trips"]}):
+        tables["calendar"].append({"service_id": sv, **{d: int(sv == "oth_daily" or f"_{d[:3]}" in sv) for d in SERVICE_DAYS},
+                                   "start_date": today.strftime("%Y%m%d"),
+                                   "end_date": (today + dt.timedelta(days=VALID_DAYS)).strftime("%Y%m%d")})
     for k, v in build_ferries(today).items():
         tables[k] += v
     # Agencies: one row per id, GTFS requires timezone.
