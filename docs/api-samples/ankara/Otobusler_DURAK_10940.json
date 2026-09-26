@@ -1,0 +1,92 @@
+{
+ "table": [
+  {
+   "arac_no": "-",
+   "sure": "Sonraki Hareket Saati İlk Duraktan\n22:08 / 3 dk Sonra",
+   "detay": "",
+   "hat_kod": "263-7",
+   "hat_no": "263-7",
+   "hat_kisa_kod": "263-7",
+   "hat_ad": "(ÖHO) ETLİK-AŞAĞI EĞLENCE-BAKANLIK-BALGAT"
+  },
+  {
+   "arac_no": "37-094",
+   "plaka_no": "06 HO 1214",
+   "lat": "39.95417",
+   "lng": "32.85479",
+   "hiz": "49",
+   "durak_no": "40131",
+   "onceki_durak_no": "40129",
+   "hat_no": "263-7",
+   "konum_tarihi": "26.09.2026 22:04:21",
+   "durak_sira_no": "21",
+   "aci": "135",
+   "doluluk": {
+    "message": "no data"
+   },
+   "detay": "-",
+   "trafik": {
+    "label": "Normal",
+    "trafficLevel": "normal",
+    "avgDelayMinutes": 0.7,
+    "avgDelayText": "0.7",
+    "reason": "normal",
+    "lastSeenUtc": "2026-09-26T19:02:26.5Z"
+   },
+   "saniye": "2119",
+   "sure": "36 dk",
+   "secili_durak_no": "10940",
+   "secili_durak_sira_no": "57",
+   "yon": "3",
+   "durum": "",
+   "konum": "-",
+   "hat_kod": "263-7",
+   "hat_ad": "(ÖHO) ETLİK-AŞAĞI EĞLENCE-BAKANLIK-BALGAT"
+  },
+  {
+   "arac_no": "37-098",
+   "plaka_no": "06 HO 1220",
+   "lat": "40.014862",
+   "lng": "32.824001",
+   "hiz": "0",
+   "durak_no": "20855",
+   "onceki_durak_no": "",
+   "hat_no": "263-7",
+   "konum_tarihi": "26.09.2026 22:01:51",
+   "durak_sira_no": "1",
+   "aci": "114",
+   "doluluk": {
+    "message": "no data"
+   },
+   "detay": "-",
+   "trafik": {
+    "label": "Normal",
+    "trafficLevel": "normal",
+    "avgDelayMinutes": 0.1,
+    "avgDelayText": "0.1",
+    "reason": "normal",
+    "lastSeenUtc": "2026-09-26T19:01:23.753Z"
+   },
+   "saniye": "3180",
+   "sure": "53 dk",
+   "secili_durak_no": "10940",
+   "secili_durak_sira_no": "57",
+   "yon": "3",
+   "durum": "",
+   "konum": "-",
+   "hat_kod": "263-7",
+   "hat_ad": "(ÖHO) ETLİK-AŞAĞI EĞLENCE-BAKANLIK-BALGAT"
+  },
+  {
+   "arac_no": "-",
+   "sure": "Sonraki Hareket Saati İlk Duraktan\n22:40 / 35 dk Sonra",
+   "detay": "",
+   "hat_kod": "481",
+   "hat_no": "481",
+   "hat_kisa_kod": "481",
+   "hat_ad": "UYANIŞ-ASFALT-15 TEMMUZ KIZILAY MİLLİ İRADE MEYDANI-BALGAT-CEYHUN A.K.CAD"
+  }
+ ],
+ "message": "",
+ "status": "TRUE"
+}
