@@ -17,3 +17,9 @@ export const ISTANBUL_BOUNDS: [[number, number], [number, number]] = [
 
 // MOTIS prefixes stop ids with the dataset name from infra/motis/config.yml.
 export const MOTIS_STOP_PREFIX = 'istanbul_'
+
+export const REPO_URL = 'https://github.com/rehagorkemeyler/GitGel'
+export const ISSUES_URL = `${REPO_URL}/issues/new`
+// Filled in once Görkem decides; empty hides the row.
+export const CONTACT_EMAIL: string = import.meta.env.VITE_CONTACT_EMAIL ?? ''
+export const DONATE_URL: string = import.meta.env.VITE_DONATE_URL ?? ''
