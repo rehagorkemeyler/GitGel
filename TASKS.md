@@ -96,11 +96,12 @@ Bitti sayılması için: noktalar hat üzerinde düzgün hareket ediyor, etiketl
 - [x] etl/ankara: durak koordinatları: OSM yerine doğrudan EGO'dan (tam koordinat)
 - [x] etl/ankara: otobüs güzergah geometrisi: EGO'nun kendi güzergah çizgisi; yoksa sıralı duraklardan
 - [x] etl/ankara: Ankara GTFS (stops, routes, trips, stop_times, shapes, calendar) + gtfs-validator; metro ve Ankaray dahil (validator hatasız)
-- [ ] MOTIS'e Ankara OSM kesiti ve GTFS'i ekle, Ankara test yolculukları
+- [x] MOTIS'e Ankara OSM kesiti ve GTFS'i ekle (OSM temizleme adımıyla), Ankara test yolculuğu: Kızılay → AŞTİ (442 veya Ankaray)
+- [x] app: Ankara'da rota araması, raylı istasyonlarda ve hat sayfasında tarifeye göre kalkışlar, metro/Ankaray/Başkentray tahmini noktaları
 - [x] app: şehir seçici (İstanbul, Ankara), harita başlangıç görünümü; ilk açılışta şehir dışındaysan "Şehir seç", sonra "...'da değilsin, örnek konum seç"; alt menüde "Şehir değiştir"
 - [x] app: Ankara raylı hatları resmi renkleriyle, otobüs güzergahları daha ince ve soluk çizgiyle; hat seçilince öne çıksın
 - [x] app: Ankara durak kartı: canlı "kaç dk kaç sn var" listesi (plaka, kaç durak önce, engelli/körüklü)
-- [ ] app: Ankara durak kartında canlı yoksa "tarifeye göre" saatler (MOTIS'te Ankara olunca)
+- [x] app: Ankara durak kartında canlı yoksa sonraki sefer ("Diğer hatlar": ilk duraktan kalkış ya da yarının ilk seferi)
 - [x] app: Ankara canlı otobüs noktaları (hat sayfasında), iki ölçüm arasında yumuşak kaydırma
 - [ ] app: canlı otobüs noktasında "x sn önce"
 - [x] Hakkında ekranına Ankara atıfları (EGO, EGO Mac, OpenStreetMap katkıcıları)
