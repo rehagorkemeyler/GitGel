@@ -158,14 +158,15 @@ def build(gtfs: Path, out: Path) -> dict:
             if abs(e[2] - lat) < 0.004 and abs(e[3] - lon) < 0.005:
                 if MODE_RANK.get(mode, 9) < MODE_RANK.get(e[4], 9):
                     e[4] = mode
-                e[5] += [by_id[l]["name"] for l in lids if by_id[l]["name"] not in e[5]]
+                e[5] += [l for l in lids if l not in e[5]]
                 break
         else:
-            e = [name, key, lat, lon, mode, [by_id[l]["name"] for l in lids]]
+            e = [name, key, lat, lon, mode, list(lids)]
             places[key].append(e)
             search.append(e)
+    # Rail first in the chips, then by line name; store short names.
     for e in search:
-        e[5] = e[5][:8]
+        e[5] = [by_id[l]["name"] for l in sorted(set(e[5]), key=lambda l: (MODE_RANK.get(by_id[l]["mode"], 9), natural(by_id[l]["name"])))][:8]
     # Stations first, then by name, so prefix matches favour rail.
     search.sort(key=lambda x: (MODE_RANK.get(x[4], 9), x[1]))
 
