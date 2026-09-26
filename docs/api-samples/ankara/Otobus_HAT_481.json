@@ -1,0 +1,117 @@
+{
+ "table": [
+  {
+   "arac_no": "-",
+   "sure": "Sonraki Hareket Saati İlk Duraktan\n22:40 / 35 dk Sonra",
+   "detay": "",
+   "hat_kod": "481",
+   "hat_no": "481",
+   "hat_kisa_kod": "481",
+   "hat_ad": "UYANIŞ-ASFALT-15 TEMMUZ KIZILAY MİLLİ İRADE MEYDANI-BALGAT-CEYHUN A.K.CAD"
+  },
+  {
+   "arac_no": "26-412",
+   "plaka_no": "06 GCC 576",
+   "lat": "40.007271",
+   "lng": "32.865051",
+   "hiz": "27",
+   "durak_no": "21070",
+   "onceki_durak_no": "21067",
+   "hat_no": "481",
+   "konum_tarihi": "26.09.2026 22:04:13",
+   "durak_sira_no": "7",
+   "aci": "137",
+   "doluluk": {
+    "message": "no data"
+   },
+   "detay": "Körüklü‚ Engelli",
+   "trafik": {
+    "label": "Normal",
+    "trafficLevel": "normal",
+    "avgDelayMinutes": 0.5,
+    "avgDelayText": "0.5",
+    "reason": "normal",
+    "lastSeenUtc": "2026-09-26T19:03:30.683Z"
+   },
+   "saniye": "999999",
+   "sure": "T.V.Süresi",
+   "secili_durak_no": "",
+   "secili_durak_sira_no": "1",
+   "yon": "3",
+   "durum": "",
+   "konum": "-",
+   "hat_kod": "481",
+   "hat_ad": "UYANIŞ-ASFALT-15 TEMMUZ KIZILAY MİLLİ İRADE MEYDANI-BALGAT-CEYHUN A.K.CAD"
+  },
+  {
+   "arac_no": "12-423",
+   "plaka_no": "06 DV 5788",
+   "lat": "39.909233",
+   "lng": "32.817589",
+   "hiz": "0",
+   "durak_no": "10880",
+   "onceki_durak_no": "10991",
+   "hat_no": "481",
+   "konum_tarihi": "26.09.2026 22:03:39",
+   "durak_sira_no": "34",
+   "aci": "239",
+   "doluluk": {
+    "message": "no data"
+   },
+   "detay": "Körüklü‚ Engelli",
+   "trafik": {
+    "label": "Normal",
+    "trafficLevel": "normal",
+    "avgDelayMinutes": 0.8,
+    "avgDelayText": "0.8",
+    "reason": "normal",
+    "lastSeenUtc": "2026-09-26T19:03:29.007Z"
+   },
+   "saniye": "999999",
+   "sure": "T.V.Süresi",
+   "secili_durak_no": "",
+   "secili_durak_sira_no": "1",
+   "yon": "5",
+   "durum": "",
+   "konum": "-",
+   "hat_kod": "481",
+   "hat_ad": "UYANIŞ-ASFALT-15 TEMMUZ KIZILAY MİLLİ İRADE MEYDANI-BALGAT-CEYHUN A.K.CAD"
+  },
+  {
+   "arac_no": "12-447",
+   "plaka_no": "06 DT 9931",
+   "lat": "39.941597",
+   "lng": "32.85461",
+   "hiz": "0",
+   "durak_no": "30386",
+   "onceki_durak_no": "30384",
+   "hat_no": "481",
+   "konum_tarihi": "26.09.2026 22:04:13",
+   "durak_sira_no": "78",
+   "aci": "37",
+   "doluluk": {
+    "message": "no data"
+   },
+   "detay": "Körüklü‚ Engelli",
+   "trafik": {
+    "label": "Normal",
+    "trafficLevel": "normal",
+    "avgDelayMinutes": 0.3,
+    "avgDelayText": "0.3",
+    "reason": "normal",
+    "lastSeenUtc": "2026-09-26T19:02:26.873Z"
+   },
+   "saniye": "999999",
+   "sure": "T.V.Süresi",
+   "secili_durak_no": "",
+   "secili_durak_sira_no": "1",
+   "yon": "1",
+   "durum": "",
+   "konum": "-",
+   "hat_kod": "481",
+   "hat_ad": "UYANIŞ-ASFALT-15 TEMMUZ KIZILAY MİLLİ İRADE MEYDANI-BALGAT-CEYHUN A.K.CAD"
+  }
+ ],
+ "message": "",
+ "status": "TRUE"
+}
