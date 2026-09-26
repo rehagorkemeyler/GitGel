@@ -32,3 +32,7 @@ def test_service_minutes_puts_night_after_evening():
     from static.build import service_minutes
     assert sorted(["00:00:00", "06:00:00", "23:51:00", "01:30:00"], key=service_minutes) == \
         ["06:00:00", "23:51:00", "00:00:00", "01:30:00"]
+
+
+def test_title_tr_passes_through_missing_values():
+    assert title_tr(float("nan")) != title_tr("X") and title_tr(None) is None
