@@ -53,6 +53,20 @@ Bitti sayılması için: test yolculuklarının hepsi internetten erişilebilen 
 
 Bitti sayılması için: gerçek telefonda 5 saniye kuralını geçiyor.
 
+## Aşama 3b: Görkem'in ilk telefon geri bildirimi (26 Eylül 2026)
+
+- [ ] Rota sonuçları sürekli yeniden aranıp titriyor (konum güncellemesi her seferinde yeni arama başlatıyor)
+- [ ] İstanbul dışındaki konumda harita kayboluyor; test için "örnek konum seç" butonu (ortadaki pini sürükle, onayla, oturum boyunca konum o kabul edilsin)
+- [ ] Aksama bandı: küçük hali yazıyla orantılı ve tutarlı olsun
+- [ ] Alt panel sadece çizgiden değil her yerinden sürüklenebilsin
+- [ ] "Hat ve sefer ara" ikonu "Yakın duraklar" ile aynı boyut ve ağırlıkta olsun
+- [ ] Dil seçeneği (TR/EN) ana panelin sağ alt köşesinde
+- [ ] Rota aramasında çıkış günü ve saati seçimi
+- [ ] Haritada raylı sistem, tramvay, füniküler, teleferik ve vapur hatları resmi renkleriyle çizili
+- [ ] Haritada istasyon ve durak işaretleri; dokununca alttan istasyon kartı: ad, yol tarifi butonu, geçen hatlar, hat ve yön bazında sonraki varışlar (otobüs durakları dahil)
+- [ ] Hat sayfası: üst yarıda hattın haritada renkli çizimi, altta kaydırılabilir bilgi; durağa dokununca o durağa her seferin varış saatleri
+- [ ] Haritadaki tren halkasına dokununca bilgi: hat, yön, hangi istasyondan hangisine, tahmini varış
+
 ## Aşama 4: Canlı katman
 
 - [x] live servisi: İETT hat bazlı araç konumu (istek üzerine ve önbellekli), Metro İstanbul hizmet durumu ve duyurular
