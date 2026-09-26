@@ -5,6 +5,8 @@ import { plan, type Itinerary } from '../lib/api'
 import { hhmm, pickOptions, summarize } from '../lib/itinerary'
 import type { Place } from '../lib/search'
 import { t } from '../i18n'
+import { WhenPicker } from '../components/WhenPicker'
+import type { When } from '../lib/when'
 import './Results.css'
 
 type Props = {
@@ -20,7 +22,9 @@ type State = { key: string } & ({ status: 'loading' } | { status: 'error' } | { 
 
 export function Results({ from, to, onEditFrom, onEditTo, onClose, onOpen }: Props) {
   const [attempt, setAttempt] = useState(0)
-  const key = from ? `${from.lat},${from.lon}>${to.lat},${to.lon}#${attempt}` : ''
+  const [when, setWhen] = useState<When>({ kind: 'now' })
+  const whenKey = when.kind === 'now' ? 'now' : `${when.kind}@${when.at.getTime()}`
+  const key = from ? `${from.lat},${from.lon}>${to.lat},${to.lon}#${attempt}#${whenKey}` : ''
   const [raw, setState] = useState<State>({ key: '', status: 'loading' })
   // A new query shows "loading" once; the same query never flickers.
   const state: State = raw.key === key ? raw : { key, status: 'loading' }
@@ -28,7 +32,8 @@ export function Results({ from, to, onEditFrom, onEditTo, onClose, onOpen }: Pro
   useEffect(() => {
     if (!from) return
     let alive = true
-    plan(from, to).then(
+    const at = when.kind === 'now' ? new Date() : when.at
+    plan(from, to, at, when.kind === 'arrive').then(
       (its) => alive && setState({ key, status: 'ok', options: pickOptions(its) }),
       () => alive && setState({ key, status: 'error' }),
     )
@@ -55,6 +60,9 @@ export function Results({ from, to, onEditFrom, onEditTo, onClose, onOpen }: Pro
         </button>
       </div>
 
+      <div className="when-row">
+        <WhenPicker value={when} onChange={setWhen} />
+      </div>
       {!from && <p className="muted pad">{t('pickOrigin')}</p>}
       {from && state.status === 'loading' && <p className="muted pad">{t('searchingRoutes')}</p>}
       {from && state.status === 'error' && (

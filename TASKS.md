@@ -61,7 +61,7 @@ Bitti sayılması için: gerçek telefonda 5 saniye kuralını geçiyor.
 - [x] Alt panel sadece çizgiden değil her yerinden sürüklenebilsin
 - [x] "Hat ve sefer ara" ikonu "Yakın duraklar" ile aynı boyut ve ağırlıkta olsun
 - [x] Dil seçeneği (TR/EN) ana panelin sağ alt köşesinde
-- [ ] Rota aramasında çıkış günü ve saati seçimi
+- [x] Rota aramasında çıkış günü ve saati seçimi
 - [ ] Haritada raylı sistem, tramvay, füniküler, teleferik ve vapur hatları resmi renkleriyle çizili
 - [ ] Haritada istasyon ve durak işaretleri; dokununca alttan istasyon kartı: ad, yol tarifi butonu, geçen hatlar, hat ve yön bazında sonraki varışlar (otobüs durakları dahil)
 - [ ] Hat sayfası: üst yarıda hattın haritada renkli çizimi, altta kaydırılabilir bilgi; durağa dokununca o durağa her seferin varış saatleri
