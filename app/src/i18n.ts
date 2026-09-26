@@ -69,6 +69,18 @@ const tr = {
   serviceNotice: 'seferlerde aksama var',
   scheduledHidden: 'Bu hatların tarifeye göre tren noktaları gizlendi.',
   legend: 'Harita işaretleri',
+  about: 'Hakkında',
+  aboutIntro: 'GitGel, İstanbul\'un herkese açık ulaşım verisini sade bir araçla sunar. Ücretsiz, reklamsız, üyeliksiz.',
+  aboutSources: 'Veri kaynakları',
+  aboutTimetables: 'İETT ve vapur tarifeleri, İBB Açık Veri Lisansı',
+  aboutRail: 'Raylı sistem hatları, tarifeleri, hizmet durumu',
+  aboutBus: 'Canlı otobüs ve metrobüs konumları',
+  aboutMap: 'Harita, hat geometrisi, yürüme yolları (ODbL)',
+  aboutTiles: 'Harita görüntüsü',
+  aboutRouting: 'Rota motoru (MIT lisansı)',
+  aboutLicense: 'Veriler İBB Açık Veri Lisansı ve ODbL koşullarıyla, olduğu gibi kullanılır. Kaynaklar kesintiye uğrayabilir; o durumda son iyi veri gösterilir.',
+  aboutHonesty: 'Otobüs ve metrobüs noktaları İETT GPS verisinden gelir ve "canlı" yazar. Raylı sistem noktaları tarifeden hesaplanır, içi boş gösterilir ve "tarifeye göre" yazar.',
+  aboutPrivacy: 'Konumun sadece telefonunda kullanılır. Son aramalar sadece bu cihazda saklanır. İzleme, reklam ya da analiz aracı yoktur.',
 }
 
 export type StringKey = keyof typeof tr
@@ -142,6 +154,18 @@ const en: Record<StringKey, string> = {
   serviceNotice: 'service disruption',
   scheduledHidden: 'Scheduled train dots for these lines are hidden.',
   legend: 'Map symbols',
+  about: 'About',
+  aboutIntro: 'GitGel presents Istanbul\'s public transit data in a simple tool. Free, no ads, no account.',
+  aboutSources: 'Data sources',
+  aboutTimetables: 'İETT and ferry timetables, İBB Open Data License',
+  aboutRail: 'Rail lines, timetables, service status',
+  aboutBus: 'Live bus and Metrobüs positions',
+  aboutMap: 'Map, line geometry, walking paths (ODbL)',
+  aboutTiles: 'Map tiles',
+  aboutRouting: 'Routing engine (MIT license)',
+  aboutLicense: 'Data is used as is under the İBB Open Data License and the ODbL. Sources can go down; the last good data is shown then.',
+  aboutHonesty: 'Bus and Metrobüs dots come from İETT GPS and are labelled "live". Rail dots are computed from timetables, drawn hollow and labelled "scheduled".',
+  aboutPrivacy: 'Your location is only used on your phone. Recent searches stay on this device. No tracking, ads or analytics.',
 }
 
 export const lang: 'tr' | 'en' =
