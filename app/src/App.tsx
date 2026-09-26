@@ -6,6 +6,7 @@ import { Icon } from './components/Icon'
 import { HomePeek } from './screens/Home'
 import { SearchPanel } from './screens/SearchPanel'
 import { Results } from './screens/Results'
+import { RouteDetail } from './screens/RouteDetail'
 import { useGeolocation } from './lib/useGeolocation'
 import type { Place } from './lib/search'
 import type { Itinerary } from './lib/api'
@@ -27,7 +28,7 @@ export function App() {
   const [expanded, setExpanded] = useState(false)
   const [to, setTo] = useState<Place | null>(null)
   const [fromChoice, setFromChoice] = useState<Place | null>(null)
-  const [, setOpen] = useState<Itinerary | null>(null)
+  const [open, setOpen] = useState<Itinerary | null>(null)
   const geo = useGeolocation()
 
   const me = useMemo<Place | null>(
@@ -44,7 +45,7 @@ export function App() {
 
   return (
     <>
-      <MapView position={geo.position} />
+      <MapView position={geo.position} route={open} bottomInset={Math.round(window.innerHeight * 0.45)} />
       <button className="locate" onClick={geo.start} aria-label={t('locateMe')}>
         <Icon name="locate" />
       </button>
@@ -58,13 +59,16 @@ export function App() {
         expanded={expanded}
         onExpandedChange={setExpanded}
         peek={
-          to ? (
+          open ? (
+            <RouteDetail it={open} onBack={() => setOpen(null)} />
+          ) : to ? (
             <Results
               from={from}
               to={to}
               onEditFrom={() => openSearch('from')}
               onEditTo={() => openSearch('to')}
               onClose={() => {
+                setOpen(null)
                 setTo(null)
                 setFromChoice(null)
               }}

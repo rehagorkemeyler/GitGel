@@ -5,6 +5,8 @@ import 'maplibre-gl/dist/maplibre-gl.css'
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url'
 import { ISTANBUL_BOUNDS, ISTANBUL_CENTER, MAP_STYLE } from '../lib/config'
 import { useColorScheme } from '../lib/useColorScheme'
+import type { Itinerary } from '../lib/api'
+import { showRoute } from './routeLayer'
 import './MapView.css'
 
 // Vite bundles MapLibre's module worker separately; tell MapLibre where it is.
@@ -13,14 +15,22 @@ maplibregl.setWorkerUrl(workerUrl)
 type Props = {
   /** User position [lon, lat], when known. */
   position?: [number, number] | null
+  /** Itinerary to draw, or null. */
+  route?: Itinerary | null
+  /** Height covered by the bottom sheet, so the route is framed above it. */
+  bottomInset?: number
   onReady?: (map: MlMap) => void
 }
 
-export function MapView({ position, onReady }: Props) {
+export function MapView({ position, route = null, bottomInset = 0, onReady }: Props) {
   const container = useRef<HTMLDivElement>(null)
   const map = useRef<MlMap | null>(null)
   const marker = useRef<maplibregl.Marker | null>(null)
   const scheme = useColorScheme()
+  const routeRef = useRef<Itinerary | null>(null)
+  const insetRef = useRef(0)
+  routeRef.current = route
+  insetRef.current = bottomInset
 
   useEffect(() => {
     if (!container.current) return
@@ -41,6 +51,8 @@ export function MapView({ position, onReady }: Props) {
     m.touchZoomRotate.disableRotation()
     map.current = m
     m.once('load', () => onReady?.(m))
+    // setStyle (theme change) drops our layers: add the route back.
+    m.on('style.load', () => showRoute(m, routeRef.current, insetRef.current))
     return () => {
       m.remove()
       map.current = null
@@ -55,13 +67,18 @@ export function MapView({ position, onReady }: Props) {
 
   useEffect(() => {
     const m = map.current
+    if (m?.isStyleLoaded()) showRoute(m, route, insetRef.current)
+  }, [route])
+
+  useEffect(() => {
+    const m = map.current
     if (!m || !position) return
     if (!marker.current) {
       const el = document.createElement('div')
       el.className = 'me-dot'
       el.setAttribute('aria-label', 'Konumun')
       marker.current = new maplibregl.Marker({ element: el }).setLngLat(position).addTo(m)
-      m.jumpTo({ center: position, zoom: 15 })
+      if (!routeRef.current) m.jumpTo({ center: position, zoom: 15 })
     } else {
       marker.current.setLngLat(position)
     }
