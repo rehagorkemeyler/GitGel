@@ -8,6 +8,7 @@ import { RouteDetail } from './screens/RouteDetail'
 import { Nearby } from './screens/Nearby'
 import { Lines } from './screens/Lines'
 import { Contact, Support } from './screens/Info'
+import { About } from './screens/About'
 import { useGeolocation } from './lib/useGeolocation'
 import type { Place } from './lib/search'
 import type { Itinerary } from './lib/api'
@@ -20,7 +21,7 @@ import './App.css'
 // The map (MapLibre, the biggest chunk) loads in parallel; the panel is usable at once.
 const MapView = lazy(() => import('./map/MapView').then((m) => ({ default: m.MapView })))
 
-export type Screen = 'home' | 'search' | 'nearby' | 'lines' | 'contact' | 'support'
+export type Screen = 'home' | 'search' | 'nearby' | 'lines' | 'contact' | 'support' | 'about'
 
 
 export function App() {
@@ -138,7 +139,8 @@ export function App() {
       )}
       {screen === 'nearby' && <Nearby position={geo.position} onLocate={geo.start} onBack={() => setScreen('home')} />}
       {screen === 'lines' && <Lines onBack={() => setScreen('home')} />}
-      {screen === 'contact' && <Contact onBack={() => setScreen('home')} />}
+      {screen === 'contact' && <Contact onBack={() => setScreen('home')} onAbout={() => setScreen('about')} />}
+      {screen === 'about' && <About onBack={() => setScreen('contact')} />}
       {screen === 'support' && <Support onBack={() => setScreen('home')} />}
     </>
   )

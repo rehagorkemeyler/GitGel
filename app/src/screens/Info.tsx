@@ -3,7 +3,7 @@ import { CONTACT_EMAIL, DONATE_URL, ISSUES_URL, REPO_URL } from '../lib/config'
 import { t } from '../i18n'
 import './Info.css'
 
-export function Contact({ onBack }: { onBack: () => void }) {
+export function Contact({ onBack, onAbout }: { onBack: () => void; onAbout: () => void }) {
   return (
     <Panel title={t('contact')} onBack={onBack}>
       <p>{t('contactIntro')}</p>
@@ -27,6 +27,12 @@ export function Contact({ onBack }: { onBack: () => void }) {
             {t('sourceCode')}
             <small>GitHub</small>
           </a>
+        </li>
+        <li>
+          <button className="link-row" onClick={onAbout}>
+            {t('about')}
+            <small>{t('aboutSources')}</small>
+          </button>
         </li>
       </ul>
     </Panel>
