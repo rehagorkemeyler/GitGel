@@ -173,10 +173,13 @@ def build(lines: list[dict], stops: dict, today: dt.date, out: Path) -> dict:
                     stop_times.append({"trip_id": tid, "arrival_time": ts, "departure_time": ts,
                                        "stop_id": P + s, "stop_sequence": k + 1})
 
+    # Start a day early: the nightly runs after midnight, and yesterday's service day
+    # still has trips after midnight (night buses, weekend night metro).
+    start = today - dt.timedelta(days=1)
     end = today + dt.timedelta(days=VALID_DAYS)
     calendar = [{"service_id": P + s, **dict(zip(
         ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"], d)),
-        "start_date": today.strftime("%Y%m%d"), "end_date": end.strftime("%Y%m%d")} for s, d in SERVICES.items()]
+        "start_date": start.strftime("%Y%m%d"), "end_date": end.strftime("%Y%m%d")} for s, d in SERVICES.items()]
     write(out / "agency.txt", [{"agency_id": "ego", "agency_name": "EGO Genel Müdürlüğü", "agency_url": "https://www.ego.gov.tr",
                                 "agency_timezone": "Europe/Istanbul", "agency_lang": "tr"}])
     write(out / "stops.txt", [{"stop_id": P + s, "stop_code": s, "stop_name": name_tr(stops[s]["name"]),
