@@ -18,6 +18,7 @@ GitGel is a free, open-source (AGPL-3.0), ad-free, account-free Istanbul public 
 1. No pull requests and no waiting for review. Commit and push directly to `main`.
 2. If a push to `main` is rejected, push to your own branch, open a PR and merge it yourself (gh CLI, GitHub MCP tools or the REST API).
 3. Never push with failing build or tests.
+4. Never put session links (Claude-Session or any claude.ai URL) in commit messages, PR descriptions or GitHub comments. Görkem did not allow it.
 
 ## Server access
 
