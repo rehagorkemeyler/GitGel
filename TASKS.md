@@ -55,7 +55,7 @@ Bitti sayılması için: gerçek telefonda 5 saniye kuralını geçiyor.
 
 ## Aşama 4: Canlı katman
 
-- [ ] live servisi: İETT hat bazlı araç konumu (istek üzerine ve önbellekli), Metro İstanbul hizmet durumu ve duyurular
+- [x] live servisi: İETT hat bazlı araç konumu (istek üzerine ve önbellekli), Metro İstanbul hizmet durumu ve duyurular
 - [ ] Uygulamada canlı otobüs ve metrobüs noktaları, iki ölçüm arasında yumuşak kaydırma
 - [ ] Raylı tarife simülasyonu: hat geometrisi üzerinde içi boş noktalar, "tarifeye göre" etiketi
 - [ ] Hat durumu bandı, aksamalı hatta tahmini noktaları gizleme
