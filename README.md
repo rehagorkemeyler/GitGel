@@ -11,11 +11,14 @@
 Free, ad-free, account-free and open-source public transit app for Istanbul.
 
 <p>
-  <img src="docs/screenshots/home.png" width="180" alt="Ana ekran">
-  <img src="docs/screenshots/search.png" width="180" alt="Arama">
-  <img src="docs/screenshots/results.png" width="180" alt="Rota seçenekleri">
-  <img src="docs/screenshots/detail.png" width="180" alt="Rota detayı">
-  <img src="docs/screenshots/line-dark.png" width="180" alt="Hat sayfası, koyu tema">
+  <img src="docs/screenshots/1-home-light.png" width="180" alt="Harita ve hatlar (açık tema)">
+  <img src="docs/screenshots/2-station-light.png" width="180" alt="İstasyon kartı ve sonraki seferler (açık tema)">
+  <img src="docs/screenshots/3-routes-light.png" width="180" alt="Rota seçenekleri (açık tema)">
+</p>
+<p>
+  <img src="docs/screenshots/4-detail-dark.png" width="180" alt="Rota detayı (koyu tema)">
+  <img src="docs/screenshots/5-line-dark.png" width="180" alt="Hat sayfası (koyu tema)">
+  <img src="docs/screenshots/6-map-dark.png" width="180" alt="İstasyon, iskele ve durak simgeleri (koyu tema)">
 </p>
 
 ## Türkçe
