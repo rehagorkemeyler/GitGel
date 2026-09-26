@@ -1,5 +1,4 @@
-import { useMemo, useState } from 'react'
-import { MapView } from './map/MapView'
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
 import { BottomSheet } from './components/BottomSheet'
 import { Icon } from './components/Icon'
 import { HomePeek } from './screens/Home'
@@ -13,7 +12,11 @@ import { useGeolocation } from './lib/useGeolocation'
 import type { Place } from './lib/search'
 import type { Itinerary } from './lib/api'
 import { t } from './i18n'
+import { loadSearchIndex } from './lib/data'
 import './App.css'
+
+// The map (MapLibre, the biggest chunk) loads in parallel; the panel is usable at once.
+const MapView = lazy(() => import('./map/MapView').then((m) => ({ default: m.MapView })))
 
 export type Screen = 'home' | 'search' | 'nearby' | 'lines' | 'contact' | 'support'
 
@@ -26,6 +29,14 @@ export function App() {
   const [fromChoice, setFromChoice] = useState<Place | null>(null)
   const [open, setOpen] = useState<Itinerary | null>(null)
   const geo = useGeolocation()
+
+  // Warm the search index while the user looks at the map.
+  useEffect(() => {
+    const idle = window.requestIdleCallback ?? ((cb: () => void) => setTimeout(cb, 1500))
+    idle(() => {
+      loadSearchIndex().catch(() => {})
+    })
+  }, [])
 
   const me = useMemo<Place | null>(
     () => (geo.position ? { name: t('myLocation'), kind: 'me', lon: geo.position[0], lat: geo.position[1] } : null),
@@ -41,7 +52,9 @@ export function App() {
 
   return (
     <>
-      <MapView position={geo.position} route={open} bottomInset={Math.round(window.innerHeight * 0.45)} />
+      <Suspense fallback={<div className="map" />}>
+        <MapView position={geo.position} route={open} bottomInset={Math.round(window.innerHeight * 0.45)} />
+      </Suspense>
       <button className="locate" onClick={geo.start} aria-label={t('locateMe')}>
         <Icon name="locate" />
       </button>
