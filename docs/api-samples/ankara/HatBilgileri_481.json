@@ -1,0 +1,107 @@
+{
+ "table": [
+  {
+   "id": "424",
+   "tur": "EGO, OTOBÜS",
+   "kod": "481",
+   "ad": "UYANIŞ-ASFALT-15 TEMMUZ KIZILAY MİLLİ İRADE MEYDANI-BALGAT-CEYHUN A.K.CAD",
+   "sure": "170",
+   "mesafe": "43",
+   "detay": "Süresi 170 dk, Hat Uzunluğu 43 km",
+   "aciklama": "Hat ile ilgili açıklama girilmemiş."
+  }
+ ],
+ "table_durak": [
+  {
+   "id": "6748",
+   "sira": "1",
+   "kod": "40010",
+   "ad": "GÜLBABA CD. 2.DURAK",
+   "konum": "Uyanış Mh.1090.Sk.Keçiören",
+   "lat": "40.008518",
+   "lng": "32.867685",
+   "detay": "Uyanış Mh.1090.Sk.Keçiören"
+  },
+  {
+   "id": "8332",
+   "sira": "2",
+   "kod": "42036",
+   "ad": "GÜLBABA CD. 2.DURAK",
+   "konum": "Uyanış Mh.Gülbaba Cd.Keçiören",
+   "lat": "40.008927",
+   "lng": "32.868671",
+   "detay": "Uyanış Mh.Gülbaba Cd.Keçiören"
+  },
+  {
+   "id": "6938",
+   "sira": "3",
+   "kod": "40251",
+   "ad": "ANKARA TİCARET ODASI İLKÖĞRETİM OKULU",
+   "konum": "Uyanış Mh.1103.Sk.Keçiören",
+   "lat": "40.010717",
+   "lng": "32.867773",
+   "detay": "Uyanış Mh.1103.Sk.Keçiören"
+  },
+  {
+   "id": "6935",
+   "sira": "4",
+   "kod": "40248",
+   "ad": "UYANIŞ KURAN KURSU",
+   "konum": "Uyanış Mh.1103.Sk.Keçiören",
+   "lat": "40.012201",
+   "lng": "32.867111",
+   "detay": "Uyanış Mh.1103.Sk.Keçiören"
+  }
+ ],
+ "table_saat": [
+  {
+   "tur": "HAFTA İÇİ",
+   "saat": "06",
+   "dakika": "17",
+   "detay": "21071DEN BAŞLAR /KARAPINARDAN 06:50"
+  },
+  {
+   "tur": "HAFTA İÇİ",
+   "saat": "06",
+   "dakika": "20",
+   "detay": "-"
+  },
+  {
+   "tur": "HAFTA İÇİ",
+   "saat": "06",
+   "dakika": "25",
+   "detay": "MHP ÖNÜNDEN BAŞLAR KARAPINARDAN 06:31"
+  },
+  {
+   "tur": "HAFTA İÇİ",
+   "saat": "06",
+   "dakika": "35",
+   "detay": "-"
+  },
+  {
+   "tur": "CUMARTESİ",
+   "saat": "06",
+   "dakika": "15",
+   "detay": "21071DEN BAŞLAR"
+  },
+  {
+   "tur": "CUMARTESİ",
+   "saat": "06",
+   "dakika": "20",
+   "detay": "-"
+  },
+  {
+   "tur": "PAZAR",
+   "saat": "22",
+   "dakika": "40",
+   "detay": "-"
+  }
+ ],
+ "yol": "32.866718,40.008286,0 32.866972,40.008267,0 32.867164,40.008361,0 32.867313,40.008432,0 32.867754,40.008595,0 32.867876,40.008642,0 32.86841,40.008851,0 32.869065,40.009109,0 32.869303,40.009208,0 32.869305,40.009209,0 32.869307,40.00921,0 32.869309,40.009211,0",
+ "time": "22:43",
+ "saat": "22",
+ "dakika": "43",
+ "gun": "CUMARTESİ",
+ "message": "",
+ "status": "TRUE"
+}
