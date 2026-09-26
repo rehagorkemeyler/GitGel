@@ -102,20 +102,30 @@ def build(gtfs: Path, out: Path) -> dict:
         mode = min(g["mode"], key=lambda m: MODE_RANK.get(m, 9))
         dirs = []
         for _, rt in rep[rep["line_id"] == line_id].sort_values("direction_id").iterrows():
-            ids = list(rep_st.loc[rep_st["trip_id"] == rt["trip_id"], "stop_id"])
+            rows = rep_st[rep_st["trip_id"] == rt["trip_id"]]
+            ids = list(rows["stop_id"])
+            secs = [service_minutes(t) * 60 + int(t[6:8]) if t else None for t in rows["departure_time"]]
+            offsets = [round((x - secs[0]) / 60) if x is not None and secs[0] is not None else None for x in secs]
             line_stops.setdefault(line_id, set()).update(ids)
             fd = firsts[(firsts["line_id"] == line_id) & (firsts["direction_id"] == rt["direction_id"])]
             times = {}
+            night = set()
             for svc, sg in fd.groupby("service_id"):
-                # The service day starts at 04:00: earlier times are the previous night.
                 deps = sorted(sg["departure_time"], key=service_minutes)
+                # First trip of the day: earliest from 05:00. Trips between 02:30 and
+                # 05:00 mean the line runs all night (weekend night metro).
+                day = [x for x in deps if service_minutes(x) >= 5 * 60] or deps
+                all_night = any(150 <= service_minutes(x) % (24 * 60) < 300 for x in deps)
                 for d in day_type.get(svc, []):
                     cur = times.get(d)
-                    times[d] = [min(deps[0], cur[0], key=service_minutes) if cur else deps[0],
+                    times[d] = [min(day[0], cur[0], key=service_minutes) if cur else day[0],
                                 max(deps[-1], cur[1], key=service_minutes) if cur else deps[-1]]
+                    if all_night:
+                        night.add(d)
             dirs.append({"headsign": title_tr(stop_name.get(ids[-1], "")) if ids else "",
                          "stops": ids,
-                         "first_last": {d: [hhmm(a), hhmm(b)] for d, (a, b) in times.items()}})
+                         "offsets": offsets,
+                         "first_last": {d: [hhmm(a), "night" if d in night else hhmm(b)] for d, (a, b) in times.items()}})
         item = {"id": line_id, "name": r0["route_short_name"], "long_name": title_tr(r0["route_long_name"]),
                 "mode": mode, "color": r0.get("route_color", "") or "", "text_color": r0.get("route_text_color", "") or "",
                 "agency": r0["agency_id"]}
@@ -163,6 +173,8 @@ def build(gtfs: Path, out: Path) -> dict:
     dump("lines.json", lines_out)
     dump("stops.json", stops_out)
     dump("search.json", search)
+    dump("stations.json", merge_stations(stops_out, by_id))
+    dump("network.geojson", network(z, routes, trips, rep, rep_st, stops))
     meta = {"built": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"),
             "lines": len(lines_out), "stops": len(stops_out)}
     dump("meta.json", meta)
@@ -173,6 +185,80 @@ def service_minutes(t: str) -> int:
     """HH:MM[:SS] as minutes into a service day that starts at 04:00."""
     m = int(t[:2]) * 60 + int(t[3:5])
     return m + 24 * 60 if m < 4 * 60 else m
+
+
+RAIL = {"metro", "rail", "tram", "funicular", "cablecar"}
+STATION_MODES = RAIL | {"ferry", "metrobus"}
+
+
+def merge_stations(stops_out: list[dict], by_id: dict) -> list[dict]:
+    """One map marker per station: platforms of the same name within ~400 m merge.
+
+    Output rows: {id, ids, name, lat, lon, mode, lines} where `id` is a stop id the
+    router knows (MOTIS groups nearby platforms when asked for departures).
+    """
+    out: list[dict] = []
+    index: dict[str, list[dict]] = {}
+    for s in sorted(stops_out, key=lambda x: MODE_RANK.get(x["mode"], 9)):
+        if s["mode"] not in STATION_MODES:
+            continue
+        key = fold(s["name"]).replace(" marmaray", "").replace(" metro", "")
+        hit = next((e for e in index.get(key, []) if abs(e["lat"] - s["lat"]) < 0.004 and abs(e["lon"] - s["lon"]) < 0.005), None)
+        if hit:
+            hit["ids"].append(s["id"])
+            hit["lines"] += [l for l in s["lines"] if l not in hit["lines"]]
+            continue
+        e = {"id": s["id"], "ids": [s["id"]], "name": s["name"], "lat": s["lat"], "lon": s["lon"], "mode": s["mode"],
+             "lines": list(s["lines"])}
+        index.setdefault(key, []).append(e)
+        out.append(e)
+    for e in out:
+        e["lines"] = sorted(e["lines"], key=lambda l: (MODE_RANK.get(by_id[l]["mode"], 9), natural(by_id[l]["name"])))
+    return out
+
+
+def network(z: zipfile.ZipFile, routes: pd.DataFrame, trips: pd.DataFrame, rep: pd.DataFrame,
+            rep_st: pd.DataFrame, stops: pd.DataFrame) -> dict:
+    """Rail, tram, funicular, cable car lines from GTFS shapes; ferries as stop-to-stop lines."""
+    shapes = read(z, "shapes.txt")
+    feats = []
+    line_of_route = dict(zip(routes["route_id"], routes["line_id"]))
+    info = {r["line_id"]: r for _, r in routes.iterrows()}
+    rail_routes = set(routes.loc[routes["mode"].isin(RAIL), "route_id"])
+    if len(shapes) and "shape_id" in trips:
+        used = trips[trips["route_id"].isin(rail_routes) & (trips["shape_id"] != "")].drop_duplicates("shape_id")
+        shapes["shape_pt_sequence"] = shapes["shape_pt_sequence"].astype(int)
+        by_shape = {k: g.sort_values("shape_pt_sequence") for k, g in shapes[shapes["shape_id"].isin(used["shape_id"])].groupby("shape_id")}
+        seen = set()
+        for _, t in used.iterrows():
+            g = by_shape.get(t["shape_id"])
+            if g is None:
+                continue
+            coords = [[round(float(x), 5), round(float(y), 5)] for x, y in zip(g["shape_pt_lon"], g["shape_pt_lat"])]
+            key = (line_of_route[t["route_id"]], tuple(map(tuple, sorted([coords[0], coords[-1]]))))
+            if key in seen:  # the other direction of the same track
+                continue
+            seen.add(key)
+            feats.append(_feature(info[line_of_route[t["route_id"]]], coords))
+    pos = {r["stop_id"]: [round(float(r["stop_lon"]), 5), round(float(r["stop_lat"]), 5)] for _, r in stops.iterrows()}
+    ferry_lines = set(routes.loc[routes["mode"] == "ferry", "line_id"])
+    # Ferries have no shapes: draw each pier-to-pier hop once, whatever line uses it.
+    hops = set()
+    for _, rt in rep[rep["line_id"].isin(ferry_lines)].iterrows():
+        coords = [pos[s] for s in rep_st.loc[rep_st["trip_id"] == rt["trip_id"], "stop_id"] if s in pos]
+        for a_, b_ in zip(coords, coords[1:]):
+            key = tuple(sorted([tuple(a_), tuple(b_)]))
+            if a_ != b_ and key not in hops:
+                hops.add(key)
+                feats.append({"type": "Feature", "geometry": {"type": "LineString", "coordinates": [a_, b_]},
+                              "properties": {"line": "", "name": "", "mode": "ferry", "color": "#4a90b8"}})
+    return {"type": "FeatureCollection", "features": feats}
+
+
+def _feature(r, coords) -> dict:
+    return {"type": "Feature", "geometry": {"type": "LineString", "coordinates": coords},
+            "properties": {"line": r["line_id"], "name": r["route_short_name"], "mode": r["mode"],
+                           "color": "#" + (r.get("route_color") or "5a6b7b")}}
 
 
 def natural(s: str):

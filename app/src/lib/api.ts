@@ -106,8 +106,11 @@ export const MODE_OF_LEG: Record<string, Mode | 'walk'> = {
 export type StopTime = {
   place: LegPlace
   routeShortName?: string
+  routeColor?: string
+  routeTextColor?: string
   headsign?: string
   realTime?: boolean
+  tripId?: string
 }
 
 /** Next departures at a stop (MOTIS groups nearby platforms of the same station). */
@@ -122,6 +125,8 @@ export async function stopTimes(stopId: string, time: Date, n = 10): Promise<Sto
 
 export type TripSegment = {
   trips: { tripId: string; routeShortName?: string }[]
+  from?: { name: string }
+  to?: { name: string }
   routeColor?: string
   mode: string
   departure: string
@@ -148,4 +153,9 @@ export async function mapTrips(
     },
     10000,
   )
+}
+
+/** One trip with all its stops and times (MOTIS returns it as a one-leg itinerary). */
+export async function trip(tripId: string): Promise<Itinerary> {
+  return get<Itinerary>('/api/v5/trip', { tripId })
 }

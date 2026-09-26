@@ -9,6 +9,8 @@ export const RAIL_MODES = new Set(['SUBWAY', 'METRO', 'TRAM', 'REGIONAL_RAIL', '
 
 export type SimSegment = {
   id: string
+  from: string
+  to: string
   line: string
   color: string
   dep: number
@@ -33,6 +35,8 @@ export function prepare(segments: TripSegment[], hiddenLines: Set<string>): SimS
     }
     out.push({
       id: s.trips[0]?.tripId ?? `${line}-${s.departure}`,
+      from: s.from?.name ?? '',
+      to: s.to?.name ?? '',
       line,
       color: `#${s.routeColor || '888888'}`,
       dep: Date.parse(s.departure),

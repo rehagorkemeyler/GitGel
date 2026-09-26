@@ -62,10 +62,10 @@ Bitti sayılması için: gerçek telefonda 5 saniye kuralını geçiyor.
 - [x] "Hat ve sefer ara" ikonu "Yakın duraklar" ile aynı boyut ve ağırlıkta olsun
 - [x] Dil seçeneği (TR/EN) ana panelin sağ alt köşesinde
 - [x] Rota aramasında çıkış günü ve saati seçimi
-- [ ] Haritada raylı sistem, tramvay, füniküler, teleferik ve vapur hatları resmi renkleriyle çizili
-- [ ] Haritada istasyon ve durak işaretleri; dokununca alttan istasyon kartı: ad, yol tarifi butonu, geçen hatlar, hat ve yön bazında sonraki varışlar (otobüs durakları dahil)
-- [ ] Hat sayfası: üst yarıda hattın haritada renkli çizimi, altta kaydırılabilir bilgi; durağa dokununca o durağa her seferin varış saatleri
-- [ ] Haritadaki tren halkasına dokununca bilgi: hat, yön, hangi istasyondan hangisine, tahmini varış
+- [x] Haritada raylı sistem, tramvay, füniküler, teleferik ve vapur hatları resmi renkleriyle çizili
+- [x] Haritada istasyon ve durak işaretleri; dokununca alttan istasyon kartı: ad, yol tarifi butonu, geçen hatlar, hat ve yön bazında sonraki varışlar (otobüs durakları dahil)
+- [x] Hat sayfası: üst yarıda hattın haritada renkli çizimi, altta kaydırılabilir bilgi; durağa dokununca o durağa her seferin varış saatleri
+- [x] Haritadaki tren halkasına dokununca bilgi: hat, yön, hangi istasyondan hangisine, tahmini varış
 
 ## Aşama 4: Canlı katman
 
