@@ -7,12 +7,26 @@ import { CITY } from '../lib/city'
 // Base transit layer, like Google Maps: rail/tram/funicular/cable car/ferry lines
 // in their official colours, station markers, and bus stops when zoomed in.
 
-export type Station = { id: string; ids: string[]; name: string; lat: number; lon: number; mode: string; lines: string[] }
+export type Station = {
+  id: string
+  ids: string[]
+  name: string
+  lat: number
+  lon: number
+  mode: string
+  lines: string[]
+  /** More than one rail line: drawn 50% bigger. */
+  transfer?: boolean
+}
 
 const NET = 'net-lines'
 // Ankara: every bus route as a thin, faded line under the rail network.
 const BUSNET = 'net-bus-lines'
 const BUS_OPACITY = 0.1
+const FERRY: ExpressionSpecification = ['==', ['get', 'mode'], 'ferry']
+// Ferries: thin, faint dashes over the water; they must not compete with rail or the land.
+const LINE_WIDTH: ExpressionSpecification = ['interpolate', ['linear'], ['zoom'], 10, ['case', FERRY, 0.8, 2.5], 15, ['case', FERRY, 2, 6]]
+const LINE_OPACITY: ExpressionSpecification = ['interpolate', ['linear'], ['zoom'], 11, ['case', FERRY, 0.1, 1], 14, ['case', FERRY, 0.3, 1]]
 const ST = 'net-stations'
 const BUS = 'net-bus-stops'
 const BUS_MIN_ZOOM = 14
@@ -86,10 +100,10 @@ export class NetworkLayer {
         layout: { 'line-cap': 'round', 'line-join': 'round' },
         paint: {
           'line-color': ['get', 'color'],
-          'line-width': ['interpolate', ['linear'], ['zoom'], 10, 2.5, 15, 6],
+          'line-width': LINE_WIDTH,
           'line-dasharray': ['case', ['==', ['get', 'mode'], 'ferry'], ['literal', [2, 2]], ['literal', [1, 0]]],
           // Ferry hops fade in with zoom so the Bosphorus is not a web of lines.
-          'line-opacity': ['interpolate', ['linear'], ['zoom'], 11, ['case', ['==', ['get', 'mode'], 'ferry'], 0.12, 1], 14, ['case', ['==', ['get', 'mode'], 'ferry'], 0.45, 1]],
+          'line-opacity': LINE_OPACITY,
         },
       })
     m.addLayer({
@@ -111,7 +125,7 @@ export class NetworkLayer {
       minzoom: 10,
       maxzoom: 12.5,
       paint: {
-        'circle-radius': ['interpolate', ['linear'], ['zoom'], 10, 1.8, 12.5, 3.5],
+        'circle-radius': ['interpolate', ['linear'], ['zoom'], 10, ['case', ['get', 'transfer'], 2.7, 1.8], 12.5, ['case', ['get', 'transfer'], 5.2, 3.5]],
         'circle-color': paper,
         'circle-stroke-color': ink,
         'circle-stroke-width': 1,
@@ -124,7 +138,9 @@ export class NetworkLayer {
       minzoom: 12.5,
       layout: {
         'icon-image': ['concat', 'gg-', ['get', 'glyph']],
-        'icon-size': ['interpolate', ['linear'], ['zoom'], 12.5, 0.7, 16, 1],
+        // Transfer stations 50% bigger.
+        'icon-size': ['interpolate', ['linear'], ['zoom'], 12.5, ['case', ['get', 'transfer'], 1.05, 0.7], 16, ['case', ['get', 'transfer'], 1.5, 1]],
+        'symbol-sort-key': ['case', ['get', 'transfer'], 0, 1],
         'icon-allow-overlap': true,
       },
     })
@@ -174,6 +190,7 @@ export class NetworkLayer {
           id: s.id,
           name: s.name,
           glyph: glyphFor(s.mode),
+          transfer: !!s.transfer,
           color: s.lines.length > 1 ? this.ink : color.get(s.lines[0]) ?? this.ink,
         },
         geometry: { type: 'Point', coordinates: [s.lon, s.lat] },
@@ -211,10 +228,10 @@ export class NetworkLayer {
         : (['interpolate', ['linear'], ['zoom'], 10, 0.5, 15, 1.2] as ExpressionSpecification))
       m.setPaintProperty(BUSNET, 'line-color', f ? ['case', hit, this.accent, this.ink] : this.ink)
     }
-    m.setPaintProperty(NET, 'line-opacity', f ? ['case', ['==', ['get', 'line'], f], 1, 0.12] : ['interpolate', ['linear'], ['zoom'], 11, ['case', ['==', ['get', 'mode'], 'ferry'], 0.12, 1], 14, ['case', ['==', ['get', 'mode'], 'ferry'], 0.45, 1]])
+    m.setPaintProperty(NET, 'line-opacity', f ? ['case', ['==', ['get', 'line'], f], 1, 0.12] : LINE_OPACITY)
     const on: ExpressionSpecification = ['==', ['get', 'line'], f ?? '']
     m.setPaintProperty(NET, 'line-width', f
-      ? (['interpolate', ['linear'], ['zoom'], 10, ['case', on, 5, 2.5], 15, ['case', on, 9, 6]] as ExpressionSpecification)
-      : (['interpolate', ['linear'], ['zoom'], 10, 2.5, 15, 6] as ExpressionSpecification))
+      ? (['interpolate', ['linear'], ['zoom'], 10, ['case', on, 5, FERRY, 0.8, 2.5], 15, ['case', on, 9, FERRY, 2, 6]] as ExpressionSpecification)
+      : (LINE_WIDTH as ExpressionSpecification))
   }
 }
