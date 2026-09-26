@@ -15,7 +15,8 @@ import type { TrainInfo } from './map/railLayer'
 import { LineHeader, LineStops } from './screens/LineSheet'
 import { lineView, useLineDetail } from './lib/lineDetail'
 import type { Station } from './map/networkLayer'
-import { inIstanbul, useGeolocation, useStablePosition } from './lib/useGeolocation'
+import { inCity, useGeolocation, useStablePosition } from './lib/useGeolocation'
+import { CITY, CITY_CHOSEN, switchCity } from './lib/city'
 import type { Place } from './lib/search'
 import type { Itinerary } from './lib/api'
 import { t } from './i18n'
@@ -48,9 +49,14 @@ export function App() {
   const view = useMemo(() => lineView(lineData.line, lineData.stops, lineDir), [lineData, lineDir])
   const railModes = ['metro', 'rail', 'tram', 'funicular', 'cablecar']
   // Buses and Metrobüs of the open route: İETT publishes their GPS positions.
+  // Ankara: EGO publishes bus positions per line, so the open line page shows its buses too.
+  const openBusLine = CITY.ego && lineData.line?.mode === 'bus' ? lineData.line.name : null
   const busLines = useMemo(
-    () => (open?.legs ?? []).filter((l) => l.mode === 'BUS' && l.routeShortName).map((l) => l.routeShortName!),
-    [open],
+    () => [
+      ...(open?.legs ?? []).filter((l) => l.mode === 'BUS' && l.routeShortName).map((l) => l.routeShortName!),
+      ...(openBusLine ? [openBusLine] : []),
+    ],
+    [open, openBusLine],
   )
   const vehicles = useLiveVehicles(busLines)
   const status = useLineStatus()
@@ -58,7 +64,10 @@ export function App() {
   const [railCount, setRailCount] = useState(0)
   const [map, setMap] = useState<MlMap | null>(null)
   const [picking, setPicking] = useState(false)
-  const outside = !!geo.position && !inIstanbul(geo.position)
+  const [choosingCity, setChoosingCity] = useState(false)
+  const outside = !!geo.position && !inCity(geo.position)
+  // First visit outside the default city: ask for the city before offering a test location.
+  const cityPrompt = choosingCity || (!CITY_CHOSEN && outside)
 
   // Warm the search index while the user looks at the map.
   useEffect(() => {
@@ -108,7 +117,7 @@ export function App() {
           }}
           focusLine={lineId}
           lineView={view}
-          pathInNetwork={!!lineData.line && railModes.includes(lineData.line.mode)}
+          pathInNetwork={!!lineData.line && (railModes.includes(lineData.line.mode) || (CITY.ego && lineData.line.mode === 'bus'))}
         />
       </Suspense>
       {status && <StatusBand lines={status.lines} />}
@@ -129,9 +138,29 @@ export function App() {
       <button className="locate" onClick={geo.start} aria-label={t('locateMe')}>
         <Icon name="locate" />
       </button>
-      {!picking && (outside || geo.status === 'denied' || geo.status === 'unavailable') && (
+      {!picking && cityPrompt && (
         <div className="notice" role="status">
-          <span>{t(outside ? 'outsideIstanbul' : geo.status === 'denied' ? 'locationDenied' : 'locationUnavailable')}</span>
+          <span>{t('pickCity')}</span>
+          <div className="notice-actions">
+            <button className="link" onClick={() => switchCity('istanbul')}>
+              {t('cityIstanbul')}
+            </button>
+            <button className="link" onClick={() => switchCity('ankara')}>
+              {t('cityAnkara')}
+            </button>
+            {choosingCity && (
+              <button className="link quiet" onClick={() => setChoosingCity(false)}>
+                {t('close')}
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+      {!picking && !cityPrompt && (outside || geo.status === 'denied' || geo.status === 'unavailable') && (
+        <div className="notice" role="status">
+          <span>
+            {t(outside ? (CITY.id === 'ankara' ? 'outsideAnkara' : 'outsideIstanbul') : geo.status === 'denied' ? 'locationDenied' : 'locationUnavailable')}
+          </span>
           <button className="link" onClick={() => setPicking(true)}>
             {t('pickLocation')}
           </button>
@@ -188,7 +217,7 @@ export function App() {
               }}
             />
           ) : (
-            <HomePeek go={(s) => (s === 'search' ? openSearch('to') : setScreen(s))} />
+            <HomePeek go={(s) => (s === 'search' ? openSearch('to') : setScreen(s))} onCity={() => setChoosingCity(true)} />
           )
         }
       >

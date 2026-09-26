@@ -2,6 +2,7 @@ import type { ExpressionSpecification, GeoJSONSource, Map as MlMap, MapLayerMous
 import type * as GeoJSON from 'geojson'
 import { loadJson, loadStops, type StopRow } from '../lib/data'
 import { addTransitIcons, glyphFor } from './icons'
+import { CITY } from '../lib/city'
 
 // Base transit layer, like Google Maps: rail/tram/funicular/cable car/ferry lines
 // in their official colours, station markers, and bus stops when zoomed in.
@@ -9,6 +10,9 @@ import { addTransitIcons, glyphFor } from './icons'
 export type Station = { id: string; ids: string[]; name: string; lat: number; lon: number; mode: string; lines: string[] }
 
 const NET = 'net-lines'
+// Ankara: every bus route as a thin, faded line under the rail network.
+const BUSNET = 'net-bus-lines'
+const BUS_OPACITY = 0.1
 const ST = 'net-stations'
 const BUS = 'net-bus-stops'
 const BUS_MIN_ZOOM = 14
@@ -20,6 +24,8 @@ export class NetworkLayer {
   onStation?: (s: Station) => void
   private stations = new Map<string, Station>()
   private ink = '#3a3a3c'
+  // Highlighted bus line (buses have no official colours): the app accent (--accent).
+  private accent = '#0a66c2'
 
   constructor(map: MlMap) {
     this.map = map
@@ -50,6 +56,21 @@ export class NetworkLayer {
     m.addSource(NET, { type: 'geojson', data: { type: 'FeatureCollection', features: [] } })
     m.addSource(ST, { type: 'geojson', data: { type: 'FeatureCollection', features: [] } })
     m.addSource(BUS, { type: 'geojson', data: { type: 'FeatureCollection', features: [] } })
+    if (CITY.ego) {
+      m.addSource(BUSNET, { type: 'geojson', data: { type: 'FeatureCollection', features: [] } })
+      m.addLayer({
+        id: BUSNET,
+        type: 'line',
+        source: BUSNET,
+        layout: { 'line-cap': 'round', 'line-join': 'round' },
+        // Dozens of routes share the main roads: keep each one faint so they do not add up to a black band.
+        paint: {
+          'line-color': ink,
+          'line-opacity': BUS_OPACITY,
+          'line-width': ['interpolate', ['linear'], ['zoom'], 10, 0.5, 15, 1.2],
+        },
+      })
+    }
     m.addLayer({
         id: NET + '-casing',
         type: 'line',
@@ -123,6 +144,7 @@ export class NetworkLayer {
       paint: { 'text-color': ink, 'text-halo-color': paper, 'text-halo-width': 1.5 },
     })
     this.ink = ink
+    this.accent = dark ? '#4d9fff' : '#0a66c2'
     await this.load()
     this.applyFocus()
     this.busLoaded = false
@@ -136,6 +158,11 @@ export class NetworkLayer {
       loadJson<{ id: string; color: string }[]>('lines.json'),
     ]).catch(() => [null, null, null] as const)
     if (!net || !stations || !lines) return
+    if (CITY.ego)
+      loadJson<GeoJSON.FeatureCollection>('bus-network.geojson').then(
+        (b) => (this.map.getSource(BUSNET) as GeoJSONSource | undefined)?.setData(b),
+        () => {},
+      )
     const color = new Map(lines.map((l) => [l.id, l.color ? `#${l.color}` : '#3a3a3c']))
     this.stations = new Map(stations.map((s) => [s.id, s]))
     ;(this.map.getSource(NET) as GeoJSONSource | undefined)?.setData(net)
@@ -176,6 +203,14 @@ export class NetworkLayer {
     const m = this.map
     if (!m.getLayer(NET)) return
     const f = this.focus
+    if (m.getLayer(BUSNET)) {
+      const hit: ExpressionSpecification = ['==', ['get', 'line'], f ?? '']
+      m.setPaintProperty(BUSNET, 'line-opacity', f ? ['case', hit, 1, 0.05] : BUS_OPACITY)
+      m.setPaintProperty(BUSNET, 'line-width', f
+        ? (['interpolate', ['linear'], ['zoom'], 10, ['case', hit, 4, 0.5], 15, ['case', hit, 7, 1.2]] as ExpressionSpecification)
+        : (['interpolate', ['linear'], ['zoom'], 10, 0.5, 15, 1.2] as ExpressionSpecification))
+      m.setPaintProperty(BUSNET, 'line-color', f ? ['case', hit, this.accent, this.ink] : this.ink)
+    }
     m.setPaintProperty(NET, 'line-opacity', f ? ['case', ['==', ['get', 'line'], f], 1, 0.12] : ['interpolate', ['linear'], ['zoom'], 11, ['case', ['==', ['get', 'mode'], 'ferry'], 0.12, 1], 14, ['case', ['==', ['get', 'mode'], 'ferry'], 0.45, 1]])
     const on: ExpressionSpecification = ['==', ['get', 'line'], f ?? '']
     m.setPaintProperty(NET, 'line-width', f

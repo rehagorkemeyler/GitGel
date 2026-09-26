@@ -6,7 +6,8 @@ import { nearestStops, type NearbyStop } from '../lib/nearby'
 import { walkMinutes } from '../lib/geo'
 import { stopTimes, type StopTime } from '../lib/api'
 import { hhmm } from '../lib/itinerary'
-import { MOTIS_STOP_PREFIX } from '../lib/config'
+import { CITY } from '../lib/city'
+import { AnkaraArrivals } from '../components/AnkaraArrivals'
 import { t } from '../i18n'
 import './Nearby.css'
 
@@ -68,7 +69,14 @@ export function Nearby({ position, onLocate, onBack }: Props) {
                 <small>{Math.round(s.distance / 10) * 10} m</small>
               </span>
             </button>
-            {open === s.id && <Departures stopId={MOTIS_STOP_PREFIX + s.id} colors={colors} />}
+            {open === s.id &&
+              (CITY.ego && /^eg_\d{3,6}$/.test(s.id) ? (
+                <AnkaraArrivals stop={s.id.slice(3)} lines={colors} />
+              ) : CITY.routing ? (
+                <Departures stopId={CITY.motisPrefix + s.id} colors={colors} />
+              ) : (
+                <p className="muted departures">{t('routingSoonAnkara')}</p>
+              ))}
           </li>
         ))}
       </ul>

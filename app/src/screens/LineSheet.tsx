@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { LineChip } from '../components/LineChip'
 import { stopTimes } from '../lib/api'
 import { hhmm } from '../lib/itinerary'
-import { MOTIS_STOP_PREFIX } from '../lib/config'
+import { CITY } from '../lib/city'
 import { currentDayType, type LineDetail } from '../lib/lineDetail'
 import type { StopRow } from '../lib/data'
 import { t } from '../i18n'
@@ -97,7 +97,7 @@ function StopArrivals({ stopId, line, headsign }: { stopId: string; line: string
   const [error, setError] = useState(false)
   useEffect(() => {
     let alive = true
-    stopTimes(MOTIS_STOP_PREFIX + stopId, new Date(), 200).then(
+    stopTimes(CITY.motisPrefix + stopId, new Date(), 200).then(
       (st) => {
         if (!alive) return
         const mine = st.filter((x) => x.routeShortName === line)

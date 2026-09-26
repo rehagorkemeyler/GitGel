@@ -1,3 +1,4 @@
+import { CITY } from '../lib/city'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Panel } from '../components/Panel'
 import { Icon } from '../components/Icon'
@@ -36,7 +37,8 @@ export function SearchPanel({ title, onPick, onBack, myLocation }: Props) {
   const local = useMemo(() => (index ? searchIndex(index, query) : []), [index, query])
 
   useEffect(() => {
-    if (!API_BASE || query.trim().length < 3) return
+    // MOTIS geocoding only knows the cities it has data for.
+    if (!API_BASE || !CITY.routing || query.trim().length < 3) return
     let alive = true
     const timer = setTimeout(() => {
       geocode(query, lang).then(

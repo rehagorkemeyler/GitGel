@@ -1,3 +1,4 @@
+import { CITY } from '../lib/city'
 import { useEffect, useState } from 'react'
 import { Icon } from '../components/Icon'
 import { LineChip } from '../components/LineChip'
@@ -30,7 +31,7 @@ export function Results({ from, to, onEditFrom, onEditTo, onClose, onOpen }: Pro
   const state: State = raw.key === key ? raw : { key, status: 'loading' }
 
   useEffect(() => {
-    if (!from) return
+    if (!from || !CITY.routing) return
     let alive = true
     const at = when.kind === 'now' ? new Date() : when.at
     plan(from, to, at, when.kind === 'arrive').then(
@@ -63,8 +64,9 @@ export function Results({ from, to, onEditFrom, onEditTo, onClose, onOpen }: Pro
       <div className="when-row">
         <WhenPicker value={when} onChange={setWhen} />
       </div>
-      {!from && <p className="muted pad">{t('pickOrigin')}</p>}
-      {from && state.status === 'loading' && <p className="muted pad">{t('searchingRoutes')}</p>}
+      {!CITY.routing && <p className="muted pad">{t('routingSoonAnkara')}</p>}
+      {CITY.routing && !from && <p className="muted pad">{t('pickOrigin')}</p>}
+      {CITY.routing && from && state.status === 'loading' && <p className="muted pad">{t('searchingRoutes')}</p>}
       {from && state.status === 'error' && (
         <div className="pad">
           <p className="muted">{t('routingUnavailable')}</p>

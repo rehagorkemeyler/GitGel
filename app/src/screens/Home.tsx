@@ -4,7 +4,7 @@ import type { Screen } from '../App'
 import './Home.css'
 
 /** Bottom panel of the home screen: one decision per screen. */
-export function HomePeek({ go, destination }: { go: (s: Screen) => void; destination?: string }) {
+export function HomePeek({ go, destination, onCity }: { go: (s: Screen) => void; destination?: string; onCity: () => void }) {
   return (
     <div className="home">
       <button className="where-to" onClick={() => go('search')}>
@@ -27,6 +27,9 @@ export function HomePeek({ go, destination }: { go: (s: Screen) => void; destina
         </button>
         <button className="small" onClick={() => go('support')}>
           {t('support')}
+        </button>
+        <button className="small" onClick={onCity}>
+          {t('changeCity')}
         </button>
         <button
           className="small lang"

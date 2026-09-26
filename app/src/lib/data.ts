@@ -1,4 +1,5 @@
 import { DATA_BASE } from './config'
+import { CITY } from './city'
 import type { IndexRow, Mode } from './search'
 
 export type Line = {
@@ -19,7 +20,7 @@ const cache = new Map<string, Promise<unknown>>()
 export function loadJson<T>(name: string): Promise<T> {
   let p = cache.get(name) as Promise<T> | undefined
   if (!p) {
-    p = fetch(DATA_BASE + name).then((r) => {
+    p = fetch(DATA_BASE + CITY.dataDir + name).then((r) => {
       if (!r.ok) throw new Error(`${name}: HTTP ${r.status}`)
       return r.json() as Promise<T>
     })
