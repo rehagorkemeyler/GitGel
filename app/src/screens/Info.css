@@ -30,3 +30,24 @@
   font-weight: var(--fw-regular);
   color: var(--text-2);
 }
+
+.about-h {
+  font-size: var(--fs-s);
+  font-weight: var(--fw-bold);
+  color: var(--text-2);
+  margin: var(--s-4) 0 0;
+}
+
+.link-row {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  min-height: 56px;
+  padding: var(--s-2) var(--s-4);
+  border-radius: var(--r-btn);
+  background: var(--surface-2);
+  font-weight: var(--fw-bold);
+  text-align: left;
+}
