@@ -1,3 +1,4 @@
+import { CITY, inBounds } from './city'
 import { API_BASE } from './config'
 import type { Mode, Place } from './search'
 
@@ -30,6 +31,8 @@ export async function geocode(text: string, lang: string): Promise<Place[]> {
   const res = await get<GeocodeMatch[]>('/api/v1/geocode', { text, language: lang })
   return res
     .filter((m) => m.type !== 'STOP') // stops come from the local index
+    // MOTIS knows every city it routes in: keep the one on screen.
+    .filter((m) => inBounds([m.lon, m.lat], CITY.bounds))
     .slice(0, 5)
     .map((m) => {
       const area = m.areas?.find((a) => a.default)?.name ?? m.areas?.find((a) => a.adminLevel === 6)?.name
