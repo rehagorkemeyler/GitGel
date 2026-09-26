@@ -1,7 +1,7 @@
 import type { GeoJSONSource, Map as MlMap } from 'maplibre-gl'
 import type * as GeoJSON from 'geojson'
 import { mapTrips } from '../lib/api'
-import { positionAt, prepare, type SimSegment } from '../lib/railsim'
+import { positionAndBearing, prepare, type SimSegment } from '../lib/railsim'
 
 export type TrainInfo = Pick<SimSegment, 'id' | 'line' | 'color' | 'from' | 'to' | 'arr'>
 
@@ -51,15 +51,18 @@ export class RailLayer {
       source: SRC,
       paint: { 'circle-radius': ['interpolate', ['linear'], ['zoom'], 11, 5, 14, 10], 'circle-color': '#ffffff', 'circle-opacity': 0.9, 'circle-blur': 0.2 },
     })
+    // Hollow ring in the line colour with a compass-style tip pointing where the train goes.
     this.map.addLayer({
       id: 'rail-sim-dots',
-      type: 'circle',
+      type: 'symbol',
       source: SRC,
-      paint: {
-        'circle-radius': ['interpolate', ['linear'], ['zoom'], 11, 3, 14, 6.5],
-        'circle-color': '#ffffff',
-        'circle-stroke-color': ['get', 'color'],
-        'circle-stroke-width': ['interpolate', ['linear'], ['zoom'], 11, 2, 14, 3.5],
+      layout: {
+        'icon-image': ['get', 'icon'],
+        'icon-rotate': ['get', 'bearing'],
+        'icon-rotation-alignment': 'map',
+        'icon-allow-overlap': true,
+        'icon-ignore-placement': true,
+        'icon-size': ['interpolate', ['linear'], ['zoom'], 11, 0.55, 14, 1],
       },
     })
     this.refresh(true)
@@ -76,6 +79,39 @@ export class RailLayer {
   setOnly(line: string | null) {
     this.only = line
     this.draw()
+  }
+
+  /** One small image per line colour: white disc, coloured ring, arrow tip at the top. */
+  private icon(color: string): string {
+    const name = `train-${color.replace('#', '')}`
+    if (this.map.hasImage(name)) return name
+    const ratio = 2
+    const size = 32
+    const c = document.createElement('canvas')
+    c.width = c.height = size * ratio
+    const ctx = c.getContext('2d')!
+    ctx.scale(ratio, ratio)
+    // Tip with a white outline so it stays visible on top of its own line colour.
+    ctx.beginPath()
+    ctx.moveTo(16, 2.5)
+    ctx.lineTo(21.5, 10.5)
+    ctx.lineTo(10.5, 10.5)
+    ctx.closePath()
+    ctx.lineJoin = 'round'
+    ctx.lineWidth = 2.5
+    ctx.strokeStyle = '#ffffff'
+    ctx.stroke()
+    ctx.fillStyle = color
+    ctx.fill()
+    ctx.beginPath()
+    ctx.arc(16, 17, 7.5, 0, Math.PI * 2)
+    ctx.fillStyle = '#ffffff'
+    ctx.fill()
+    ctx.lineWidth = 3.4
+    ctx.strokeStyle = color
+    ctx.stroke()
+    this.map.addImage(name, ctx.getImageData(0, 0, size * ratio, size * ratio), { pixelRatio: ratio })
+    return name
   }
 
   destroy() {
@@ -114,10 +150,14 @@ export class RailLayer {
     for (const s of this.segments) {
       if (seen.has(s.id)) continue
       if (this.only && s.line.toLowerCase() !== this.only.toLowerCase()) continue
-      const p = positionAt(s, now)
-      if (!p) continue
+      const pos = positionAndBearing(s, now)
+      if (!pos) continue
       seen.add(s.id)
-      features.push({ type: 'Feature', properties: { id: s.id, color: s.color, line: s.line }, geometry: { type: 'Point', coordinates: p } })
+      features.push({
+        type: 'Feature',
+        properties: { id: s.id, color: s.color, line: s.line, bearing: pos.bearing, icon: this.icon(s.color) },
+        geometry: { type: 'Point', coordinates: pos.p },
+      })
     }
     src.setData({ type: 'FeatureCollection', features })
     this.onCount?.(features.length)
