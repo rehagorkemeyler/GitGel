@@ -139,6 +139,19 @@ def build_ferries(today: dt.date) -> dict[str, list[dict]]:
     freq = g["frequencies"][g["frequencies"]["trip_id"].isin(trips["trip_id"])].copy()
     cal = g["calendar"][g["calendar"]["service_id"].isin(trips["service_id"])].drop_duplicates("service_id").copy()
 
+    # Clean up: services with no weekday, trips with fewer than two stops,
+    # frequency windows that cross midnight.
+    days = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
+    cal = cal[cal[days].astype(int).sum(axis=1) > 0]
+    counts = st.groupby("trip_id").size()
+    trips = trips[trips["service_id"].isin(cal["service_id"]) & trips["trip_id"].isin(counts[counts >= 2].index)]
+    st = st[st["trip_id"].isin(trips["trip_id"])]
+    freq = freq[freq["trip_id"].isin(trips["trip_id"])].copy()
+    wrap = freq["end_time"] < freq["start_time"]
+    freq.loc[wrap, "end_time"] = freq.loc[wrap, "end_time"].map(lambda t: f"{int(t[:2]) + 24:02d}{t[2:]}")
+    routes = routes[routes["route_id"].isin(trips["route_id"])]
+    stops = stops[stops["stop_id"].isin(st["stop_id"])]
+
     p = lambda s: "fer_" + s.astype(str)  # noqa: E731
     routes["route_id"] = p(routes["route_id"])
     routes["agency_id"] = routes["agency_id"].map(FERRY_AGENCIES)
