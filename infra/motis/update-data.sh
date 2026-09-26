@@ -22,14 +22,17 @@ main() {
 
   cp "$base/input/istanbul-gtfs.zip" "$base/input/istanbul.osm.pbf" "$repo/infra/motis/config.yml" "$new/"
   chmod -R a+rwX "$new"
-  docker run --rm -v "$new:/work" -w /work "$image" /motis import -c config.yml -d data
+  # Run as the server user so old builds can be deleted later without root.
+  docker run --rm --user "$(id -u):$(id -g)" -v "$new:/work" -w /work "$image" /motis import -c config.yml -d data
 
   # docker creates an empty dir at "current" if motis starts before the first import.
   [ -L "$base/current" ] || rm -rf "$base/current"
   ln -sfn "$new/data" "$base/current.new" && mv -T "$base/current.new" "$base/current"
   docker compose -f "$repo/infra/docker-compose.yml" up -d --force-recreate motis
-  # Keep the two newest builds.
-  ls -1dt "$base"/build-* | tail -n +3 | xargs -r rm -rf
+  # Keep the two newest builds. Older ones may be owned by the container user: delete them through Docker.
+  for old in $(ls -1dt "$base"/build-* | tail -n +3); do
+    rm -rf "$old" 2>/dev/null || docker run --rm --user 0 -v "$base:/b" --entrypoint rm "$image" -rf "/b/$(basename "$old")" || true
+  done
   echo "motis data updated: $new"
 }
 main "$@"
