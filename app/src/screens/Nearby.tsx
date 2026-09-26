@@ -8,6 +8,8 @@ import { stopTimes, type StopTime } from '../lib/api'
 import { hhmm } from '../lib/itinerary'
 import { CITY } from '../lib/city'
 import { AnkaraArrivals } from '../components/AnkaraArrivals'
+import { StopCode } from '../components/StopCode'
+import { stopCode } from '../lib/city'
 import { t } from '../i18n'
 import './Nearby.css'
 
@@ -56,7 +58,10 @@ export function Nearby({ position, onLocate, onBack }: Props) {
           <li key={s.id}>
             <button className="result" onClick={() => setOpen(open === s.id ? null : s.id)} aria-expanded={open === s.id}>
               <span className="result-text">
-                <span className="result-name">{s.name}</span>
+                <span className="result-name">
+                  {s.name}
+                  <StopCode code={stopCode(s.id)} />
+                </span>
                 <span className="chips">
                   {s.lines.slice(0, 6).map((id) => {
                     const l = lineById.get(id)

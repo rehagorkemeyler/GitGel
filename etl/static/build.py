@@ -3,7 +3,7 @@
 Output (out/static/):
   lines.json          all lines: id, name, long name, mode, colour, agency
   stops.json          every stop/station: id, name, lat, lon, mode, line ids
-  search.json         compact search index: [name, normalized name, lat, lon, mode, line names]
+  search.json         compact search index: [name, normalized name, lat, lon, mode, line names(, stop code)]
   lines/<id>.json     one line: stops per direction, first/last departures per day type
   meta.json           build date and counts
 
@@ -54,7 +54,7 @@ def hhmm(t: str) -> str:
     return f"{h % 24:02d}:{m:02d}"
 
 
-def build(gtfs: Path, out: Path, bus_network: bool = False) -> dict:
+def build(gtfs: Path, out: Path, bus_network: bool = False, stop_codes: bool = False) -> dict:
     out.mkdir(parents=True, exist_ok=True)
     (out / "lines").mkdir(exist_ok=True)
     z = zipfile.ZipFile(gtfs)
@@ -152,8 +152,14 @@ def build(gtfs: Path, out: Path, bus_network: bool = False) -> dict:
         lat, lon = round(float(s["stop_lat"]), 6), round(float(s["stop_lon"]), 6)
         stops_out.append({"id": s["stop_id"], "name": name, "lat": lat, "lon": lon, "mode": mode, "lines": lids})
         # Search: one entry per place; merge same-name stops within ~400 m
-        # (bus stops on both sides of a road, station entrances).
+        # (bus stops on both sides of a road, station entrances). With stop codes
+        # (Ankara: people know stops by number) every numbered stop stays its own row.
         key = fold(name)
+        code = str(s.get("stop_code", "") or "") if stop_codes else ""
+        if code.isdigit():
+            e = [name, key, lat, lon, mode, list(lids), code]
+            search.append(e)
+            continue
         for e in places.setdefault(key, []):
             if abs(e[2] - lat) < 0.004 and abs(e[3] - lon) < 0.005:
                 if MODE_RANK.get(mode, 9) < MODE_RANK.get(e[4], 9):
@@ -322,8 +328,9 @@ def main(argv=None) -> None:
     ap.add_argument("--gtfs", type=Path, default=ETL / "out" / "istanbul-gtfs.zip")
     ap.add_argument("--out", type=Path, default=ETL / "out" / "static")
     ap.add_argument("--bus-network", action="store_true", help="also write bus-network.geojson (Ankara)")
+    ap.add_argument("--stop-codes", action="store_true", help="one search row per numbered stop, with its code (Ankara)")
     a = ap.parse_args(argv)
-    for k, v in build(a.gtfs, a.out, a.bus_network).items():
+    for k, v in build(a.gtfs, a.out, a.bus_network, a.stop_codes).items():
         print(f"{k}: {v}")
 
 

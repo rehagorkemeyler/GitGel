@@ -108,7 +108,21 @@ export function useLineStatus(): Status | null {
   return status
 }
 
-export type ArrivalsState = { stop: string; arrivals: AnkaraArrival[] | null; error: boolean; at: number }
+export type AnkaraLineStatus = {
+  line: string
+  lineName: string
+  nextStart: string | null
+  nextStartInMin: number | null
+  noMoreToday: boolean
+}
+
+export type ArrivalsState = {
+  stop: string
+  arrivals: AnkaraArrival[] | null
+  lines: AnkaraLineStatus[]
+  error: boolean
+  at: number
+}
 
 /** Ankara: live buses coming to one stop (EGO stop number), refreshed every 15 s. */
 export function useAnkaraArrivals(stop: string | null): ArrivalsState | null {
@@ -118,9 +132,17 @@ export function useAnkaraArrivals(stop: string | null): ArrivalsState | null {
     let alive = true
     const load = () => {
       if (document.hidden) return
-      get<{ arrivals: AnkaraArrival[] }>(`/live/ankara/arrivals?stop=${encodeURIComponent(stop)}`).then(
-        (r) => alive && setState({ stop, arrivals: r.arrivals, error: false, at: Date.now() }),
-        () => alive && setState((s) => ({ stop, arrivals: s?.stop === stop ? s.arrivals : null, error: true, at: Date.now() })),
+      get<{ arrivals: AnkaraArrival[]; lines?: AnkaraLineStatus[] }>(`/live/ankara/arrivals?stop=${encodeURIComponent(stop)}`).then(
+        (r) => alive && setState({ stop, arrivals: r.arrivals, lines: r.lines ?? [], error: false, at: Date.now() }),
+        () =>
+          alive &&
+          setState((s) => ({
+            stop,
+            arrivals: s?.stop === stop ? s.arrivals : null,
+            lines: s?.stop === stop ? s.lines : [],
+            error: true,
+            at: Date.now(),
+          })),
       )
     }
     load()

@@ -8,6 +8,8 @@ import { hhmm } from '../lib/itinerary'
 import { CITY } from '../lib/city'
 import type { Station } from '../map/networkLayer'
 import { AnkaraArrivals } from '../components/AnkaraArrivals'
+import { StopCode } from '../components/StopCode'
+import { stopCode } from '../lib/city'
 import { t } from '../i18n'
 import './StationSheet.css'
 
@@ -61,7 +63,10 @@ export function StationSheet({
     <div className="station">
       <div className="station-head">
         <div className="station-title">
-          <h2>{station.name}</h2>
+          <h2>
+            {station.name}
+            <StopCode code={stopCode(station.id)} />
+          </h2>
           <div className="chips wrap">
             {station.lines.map((id) => {
               const l = lines.get(id)

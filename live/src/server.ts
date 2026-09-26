@@ -4,7 +4,7 @@
 //   GET /live/status              Metro İstanbul line problems + announcements
 //   GET /live/calibration         Bus stop-to-stop times measured from GPS (for the nightly ETL)
 //   GET /live/ankara/vehicles?line=185-7  Ankara buses on one line
-//   GET /live/ankara/arrivals?stop=11654  upcoming buses at one Ankara stop
+//   GET /live/ankara/arrivals?stop=11654  upcoming buses at one Ankara stop + other lines' next trips
 //   GET /live/health
 //
 // Every response is cached in memory and briefly by Cloudflare. When a source
@@ -14,7 +14,7 @@ import { createServer, type IncomingMessage, type ServerResponse } from 'node:ht
 import { Cache } from './cache.ts'
 import { Calibration, Sampler } from './calibration.ts'
 import { fetchLineVehicles, type Vehicle } from './iett.ts'
-import { getArrivalsByStop, getVehiclesByLine, NotImplemented, type AnkaraArrival, type AnkaraVehicle } from './providers/ego.ts'
+import { getStopBoard, getVehiclesByLine, NotImplemented, type AnkaraStopBoard, type AnkaraVehicle } from './providers/ego.ts'
 import { fetchAnnouncements, fetchStatus, type Announcement, type LineStatus } from './metro.ts'
 
 const PORT = Number(process.env.PORT ?? 8081)
@@ -33,7 +33,7 @@ const loadVehicles = (line: string) => () =>
   })
 
 const ankaraVehicles = new Cache<AnkaraVehicle[]>(10_000, 5 * 60_000)
-const ankaraArrivals = new Cache<AnkaraArrival[]>(10_000, 2 * 60_000)
+const ankaraArrivals = new Cache<AnkaraStopBoard>(10_000, 2 * 60_000)
 const status = new Cache<{ lines: LineStatus[]; announcements: Announcement[] }>(60_000, 6 * 3600_000)
 
 function send(res: ServerResponse, code: number, body: unknown, maxAge = 0) {
@@ -68,8 +68,8 @@ export async function handle(req: IncomingMessage, res: ServerResponse) {
     if (path === '/live/ankara/arrivals') {
       const stop = (url.searchParams.get('stop') ?? '').trim()
       if (!/^[0-9]{3,6}$/.test(stop)) return send(res, 400, { error: 'stop' })
-      const c = await ankaraArrivals.get(stop, () => getArrivalsByStop(stop))
-      return send(res, 200, { stop, arrivals: c.value, fetchedAt: new Date(c.fetchedAt).toISOString(), stale: c.stale }, 5)
+      const c = await ankaraArrivals.get(stop, () => getStopBoard(stop))
+      return send(res, 200, { stop, ...c.value, fetchedAt: new Date(c.fetchedAt).toISOString(), stale: c.stale }, 5)
     }
     if (path === '/live/status') {
       const lang = url.searchParams.get('lang') === 'en' ? 'en' : 'tr'
