@@ -1,0 +1,22 @@
+# Marmaray. No machine-readable source exists; values come from TCDD
+# Taşımacılık's "günlük tren saatleri" page and press summaries of it.
+# Update when TCDD changes the timetable (ETL warns after 180 days).
+id: marmaray
+checked: 2026-09-26
+sources:
+  - https://www.tcddtasimacilik.gov.tr/marmaray/tr/gunluk_tren_saatleri
+  - https://www.birgun.net/haber/marmaray-saatleri-2026-halkali-gebze-marmaray-sefer-saatleri-509724
+agency: {agency_id: tcdd, agency_name: TCDD Taşımacılık, agency_url: "https://www.tcddtasimacilik.gov.tr/marmaray"}
+route: {route_short_name: Marmaray, route_long_name: Halkalı - Gebze, route_type: 2, route_color: "0072BC"}
+osm_relation: 9987139          # "Marmaray: Halkalı - Gebze": stations and geometry
+line_minutes: 115              # Halkalı -> Gebze end to end
+patterns:
+  - from: Halkalı
+    to: Gebze
+    periods: [{start: "05:58", end: "22:58", headway: 15}]
+    reverse_periods: [{start: "06:05", end: "22:50", headway: 15}]
+  - from: Ataköy
+    to: Pendik
+    # Extra trains between Ataköy and Pendik, offset from the main pattern.
+    periods: [{start: "06:06", end: "22:36", headway: 15}]
+    reverse_periods: [{start: "06:13", end: "22:43", headway: 15}]

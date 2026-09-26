@@ -139,7 +139,10 @@ def build(out: Path, osm: Path | None, today: dt.date, workers: int = 16) -> dic
                        "route_long_name": line["LongDescription"], "route_type": rtype,
                        "route_color": c, "route_text_color": text_color(c)})
         stations = api.call(f"GetStationById/{line['Id']}")
-        stations = sorted(stations, key=lambda s: s["Order"])
+        missing = [s["Name"] for s in stations if not s["DetailInfo"].get("Latitude")]
+        if missing:
+            stats.setdefault("stations_without_coords", []).extend(f"{name} {m}" for m in missing)
+        stations = sorted((s for s in stations if s["DetailInfo"].get("Latitude")), key=lambda s: s["Order"])
         for s in stations:
             stops[s["Id"]] = {"stop_id": f"mi_{s['Id']}", "stop_name": s["Description"].strip(),
                               "stop_lat": round(float(s["DetailInfo"]["Latitude"]), 7),
@@ -242,7 +245,7 @@ def write(path: Path, rows: list[dict]) -> None:
 def main(argv=None) -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", type=Path, default=ETL / "out" / "rail")
-    ap.add_argument("--osm", type=Path, default=ETL / "cache" / "osm" / "istanbul.osm.pbf")
+    ap.add_argument("--osm", type=Path, default=ETL / "cache" / "osm" / "marmara.osm.pbf")
     ap.add_argument("--date", type=dt.date.fromisoformat, default=None)
     a = ap.parse_args(argv)
     today = a.date or dt.datetime.now(dt.timezone(dt.timedelta(hours=3))).date()
