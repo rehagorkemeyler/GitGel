@@ -51,3 +51,9 @@
   font-weight: var(--fw-bold);
   text-align: left;
 }
+
+.about-logo {
+  display: flex;
+  color: var(--text);
+  margin: var(--s-2) 0 var(--s-4);
+}
