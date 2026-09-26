@@ -129,7 +129,20 @@ export function MapView({ position, route = null, bottomInset = 0, vehicles, hid
   }, [focusLine])
 
   const lineViewRef = useRef<{ v: LineView | null; inNet: boolean }>({ v: null, inNet: false })
+  // Camera before a line page opened; restored when it closes.
+  const savedCamera = useRef<{ center: [number, number]; zoom: number } | null>(null)
   useEffect(() => {
+    const prev = lineViewRef.current.v
+    const m0 = map.current
+    if (m0 && lineView && !prev) {
+      const c = m0.getCenter()
+      savedCamera.current = { center: [c.lng, c.lat], zoom: m0.getZoom() }
+    }
+    if (m0 && !lineView && prev && savedCamera.current) {
+      const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches
+      m0.easeTo({ ...savedCamera.current, duration: reduce ? 0 : 500 })
+      savedCamera.current = null
+    }
     lineViewRef.current = { v: lineView, inNet: pathInNetwork }
     const m = map.current
     if (m && styleReady.current) showLineView(m, lineView, insetRef.current, !pathInNetwork)

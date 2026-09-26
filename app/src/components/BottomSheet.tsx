@@ -9,15 +9,18 @@ type Props = {
   expanded: boolean
   onExpandedChange: (expanded: boolean) => void
   label: string
+  /** When this changes (new station, route, line...), a minimized sheet opens again. */
+  contentKey?: string
 }
 
 const VELOCITY = 0.4 // px/ms that counts as a flick
+const MIN_VISIBLE = 88 // px left on screen when minimized: grip + title
 
 /**
  * Draggable bottom sheet. Moves only with transform (60 fps on low-end
  * Android); the spring-like easing lives in CSS and respects reduced motion.
  */
-export function BottomSheet({ peek, children, expanded, onExpandedChange, label }: Props) {
+export function BottomSheet({ peek, children, expanded, onExpandedChange, label, contentKey }: Props) {
   const sheet = useRef<HTMLDivElement>(null)
   const peekRef = useRef<HTMLDivElement>(null)
   const [peekH, setPeekH] = useState(0)
@@ -37,14 +40,22 @@ export function BottomSheet({ peek, children, expanded, onExpandedChange, label 
     return () => ro.disconnect()
   }, [])
 
+  // Three snap points: expanded (0), normal (shows the peek), minimized (title only).
+  // Minimized for one piece of content only: new content opens normally.
+  const key = contentKey ?? ''
+  const [minimizedFor, setMinimizedFor] = useState<string | null>(null)
+  const minimized = minimizedFor === key
+  const setMinimized = (on: boolean) => setMinimizedFor(on ? key : null)
   const collapsedY = Math.max(0, sheetH - peekH)
-  const baseY = expanded ? 0 : collapsedY
+  const minY = Math.max(collapsedY, sheetH - MIN_VISIBLE)
+  const baseY = expanded ? 0 : minimized ? minY : collapsedY
   const y = drag ?? baseY
+  const visible = minimized && !expanded ? MIN_VISIBLE : peekH
 
   useLayoutEffect(() => {
     // Lets the map keep its attribution above the sheet.
-    document.documentElement.style.setProperty('--map-bottom-inset', `${peekH}px`)
-  }, [peekH])
+    document.documentElement.style.setProperty('--map-bottom-inset', `${visible}px`)
+  }, [visible])
 
   // The whole sheet is a drag handle. A drag starts only after a clear vertical
   // move, so taps on buttons inside still work; pointer capture begins then.
@@ -67,9 +78,9 @@ export function BottomSheet({ peek, children, expanded, onExpandedChange, label 
       }
       const next = s0.base + dy
       // Rubber band past the ends.
-      setDrag(next < 0 ? next / 4 : next > collapsedY ? collapsedY + (next - collapsedY) / 4 : next)
+      setDrag(next < 0 ? next / 4 : next > minY ? minY + (next - minY) / 4 : next)
     },
-    [collapsedY, drag],
+    [minY, drag],
   )
 
   const onPointerUp = useCallback(
@@ -79,11 +90,21 @@ export function BottomSheet({ peek, children, expanded, onExpandedChange, label 
       e.currentTarget.releasePointerCapture?.(e.pointerId)
       const dt = Math.max(1, e.timeStamp - start.current.t)
       const v = (e.clientY - start.current.y) / dt
-      const open = Math.abs(v) > VELOCITY ? v < 0 : drag < collapsedY / 2
+      // Snap to the nearest point; a flick moves one step in its direction.
+      const snaps = [0, collapsedY, minY]
+      const from = start.current.base
+      let target: number
+      if (Math.abs(v) > VELOCITY) {
+        target = v < 0 ? Math.max(...snaps.filter((p) => p < from - 1), 0) : Math.min(...snaps.filter((p) => p > from + 1), minY)
+        if (!Number.isFinite(target)) target = from
+      } else {
+        target = snaps.reduce((a, b) => (Math.abs(b - drag) < Math.abs(a - drag) ? b : a))
+      }
       setDrag(null)
-      onExpandedChange(open)
+      setMinimizedFor(target === minY && minY > collapsedY ? key : null)
+      onExpandedChange(target === 0)
     },
-    [collapsedY, drag, onExpandedChange],
+    [collapsedY, minY, drag, onExpandedChange, key],
   )
 
   return (
@@ -102,7 +123,11 @@ export function BottomSheet({ peek, children, expanded, onExpandedChange, label 
           className="sheet-handle"
           aria-label={label}
           aria-expanded={expanded}
-          onClick={() => drag === null && onExpandedChange(!expanded)}
+          onClick={() => {
+            if (drag !== null) return
+            if (minimized) setMinimized(false)
+            else onExpandedChange(!expanded)
+          }}
         />
       </div>
       <div ref={peekRef} className="sheet-peek">
