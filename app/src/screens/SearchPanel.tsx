@@ -1,3 +1,4 @@
+import { StopCode } from '../components/StopCode'
 import { CITY } from '../lib/city'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Panel } from '../components/Panel'
@@ -114,7 +115,10 @@ export function SearchPanel({ title, onPick, onBack, myLocation }: Props) {
                 <Icon name={p.kind === 'stop' ? 'route' : 'pin'} />
               </span>
               <span className="result-text">
-                <span className="result-name">{p.name}</span>
+                <span className="result-name">
+                  {p.name}
+                  <StopCode code={p.code} />
+                </span>
                 {p.lines && p.lines.length > 0 ? (
                   <span className="chips">
                     {p.lines.slice(0, 5).map((l) => (

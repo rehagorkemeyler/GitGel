@@ -1,3 +1,5 @@
+import { StopCode } from '../components/StopCode'
+import { stopCode } from '../lib/city'
 import { useEffect, useState } from 'react'
 import { LineChip } from '../components/LineChip'
 import { stopTimes } from '../lib/api'
@@ -81,7 +83,10 @@ export function LineStops({ line, stops, dir }: Props) {
         {d.stops.map((s, i) => (
           <li key={`${s}-${i}`}>
             <button className="stop-row" onClick={() => setOpen(open === i ? null : i)} aria-expanded={open === i}>
-              <span>{stops.get(s)?.name ?? '…'}</span>
+              <span>
+                {stops.get(s)?.name ?? '…'}
+                <StopCode code={stopCode(s)} />
+              </span>
               {d.offsets?.[i] != null && i > 0 && <span className="muted">+{d.offsets[i]} {t('min')}</span>}
             </button>
             {open === i && <StopArrivals stopId={s} line={line.name} headsign={d.headsign} />}

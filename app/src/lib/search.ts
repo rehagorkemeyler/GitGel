@@ -11,10 +11,12 @@ export type Place = {
   mode?: Mode
   lines?: string[]
   sub?: string
+  /** Stop number (Ankara). */
+  code?: string
 }
 
-/** One search.json row: [name, folded name, lat, lon, mode, line names]. */
-export type IndexRow = [string, string, number, number, Mode, string[]]
+/** One search.json row: [name, folded name, lat, lon, mode, line names, stop code (Ankara)]. */
+export type IndexRow = [string, string, number, number, Mode, string[], string?]
 
 export function fold(s: string): string {
   return s
@@ -67,7 +69,11 @@ export function searchIndex(index: IndexRow[], query: string, limit = 8): Place[
   if (!q) return []
   const qWords = q.split(' ')
   const scored: [number, IndexRow][] = []
-  for (const row of index) {
+  // A number is a stop code (Ankara: "11654"): exact first, then prefixes.
+  if (/^\d{3,6}$/.test(q)) {
+    for (const row of index) if (row[6]?.startsWith(q)) scored.push([row[6] === q ? 0 : 1 + row[6].length / 100, row])
+  }
+  if (!scored.length) for (const row of index) {
     const words = row[1].split(' ')
     let total = 0
     let ok = true
@@ -91,6 +97,6 @@ export function searchIndex(index: IndexRow[], query: string, limit = 8): Place[
   }
   scored.sort((a, b) => a[0] - b[0])
   return scored.slice(0, limit).map(([, r]) => ({
-    name: r[0], lat: r[2], lon: r[3], kind: 'stop', mode: r[4], lines: r[5],
+    name: r[0], lat: r[2], lon: r[3], kind: 'stop', mode: r[4], lines: r[5], code: r[6],
   }))
 }

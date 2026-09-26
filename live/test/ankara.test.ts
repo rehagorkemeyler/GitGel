@@ -3,12 +3,13 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import {
   ankaraToIso,
-  getArrivalsByStop,
+  getStopBoard,
   mockArrivals,
   mockVehicles,
   normalizePlate,
   parseArrivals,
   parseFeatures,
+  parseLineStatus,
   parseVehicles,
 } from '../src/providers/ego.ts'
 
@@ -91,12 +92,14 @@ test('provider calls EGO with a timeout and parses the answer', async () => {
     return new Response(sample('Otobusler_DURAK_10940.json'))
   }) as typeof fetch
   try {
-    const a = await getArrivalsByStop('10940', NOW)
+    const b = await getStopBoard('10940', NOW)
     assert.match(asked, /FNC=Otobusler/)
     assert.match(asked, /DURAK=10940/)
-    assert.equal(a.length, 2)
+    assert.equal(b.arrivals.length, 2)
+    // 263-7 has live buses, so only 481 is listed with its next trip.
+    assert.deepEqual(b.lines.map((l) => l.line), ['481'])
     globalThis.fetch = (async () => new Response('', { status: 500 })) as unknown as typeof fetch
-    await assert.rejects(getArrivalsByStop('10940', NOW))
+    await assert.rejects(getStopBoard('10940', NOW))
   } finally {
     globalThis.fetch = real
   }
@@ -134,4 +137,19 @@ test('ankara routes serve mock data', async () => {
   assert.equal(a.code, 200)
   assert.ok(Array.isArray(a.json.arrivals))
   delete process.env.EGO_MOCK
+})
+
+test('lines without a live bus: next trip from the first stop, or none today', () => {
+  const doc = JSON.stringify({ status: 'TRUE', table: [
+    { arac_no: '-', hat_no: '185-6', hat_ad: 'ORAN SİTESİ-ULUS', sure: 'Sonraki Hareket Saati İlk Duraktan\n24:30 / 33 dk Sonra' },
+    { arac_no: '-', hat_no: '173-2', hat_ad: 'ULUS-ORAN', sure: 'Hattın Bugün İçin Başka Servisi Yok' },
+    { arac_no: '-', hat_no: '190', hat_ad: 'X', sure: 'Sonraki Hareket Saati İlk Duraktan\n6:05 / 5 dk Sonra' },
+    { arac_no: '-', hat_no: '999', hat_ad: 'Y', sure: 'bilinmeyen' },
+    { arac_no: '-', hat_no: '481', hat_ad: 'Z', sure: 'Hattın Bugün İçin Başka Servisi Yok' },
+  ] })
+  assert.deepEqual(parseLineStatus(doc, new Set(['481'])), [
+    { line: '190', lineName: 'X', nextStart: '06:05', nextStartInMin: 5, noMoreToday: false },
+    { line: '185-6', lineName: 'ORAN SİTESİ-ULUS', nextStart: '24:30', nextStartInMin: 33, noMoreToday: false },
+    { line: '173-2', lineName: 'ULUS-ORAN', nextStart: null, nextStartInMin: null, noMoreToday: true },
+  ])
 })

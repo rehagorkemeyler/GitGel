@@ -87,3 +87,9 @@ export function cityAt(p: [number, number] | null): CityId | null {
   for (const c of Object.values(CITIES)) if (inBounds(p, c.bounds)) return c.id
   return null
 }
+
+/** EGO stop number of an Ankara stop id ("eg_11654" -> "11654"); rail codes (M33) and Istanbul ids: null. */
+export function stopCode(id: string | undefined): string | null {
+  if (!CITY.ego || !id) return null
+  return /^eg_(\d{3,6})$/.exec(id)?.[1] ?? null
+}
