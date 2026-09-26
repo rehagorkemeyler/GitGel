@@ -1,6 +1,7 @@
 import type { ExpressionSpecification, GeoJSONSource, Map as MlMap, MapLayerMouseEvent } from 'maplibre-gl'
 import type * as GeoJSON from 'geojson'
 import { loadJson, loadStops, type StopRow } from '../lib/data'
+import { addTransitIcons, glyphFor } from './icons'
 
 // Base transit layer, like Google Maps: rail/tram/funicular/cable car/ferry lines
 // in their official colours, station markers, and bus stops when zoomed in.
@@ -10,11 +11,7 @@ export type Station = { id: string; ids: string[]; name: string; lat: number; lo
 const NET = 'net-lines'
 const ST = 'net-stations'
 const BUS = 'net-bus-stops'
-const BUS_MIN_ZOOM = 15
-
-function firstSymbolLayer(map: MlMap): string | undefined {
-  return map.getStyle().layers?.find((l) => l.type === 'symbol')?.id
-}
+const BUS_MIN_ZOOM = 14
 
 export class NetworkLayer {
   private map: MlMap
@@ -44,26 +41,23 @@ export class NetworkLayer {
   async ensure() {
     const m = this.map
     if (m.getSource(NET)) return
-    const before = firstSymbolLayer(m)
+    // Transit lines sit on top of every base-map layer (roads included), under our own markers.
     const dark = matchMedia('(prefers-color-scheme: dark)').matches
     const ink = dark ? '#e5e5ea' : '#3a3a3c'
     const paper = dark ? '#1c1c1e' : '#ffffff'
+    addTransitIcons(m, dark)
     m.addSource(NET, { type: 'geojson', data: { type: 'FeatureCollection', features: [] } })
     m.addSource(ST, { type: 'geojson', data: { type: 'FeatureCollection', features: [] } })
     m.addSource(BUS, { type: 'geojson', data: { type: 'FeatureCollection', features: [] } })
-    m.addLayer(
-      {
+    m.addLayer({
         id: NET + '-casing',
         type: 'line',
         source: NET,
         filter: ['!=', ['get', 'mode'], 'ferry'],
         layout: { 'line-cap': 'round', 'line-join': 'round' },
         paint: { 'line-color': paper, 'line-opacity': 0.8, 'line-width': ['interpolate', ['linear'], ['zoom'], 10, 2.5, 15, 7] },
-      },
-      before,
-    )
-    m.addLayer(
-      {
+      })
+    m.addLayer({
         id: NET,
         type: 'line',
         source: NET,
@@ -75,26 +69,27 @@ export class NetworkLayer {
           // Ferry hops fade in with zoom so the Bosphorus is not a web of lines.
           'line-opacity': ['interpolate', ['linear'], ['zoom'], 11, ['case', ['==', ['get', 'mode'], 'ferry'], 0.12, 1], 14, ['case', ['==', ['get', 'mode'], 'ferry'], 0.45, 1]],
         },
-      },
-      before,
-    )
+      })
     m.addLayer({
       id: BUS + '-dot',
-      type: 'circle',
+      type: 'symbol',
       source: BUS,
       minzoom: BUS_MIN_ZOOM,
-      paint: { 'circle-radius': 4, 'circle-color': paper, 'circle-stroke-color': dark ? '#aeaeb2' : '#5f5f66', 'circle-stroke-width': 1.5 },
+      layout: {
+        'icon-image': 'gg-busstop',
+        'icon-size': ['interpolate', ['linear'], ['zoom'], 14, 0.75, 17, 1],
+        'icon-allow-overlap': true,
+      },
     })
     m.addLayer({
       id: ST + '-dot',
-      type: 'circle',
+      type: 'symbol',
       source: ST,
       minzoom: 10.5,
-      paint: {
-        'circle-radius': ['interpolate', ['linear'], ['zoom'], 11, 2.5, 15, 5],
-        'circle-color': paper,
-        'circle-stroke-color': ink,
-        'circle-stroke-width': ['interpolate', ['linear'], ['zoom'], 11, 1, 15, 1.5],
+      layout: {
+        'icon-image': ['concat', 'gg-', ['get', 'glyph']],
+        'icon-size': ['interpolate', ['linear'], ['zoom'], 11, 0.5, 13, 0.75, 16, 1],
+        'icon-allow-overlap': true,
       },
     })
     m.addLayer({
@@ -105,7 +100,7 @@ export class NetworkLayer {
       layout: {
         'text-field': ['get', 'name'],
         'text-size': 12,
-        'text-offset': [0, 1.1],
+        'text-offset': [0, 1.2],
         'text-anchor': 'top',
         'text-optional': true,
         'text-font': ['Noto Sans Regular'],
@@ -133,7 +128,12 @@ export class NetworkLayer {
       type: 'FeatureCollection',
       features: stations.map((s) => ({
         type: 'Feature',
-        properties: { id: s.id, name: s.name, color: s.lines.length > 1 ? this.ink : color.get(s.lines[0]) ?? this.ink },
+        properties: {
+          id: s.id,
+          name: s.name,
+          glyph: glyphFor(s.mode),
+          color: s.lines.length > 1 ? this.ink : color.get(s.lines[0]) ?? this.ink,
+        },
         geometry: { type: 'Point', coordinates: [s.lon, s.lat] },
       })),
     })

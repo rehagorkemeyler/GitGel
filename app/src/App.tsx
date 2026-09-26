@@ -149,6 +149,9 @@ export function App() {
       )}
       <BottomSheet
         label={t('whereTo')}
+        contentKey={
+          lineId ? `line:${lineId}` : open ? `route:${open.startTime}` : to ? `to:${to.name}` : train ? `train:${train.id}` : station ? `st:${station.id}` : 'home'
+        }
         expanded={expanded}
         onExpandedChange={setExpanded}
         peek={
