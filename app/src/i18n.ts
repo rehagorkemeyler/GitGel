@@ -34,6 +34,9 @@ const tr = {
   direction: 'yönü',
   stops: 'durak',
   nextDepartures: 'Sonraki kalkışlar',
+  nearbyNeedsLocation: 'Yakındaki durakları görmek için konumunu aç. Konumun sadece telefonunda kalır.',
+  nothingNearby: 'Yakında durak bulunamadı.',
+  noDepartures: 'Yakın zamanda kalkış yok.',
 }
 
 export type StringKey = keyof typeof tr
@@ -72,6 +75,9 @@ const en: Record<StringKey, string> = {
   direction: 'direction',
   stops: 'stops',
   nextDepartures: 'Next departures',
+  nearbyNeedsLocation: 'Turn on your location to see stops near you. It stays on your phone.',
+  nothingNearby: 'No stops nearby.',
+  noDepartures: 'No departures soon.',
 }
 
 export const lang: 'tr' | 'en' =

@@ -44,7 +44,7 @@ Bitti sayılması için: test yolculuklarının hepsi internetten erişilebilen 
 - [x] Arama: MOTIS geocoding + yerel istasyon indeksi, Türkçe karakter ve yazım hatası toleransı, son aramalar (localStorage)
 - [x] Rota sonuçları: 2 ila 3 kart, süre, aktarma, yürüme, hat renkleri
 - [x] Rota detayı: adım adım, haritada çizim, sonraki kalkış
-- [ ] Yakın duraklar ekranı
+- [x] Yakın duraklar ekranı
 - [ ] Hat ve sefer ara ekranı: hat listesi, hat sayfası
 - [ ] Bize ulaşın ve Destek olun ekranları
 - [ ] Türkçe ve İngilizce metinler
