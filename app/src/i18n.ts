@@ -65,6 +65,7 @@ const tr = {
   donateSoon: 'Bağış bağlantısı yakında eklenecek.',
   contribute: 'Koda katkı ver',
   supportNoStrings: 'Bu ekran sadece sen açtığında görünür, asla kendiliğinden açılmaz.',
+  liveVehicles: 'araç haritada canlı (İETT GPS)',
 }
 
 export type StringKey = keyof typeof tr
@@ -134,6 +135,7 @@ const en: Record<StringKey, string> = {
   donateSoon: 'The donation link will be added soon.',
   contribute: 'Contribute code',
   supportNoStrings: 'This screen only appears when you open it, never on its own.',
+  liveVehicles: 'vehicles live on the map (İETT GPS)',
 }
 
 export const lang: 'tr' | 'en' =

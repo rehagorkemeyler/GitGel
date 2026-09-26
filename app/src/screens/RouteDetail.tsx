@@ -7,7 +7,7 @@ import { t } from '../i18n'
 import './RouteDetail.css'
 
 /** Step-by-step view of one itinerary; the map shows it at the same time. */
-export function RouteDetail({ it, onBack }: { it: Itinerary; onBack: () => void }) {
+export function RouteDetail({ it, liveCount = 0, onBack }: { it: Itinerary; liveCount?: number; onBack: () => void }) {
   const minutes = Math.round(it.duration / 60)
   return (
     <div className="detail">
@@ -24,6 +24,11 @@ export function RouteDetail({ it, onBack }: { it: Itinerary; onBack: () => void 
           </div>
         </div>
       </div>
+      {liveCount > 0 && (
+        <p className="live-note">
+          <span className="live-dot" aria-hidden /> {liveCount} {t('liveVehicles')}
+        </p>
+      )}
       <ol className="steps">
         {it.legs.map((leg, i) => (
           <li key={i} className="step">

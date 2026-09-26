@@ -7,6 +7,8 @@ import { ISTANBUL_BOUNDS, ISTANBUL_CENTER, MAP_STYLE } from '../lib/config'
 import { useColorScheme } from '../lib/useColorScheme'
 import type { Itinerary } from '../lib/api'
 import { showRoute } from './routeLayer'
+import { LiveLayer } from './liveLayer'
+import type { Vehicle } from '../lib/live'
 import { t } from '../i18n'
 import './MapView.css'
 
@@ -20,15 +22,18 @@ type Props = {
   route?: Itinerary | null
   /** Height covered by the bottom sheet, so the route is framed above it. */
   bottomInset?: number
+  /** Live GPS vehicles (filled dots). */
+  vehicles?: Vehicle[]
   onReady?: (map: MlMap) => void
 }
 
-export function MapView({ position, route = null, bottomInset = 0, onReady }: Props) {
+export function MapView({ position, route = null, bottomInset = 0, vehicles, onReady }: Props) {
   const container = useRef<HTMLDivElement>(null)
   const map = useRef<MlMap | null>(null)
   const marker = useRef<maplibregl.Marker | null>(null)
   const scheme = useColorScheme()
   const routeRef = useRef<Itinerary | null>(null)
+  const live = useRef<LiveLayer | null>(null)
   const insetRef = useRef(0)
   routeRef.current = route
   insetRef.current = bottomInset
@@ -53,7 +58,11 @@ export function MapView({ position, route = null, bottomInset = 0, onReady }: Pr
     map.current = m
     m.once('load', () => onReady?.(m))
     // setStyle (theme change) drops our layers: add the route back.
-    m.on('style.load', () => showRoute(m, routeRef.current, insetRef.current))
+    live.current = new LiveLayer(m)
+    m.on('style.load', () => {
+      showRoute(m, routeRef.current, insetRef.current)
+      live.current?.ensure()
+    })
     return () => {
       m.remove()
       map.current = null
@@ -70,6 +79,12 @@ export function MapView({ position, route = null, bottomInset = 0, onReady }: Pr
     const m = map.current
     if (m?.isStyleLoaded()) showRoute(m, route, insetRef.current)
   }, [route])
+
+  useEffect(() => {
+    if (!map.current?.isStyleLoaded()) return
+    live.current?.ensure()
+    live.current?.update(vehicles ?? [])
+  }, [vehicles])
 
   useEffect(() => {
     const m = map.current
