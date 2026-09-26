@@ -39,7 +39,7 @@ Bitti sayılması için: test yolculuklarının hepsi internetten erişilebilen 
 
 ## Aşama 3: Uygulama
 
-- [ ] app iskeleti: Vite + React + TS + PWA + MapLibre + OpenFreeMap, açık ve koyu tema değişkenleri, tasarım ölçekleri (VISION.md)
+- [x] app iskeleti: Vite + React + TS + PWA + MapLibre + OpenFreeMap, açık ve koyu tema değişkenleri, tasarım ölçekleri (VISION.md)
 - [ ] Ana ekran: tam ekran harita, konum izni, alt panel (Nereye, iki kare buton, iki küçük buton), sürüklenebilir panel animasyonu
 - [ ] Arama: MOTIS geocoding + yerel istasyon indeksi, Türkçe karakter ve yazım hatası toleransı, son aramalar (localStorage)
 - [ ] Rota sonuçları: 2 ila 3 kart, süre, aktarma, yürüme, hat renkleri
