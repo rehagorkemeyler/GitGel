@@ -1,0 +1,34 @@
+.status-band {
+  position: fixed;
+  top: calc(var(--s-3) + env(safe-area-inset-top));
+  left: var(--s-4);
+  right: var(--s-4);
+  max-width: 528px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  padding: var(--s-2) var(--s-4);
+  border-radius: var(--r-btn);
+  background: var(--warning-bg);
+  color: var(--warning-text);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  text-align: left;
+  font-size: var(--fs-s);
+  z-index: 6;
+}
+
+.status-title {
+  font-weight: var(--fw-bold);
+}
+
+.status-band:not(.open) .status-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.muted-small {
+  opacity: 0.8;
+}
