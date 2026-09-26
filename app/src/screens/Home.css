@@ -38,13 +38,22 @@
 }
 
 .square svg {
+  width: 28px;
+  height: 28px;
   color: var(--accent);
 }
 
 .home-small {
   display: flex;
-  justify-content: center;
-  gap: var(--s-2);
+  align-items: center;
+  gap: var(--s-1);
+}
+
+.small.lang {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-1);
 }
 
 .small {

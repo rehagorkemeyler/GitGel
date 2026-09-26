@@ -70,6 +70,11 @@ const tr = {
   scheduledHidden: 'Bu hatların tarifeye göre tren noktaları gizlendi.',
   legend: 'Harita işaretleri',
   about: 'Hakkında',
+  outsideIstanbul: 'İstanbul dışındasın. Denemek için haritada bir konum seçebilirsin.',
+  pickLocation: 'Örnek konum seç',
+  pickLocationHelp: 'Haritayı kaydırıp pini istediğin yere getir. Sayfayı yenileyene kadar konumun bu kabul edilir.',
+  useThisLocation: 'Bu konumu kullan',
+  cancel: 'Vazgeç',
   aboutIntro: 'GitGel, İstanbul\'un herkese açık ulaşım verisini sade bir araçla sunar. Ücretsiz, reklamsız, üyeliksiz.',
   aboutSources: 'Veri kaynakları',
   aboutTimetables: 'İETT ve vapur tarifeleri, İBB Açık Veri Lisansı',
@@ -155,6 +160,11 @@ const en: Record<StringKey, string> = {
   scheduledHidden: 'Scheduled train dots for these lines are hidden.',
   legend: 'Map symbols',
   about: 'About',
+  outsideIstanbul: 'You are outside Istanbul. To try the app, pick a location on the map.',
+  pickLocation: 'Pick a test location',
+  pickLocationHelp: 'Move the map to put the pin where you want. It counts as your location until you reload.',
+  useThisLocation: 'Use this location',
+  cancel: 'Cancel',
   aboutIntro: 'GitGel presents Istanbul\'s public transit data in a simple tool. Free, no ads, no account.',
   aboutSources: 'Data sources',
   aboutTimetables: 'İETT and ferry timetables, İBB Open Data License',
@@ -168,8 +178,30 @@ const en: Record<StringKey, string> = {
   aboutPrivacy: 'Your location is only used on your phone. Recent searches stay on this device. No tracking, ads or analytics.',
 }
 
+const LANG_KEY = 'gitgel.lang'
+
+function savedLang(): 'tr' | 'en' | null {
+  try {
+    const v = localStorage.getItem(LANG_KEY)
+    return v === 'tr' || v === 'en' ? v : null
+  } catch {
+    return null
+  }
+}
+
+/** Turkish unless the device language is not Turkish; the user's choice wins. */
 export const lang: 'tr' | 'en' =
-  typeof navigator !== 'undefined' && !navigator.language.toLowerCase().startsWith('tr') ? 'en' : 'tr'
+  savedLang() ??
+  (typeof navigator !== 'undefined' && !navigator.language.toLowerCase().startsWith('tr') ? 'en' : 'tr')
+
+export function setLang(l: 'tr' | 'en'): void {
+  try {
+    localStorage.setItem(LANG_KEY, l)
+  } catch {
+    // ignore: the choice then lasts only for this page load
+  }
+  location.reload()
+}
 
 const dict = lang === 'tr' ? tr : en
 
