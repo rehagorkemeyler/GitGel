@@ -79,3 +79,9 @@ Alan adı ve tünel (2. bölüm) bitince bir değişken daha ekleyeceğiz: https
 2. Uygulamayı kapat, ana ekrandan aç, "Nereye?"ye dokun, bir istasyon yaz, seç. Açılıştan rota kartları görünene kadar geçen süreyi say.
 3. Paneli parmakla yukarı aşağı sürükle; takılma var mı bak.
 4. Süreyi ve gözlemini sohbete yaz.
+
+### 2b. Canlı servis adresi (2. bölümle birlikte yap)
+
+Tünel sayfasında ("Zero Trust" > "Networks" > "Tunnels" > `gitgel` > "Public Hostname" > "Add a public hostname") ikinci bir adres ekle: Subdomain `live`, Domain senin alan adın, Service Type `HTTP`, URL `localhost:8081`. Sonra https://github.com/rehagorkemeyler/GitGel/settings/variables/actions/new sayfasında Name `LIVE_BASE`, Value `https://live.ALANADI` değişkenini ekle.
+
+Deneme: `curl -s "https://live.ALANADI/live/status" | head -c 300` komutu `{"lines":[` ile başlayan bir metin döndürmeli.
