@@ -92,10 +92,11 @@ Bitti sayılması için: noktalar hat üzerinde düzgün hareket ediyor, etiketl
 
 - [x] live: Ankara sağlayıcı arayüzü (`live/src/providers/ego.ts`), `/live/ankara/vehicles` ve `/live/ankara/arrivals` uç noktaları, sahte veri modu (EGO_MOCK=1), testler, sözleşme belgesi (docs/ankara-live-provider.md)
 - [x] Ankara canlı veri kaynağı `ego.ts` içinde: EGO Cepte servisi (hat bazında otobüsler, durak bazında kaç dk/sn kaldı, plaka, hız, yön, körüklü/engelli); uç noktalar EGO Mac projesinden (byigitt/egomac, MIT)
-- [ ] etl/ankara: EGO Hareket Saatleri sayfasından hat listesi, hat bilgisi, sefer saatleri ve sıralı durak listeleri (günde bir kez, istekler arası bekleme)
-- [ ] etl/ankara: durak koordinatlarını OSM'den durak numarasıyla eşleştir; eşleşmeyenleri raporla
-- [ ] etl/ankara: otobüs güzergah geometrisi OSM route=bus ilişkilerinden; yoksa sıralı duraklardan
-- [ ] etl/ankara: Ankara GTFS (stops, routes, trips, stop_times, shapes, calendar) + gtfs-validator; metro ve Ankaray dahil
+- [x] etl/ankara: EGO Hareket Saatleri sayfasından hat listesi, hat bilgisi, sefer saatleri ve sıralı durak listeleri (günde bir kez, istekler arası bekleme): 663 hat, 10 799 durak
+- [x] etl/ankara: durak koordinatlarını OSM'den durak numarasıyla eşleştir; eşleşmeyenleri raporla (6 197 / 10 799 eşleşti; eksikler `out/ankara/unmatched_stops.csv`)
+- [ ] etl/ankara: OSM'de olmayan ~4 600 durağın konumu (karar Görkem'de, bkz. GORKEM-TODO)
+- [x] etl/ankara: otobüs güzergah geometrisi OSM route=bus ilişkilerinden; yoksa sıralı duraklardan (318 hat OSM, 303 hat durak-durak)
+- [x] etl/ankara: Ankara GTFS (stops, routes, trips, stop_times, shapes, calendar) + gtfs-validator; metro ve Ankaray dahil (621 hat, 33 903 sefer, validator hatasız)
 - [ ] MOTIS'e Ankara OSM kesiti ve GTFS'i ekle, Ankara test yolculukları
 - [ ] app: şehir seçici (İstanbul, Ankara), harita başlangıç görünümü
 - [ ] app: Ankara raylı hatları resmi renkleriyle, otobüs güzergahları daha ince ve soluk çizgiyle; hat seçilince öne çıksın

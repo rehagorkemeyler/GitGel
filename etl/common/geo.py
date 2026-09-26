@@ -91,11 +91,34 @@ def chain_ways(ways: list[list[tuple[float, float]]]) -> np.ndarray:
     return np.array(out)
 
 
-def load_route_lines(pbf: Path, route_types: set[str]) -> list[dict]:
+def chain_in_order(ways: list[list[tuple[float, float]]]) -> np.ndarray:
+    """Join way geometries in relation member order, flipping each way to meet the tip.
+
+    Right for well-mapped PTv2 routes that use a street twice (out-and-back,
+    loops), where nearest-end chaining (chain_ways) jumps between legs."""
+    ways = [list(w) for w in ways if len(w) >= 2]
+    if not ways:
+        return np.empty((0, 2))
+    first = ways[0]
+    if len(ways) > 1 and first[0] in (ways[1][0], ways[1][-1]):
+        first = first[::-1]
+    out = list(first)
+    for w in ways[1:]:
+        tip = out[-1]
+        d0 = (w[0][0] - tip[0]) ** 2 + (w[0][1] - tip[1]) ** 2
+        d1 = (w[-1][0] - tip[0]) ** 2 + (w[-1][1] - tip[1]) ** 2
+        if d1 < d0:
+            w = w[::-1]
+        out.extend(w[1:] if w[0] == tip else w)
+    return np.array(out)
+
+
+def load_route_lines(pbf: Path, route_types: set[str], in_order: bool = False) -> list[dict]:
     """Read OSM route relations and build one polyline per relation.
 
     Returns [{id, route, ref, name, colour, line: ndarray[(lat, lon)],
               stops: [{osm_id, name, lat, lon}] in relation order}].
+    With in_order, each relation also gets `line_in_order` (see chain_in_order).
     """
     import osmium
 
@@ -106,7 +129,7 @@ def load_route_lines(pbf: Path, route_types: set[str]) -> list[dict]:
             t = r.tags
             if t.get("type") == "route" and t.get("route") in route_types:
                 ways = [m.ref for m in r.members
-                        if m.type == "w" and m.role in ("", "forward", "backward", "main")]
+                        if m.type == "w" and m.role.strip() in ("", "forward", "backward", "main")]
                 stops = [m.ref for m in r.members if m.type == "n" and m.role.startswith("stop")]
                 rels.append({"id": r.id, "route": t.get("route"), "ref": t.get("ref", ""),
                              "name": t.get("name", ""), "colour": t.get("colour", ""), "ways": ways,
@@ -133,7 +156,10 @@ def load_route_lines(pbf: Path, route_types: set[str]) -> list[dict]:
 
     Ways().apply_file(str(pbf), locations=True)
     for r in rels:
-        r["line"] = chain_ways([geom[w] for w in r.pop("ways") if w in geom])
+        ways = [geom[w] for w in r.pop("ways") if w in geom]
+        r["line"] = chain_ways(ways)
+        if in_order:
+            r["line_in_order"] = chain_in_order(ways)
         r["stops"] = [nodes[n] for n in r.pop("stop_nodes") if n in nodes]
     return [r for r in rels if len(r["line"]) >= 2]
 
