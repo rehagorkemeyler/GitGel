@@ -32,7 +32,7 @@ Bitti sayılması için: doğrulayıcıdan hatasız geçen tek bir İstanbul GTF
 - [x] infra/docker-compose.yml: motis + live servisleri
 - [x] MOTIS'i İstanbul OSM kesiti ve bizim GTFS ile çalıştır
 - [x] CLAUDE.md'deki test yolculuklarının hepsini MOTIS API'si ile dene, sonuçları docs/route-tests.md'ye yaz (ilk koşu yerelde aynı imaj ve ayarla; sunucu hazır olunca scripts/route_tests.py ile tekrar)
-- [ ] [Görkem] Cloudflare'de alan adı ve Tunnel kur, api adresini sunucuya bağla
+- [x] [Görkem] Sunucuyu internete aç: şimdilik ücretsiz Tailscale Funnel (https://gitgel.tail90b397.ts.net); alan adı alınırsa Cloudflare Tunnel (GORKEM-TODO 2)
 - [ ] Sunucu gece yeni GTFS'i çekip MOTIS'i yeniden yüklesin
 
 Bitti sayılması için: test yolculuklarının hepsi internetten erişilebilen API'den doğru dönüyor.
