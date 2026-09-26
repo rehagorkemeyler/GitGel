@@ -1,3 +1,10 @@
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="brand/gitgel-logo-white.png">
+    <img src="brand/gitgel-logo-black.png" alt="GitGel" width="320">
+  </picture>
+</p>
+
 # GitGel
 
 İstanbul için ücretsiz, reklamsız, üyeliksiz ve açık kaynak toplu taşıma uygulaması.
