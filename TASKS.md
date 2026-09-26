@@ -82,3 +82,20 @@ Bitti sayılması için: noktalar hat üzerinde düzgün hareket ediyor, etiketl
 - [x] README'de ekran görüntüleri, kurulum ve katkı rehberi
 - [ ] [Görkem] Duyuru ve ilk kullanıcılar
 - [ ] [Görkem] Metro İstanbul'a canlı tren verisi için resmi talep (taslak hazır: docs/metro-istanbul-talep.md)
+
+## Aşama 6: Ankara
+
+- [x] live: Ankara sağlayıcı arayüzü (`live/src/providers/ego.ts`), `/live/ankara/vehicles` ve `/live/ankara/arrivals` uç noktaları, sahte veri modu (EGO_MOCK=1), testler, sözleşme belgesi (docs/ankara-live-provider.md)
+- [ ] [Görkem] Ankara canlı veri kaynağını `ego.ts` içine uygula (sözleşme: docs/ankara-live-provider.md)
+- [ ] etl/ankara: EGO Hareket Saatleri sayfasından hat listesi, hat bilgisi, sefer saatleri ve sıralı durak listeleri (günde bir kez, istekler arası bekleme)
+- [ ] etl/ankara: durak koordinatlarını OSM'den durak numarasıyla eşleştir; eşleşmeyenleri raporla
+- [ ] etl/ankara: otobüs güzergah geometrisi OSM route=bus ilişkilerinden; yoksa sıralı duraklardan
+- [ ] etl/ankara: Ankara GTFS (stops, routes, trips, stop_times, shapes, calendar) + gtfs-validator; metro ve Ankaray dahil
+- [ ] MOTIS'e Ankara OSM kesiti ve GTFS'i ekle, Ankara test yolculukları
+- [ ] app: şehir seçici (İstanbul, Ankara), harita başlangıç görünümü
+- [ ] app: Ankara raylı hatları resmi renkleriyle, otobüs güzergahları daha ince ve soluk çizgiyle; hat seçilince öne çıksın
+- [ ] app: Ankara durak kartı: canlı "kaç dk var" listesi, canlı yoksa "tarifeye göre" saatler
+- [ ] app: Ankara canlı otobüs noktaları, iki ölçüm arasında yumuşak kaydırma, "x sn önce"
+- [ ] Hakkında ekranına Ankara atıfları (EGO, OpenStreetMap katkıcıları)
+
+Bitti sayılması için: Ankara'da bir durağa dokununca liste açılıyor, otobüs güzergahları çizili, sağlayıcı uygulandığında canlı noktalar hareket ediyor.
