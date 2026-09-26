@@ -80,3 +80,11 @@
   align-items: flex-start;
   gap: var(--s-1);
 }
+.notice-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-4);
+}
+.notice .quiet {
+  color: var(--text-2);
+}

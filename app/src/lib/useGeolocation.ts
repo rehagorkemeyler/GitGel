@@ -1,3 +1,4 @@
+import { CITY, inBounds } from './city'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 export type GeoState = {
@@ -66,6 +67,7 @@ export function useStablePosition(position: [number, number] | null, metres = 15
   return next
 }
 
-export function inIstanbul(p: [number, number] | null): boolean {
-  return !!p && p[0] > 27.9 && p[0] < 30.0 && p[1] > 40.7 && p[1] < 41.7
+/** Inside the city this page shows. */
+export function inCity(p: [number, number] | null): boolean {
+  return inBounds(p, CITY.bounds)
 }

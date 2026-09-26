@@ -29,6 +29,9 @@ ETL = Path(__file__).resolve().parents[1]
 OUT = ETL / "out" / "ankara"
 P = "eg_"  # id prefix, keeps Ankara ids apart from Istanbul ones
 ROUTE_TYPE = {"bus": 3, "metro": 1, "ankaray": 1, "suburban": 2}
+# Official colours (as tagged on the OSM route relations of Ankara Metrosu).
+COLORS = {"M1": ("BF0E1C", "FFFFFF"), "M2": ("BF0E1C", "FFFFFF"), "M3": ("BF0E1C", "FFFFFF"),
+          "M4": ("EDAF2E", "000000"), "A1": ("056D2E", "FFFFFF")}
 FALLBACK_KMH = 18.0
 NIGHT_END = 4 * 60  # a departure before 04:00 in a list that also has daytime times belongs to the evening before
 
@@ -151,8 +154,10 @@ def build(lines: list[dict], stops: dict, today: dt.date, out: Path) -> dict:
         stats["lines"] += 1
         stats["ego_shape" if b["fitted"] else "straight_shape"] += 1
         rid = P + code
+        color, text = COLORS.get(code.split("-")[0], ("", "")) if mode != "bus" else ("", "")
         routes.append({"route_id": rid, "agency_id": "ego", "route_short_name": code,
-                       "route_long_name": name_tr(ln["name"]), "route_type": ROUTE_TYPE[mode]})
+                       "route_long_name": name_tr(ln["name"]), "route_type": ROUTE_TYPE[mode],
+                       "route_color": color, "route_text_color": text})
         shapes += [{"shape_id": rid, "shape_pt_lat": round(p[0], 6), "shape_pt_lon": round(p[1], 6),
                     "shape_pt_sequence": k} for k, p in enumerate(b["shape"])]
         headsign = name_tr(stops[b["stops"][-1]]["name"])
@@ -160,8 +165,9 @@ def build(lines: list[dict], stops: dict, today: dt.date, out: Path) -> dict:
         for svc, mins in days.items():
             for i, m in enumerate(mins):
                 tid = f"{rid}_{svc}_{i}"
+                # EGO publishes each direction as its own line code (M1-D / M1-G, 102-1 / 102-2).
                 trips.append({"route_id": rid, "service_id": P + svc, "trip_id": tid,
-                              "trip_headsign": headsign, "shape_id": rid})
+                              "trip_headsign": headsign, "direction_id": 0, "shape_id": rid})
                 for k, (s, off) in enumerate(zip(b["stops"], b["offsets"])):
                     ts = hms(m * 60 + off)
                     stop_times.append({"trip_id": tid, "arrival_time": ts, "departure_time": ts,

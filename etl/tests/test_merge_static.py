@@ -36,3 +36,12 @@ def test_service_minutes_puts_night_after_evening():
 
 def test_title_tr_passes_through_missing_values():
     assert title_tr(float("nan")) != title_tr("X") and title_tr(None) is None
+
+
+def test_simplify_keeps_corners_drops_straight_points():
+    from static.build import simplify
+
+    straight = [[32.80 + i * 0.001, 39.9] for i in range(11)]
+    assert simplify(straight, 15) == [straight[0], straight[-1]]
+    corner = [[32.80, 39.90], [32.81, 39.90], [32.81, 39.91]]
+    assert simplify(corner, 15) == corner

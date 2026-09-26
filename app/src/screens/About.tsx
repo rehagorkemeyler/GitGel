@@ -4,10 +4,12 @@ import { t } from '../i18n'
 import { Logo } from '../components/Logo'
 import './Info.css'
 
-const SOURCES: { name: string; url: string; what: 'aboutTimetables' | 'aboutRail' | 'aboutBus' | 'aboutMap' | 'aboutTiles' | 'aboutRouting' }[] = [
+const SOURCES: { name: string; url: string; what: 'aboutTimetables' | 'aboutRail' | 'aboutBus' | 'aboutEgo' | 'aboutEgoMac' | 'aboutMap' | 'aboutTiles' | 'aboutRouting' }[] = [
   { name: 'İBB Açık Veri Portalı', url: 'https://data.ibb.gov.tr', what: 'aboutTimetables' },
   { name: 'Metro İstanbul', url: 'https://www.metro.istanbul', what: 'aboutRail' },
   { name: 'İETT', url: 'https://www.iett.istanbul', what: 'aboutBus' },
+  { name: 'EGO Genel Müdürlüğü', url: 'https://www.ego.gov.tr', what: 'aboutEgo' },
+  { name: 'EGO Mac (byigitt/egomac)', url: 'https://github.com/byigitt/egomac', what: 'aboutEgoMac' },
   { name: '© OpenStreetMap katkıcıları', url: 'https://www.openstreetmap.org/copyright', what: 'aboutMap' },
   { name: 'OpenFreeMap, OpenMapTiles', url: 'https://openfreemap.org', what: 'aboutTiles' },
   { name: 'MOTIS', url: 'https://github.com/motis-project/motis', what: 'aboutRouting' },
@@ -33,6 +35,7 @@ export function About({ onBack }: { onBack: () => void }) {
       </ul>
       <p className="muted">{t('aboutLicense')}</p>
       <p className="muted">{t('aboutHonesty')}</p>
+      <p className="muted">{t('aboutHonestyAnkara')}</p>
       <p className="muted">{t('aboutPrivacy')}</p>
       <p>
         <a href={REPO_URL} target="_blank" rel="noreferrer">
