@@ -92,6 +92,19 @@ def segment_minutes(stations: list[dict], api_orders: list[list[dict]], total: f
     return [max(s * scale, 0.5) for s in seg]
 
 
+def fill_coords_from_osm(stations: list[dict], relations: list[dict]) -> None:
+    """Some API stations have no coordinates; take them from OSM stop members by name."""
+    osm_stops = {norm(st["name"]): st for r in relations for st in r.get("stops", []) if st["name"]}
+    for s in stations:
+        if s["DetailInfo"].get("Latitude"):
+            continue
+        for key in (norm(s["Description"] or ""), norm(s["Name"])):
+            hit = osm_stops.get(key) or next((v for k, v in osm_stops.items() if key and (key in k or k in key)), None)
+            if hit:
+                s["DetailInfo"]["Latitude"], s["DetailInfo"]["Longitude"] = str(hit["lat"]), str(hit["lon"])
+                break
+
+
 def rep_dates(today: dt.date) -> dict[str, dt.date]:
     """Next Tuesday, Saturday and Sunday strictly after today."""
     def nxt(wd):
@@ -139,6 +152,8 @@ def build(out: Path, osm: Path | None, today: dt.date, workers: int = 16) -> dic
                        "route_long_name": line["LongDescription"], "route_type": rtype,
                        "route_color": c, "route_text_color": text_color(c)})
         stations = api.call(f"GetStationById/{line['Id']}")
+        candidates = [r for r in osm_lines if r["ref"] == name]
+        fill_coords_from_osm(stations, candidates)
         missing = [s["Name"] for s in stations if not s["DetailInfo"].get("Latitude")]
         if missing:
             stats.setdefault("stations_without_coords", []).extend(f"{name} {m}" for m in missing)
@@ -161,7 +176,7 @@ def build(out: Path, osm: Path | None, today: dt.date, workers: int = 16) -> dic
                     pass
         seg = segment_minutes(stations, api_orders, trip_minutes(line["Content"]))
         cum = np.concatenate([[0], np.cumsum(seg)])
-        candidates = [r["line"] for r in osm_lines if r["ref"] == name]
+        candidates = [r["line"] for r in candidates]
         stats["lines"] += 1
 
         for d in directions:

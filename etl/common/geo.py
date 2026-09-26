@@ -56,26 +56,38 @@ def cut(line: np.ndarray, start_m: float, end_m: float) -> np.ndarray:
 
 
 def chain_ways(ways: list[list[tuple[float, float]]]) -> np.ndarray:
-    """Join ordered way geometries into one polyline, flipping ways as needed."""
-    ways = [w for w in ways if len(w) >= 2]
+    """Join way geometries into one polyline.
+
+    Relation member order is often wrong, so ways are chained by shared end
+    nodes: start from a dangling end and always continue with the way whose
+    end is closest to the current tip (flipping it when needed).
+    """
+    ways = [list(w) for w in ways if len(w) >= 2]
     if not ways:
         return np.empty((0, 2))
-    out = list(ways[0])
-    if len(ways) > 1:
-        w1 = ways[1]
-        # Orient the first way so that its end touches the second way.
-        if out[0] in (w1[0], w1[-1]) and out[-1] not in (w1[0], w1[-1]):
-            out.reverse()
-    for w in ways[1:]:
-        if w[0] == out[-1]:
-            out.extend(w[1:])
-        elif w[-1] == out[-1]:
-            out.extend(reversed(w[:-1]))
-        else:
-            # Gap: connect to the nearer end.
-            d0 = (w[0][0] - out[-1][0]) ** 2 + (w[0][1] - out[-1][1]) ** 2
-            d1 = (w[-1][0] - out[-1][0]) ** 2 + (w[-1][1] - out[-1][1]) ** 2
-            out.extend(w if d0 <= d1 else list(reversed(w)))
+    ends: dict[tuple[float, float], int] = {}
+    for w in ways:
+        for p in (w[0], w[-1]):
+            ends[p] = ends.get(p, 0) + 1
+    # Prefer a way with a dangling end (degree 1) as the start, respecting relation order.
+    start = next((i for i, w in enumerate(ways) if ends[w[0]] == 1 or ends[w[-1]] == 1), 0)
+    first = ways[start]
+    if ends[first[0]] != 1 and ends[first[-1]] == 1:
+        first = first[::-1]
+    out = list(first)
+    left = [w for i, w in enumerate(ways) if i != start]
+    while left:
+        tip = out[-1]
+        best, best_d, flip = 0, float("inf"), False
+        for i, w in enumerate(left):
+            for rev, p in ((False, w[0]), (True, w[-1])):
+                d = (p[0] - tip[0]) ** 2 + (p[1] - tip[1]) ** 2
+                if d < best_d:
+                    best, best_d, flip = i, d, rev
+        w = left.pop(best)
+        if flip:
+            w = w[::-1]
+        out.extend(w[1:] if w[0] == tip else w)
     return np.array(out)
 
 
@@ -135,13 +147,14 @@ def shape_for_stops(candidates: list[np.ndarray], stops: list[tuple[float, float
     best, best_err = None, max_offset_m
     for line in candidates:
         proj = [project(line, s) for s in stops]
-        err = max(p[1] for p in proj)
+        # Tolerate a few stations with bad coordinates.
+        err = float(np.percentile([p[1] for p in proj], 80))
         along = [p[0] for p in proj]
         if along[0] > along[-1]:
             line = line[::-1]
             proj = [project(line, s) for s in stops]
             along = [p[0] for p in proj]
-        monotonic = all(b >= a - 50 for a, b in zip(along, along[1:]))
+        monotonic = sum(b < a - 100 for a, b in zip(along, along[1:])) <= max(1, len(along) // 10)
         if err < best_err and monotonic and along[-1] > along[0]:
             best, best_err = cut(line, along[0], along[-1]), err
     if best is None:
