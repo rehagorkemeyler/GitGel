@@ -230,6 +230,16 @@ Marmaray: TCDD'nin ilk/son tren saatleri ve marmaray.istanbul'un Haziran 2026 ta
 
 Otobüs kalibrasyonu: İETT GTFS'inde yalnızca ilk durak saati var, ara duraklar hız modeliyle tahmin ediliyor. Canlı servis (live/src/calibration.ts) otobüs hatlarını sırayla örnekliyor (12 hatlık gruplar, 40 dakika, toplamda ~5 saniyede bir istek) ve uygulamanın istediği hatları da kullanıyor. Her aracın "en yakın durak" kodu değiştiğinde iki durak arası süreyi kaydediyor (hat, durak çifti, hafta içi/sonu ve saat dilimi: am 06–10, mid 10–16, pm 16–20, night). Araç kimliği saklanmıyor. /live/calibration bu medyanları veriyor; gece ETL'i indiriyor (yoksa bir önceki kopya) ve hat + saat dilimi başına model süresini ölçekliyor (en az 8 örnek; yoksa tüm otobüslerin o dilimdeki katsayısı, en az 50 örnek; katsayı 0.5–2.5 arasında). Metrobüs yalnızca kendi verisiyle kalibre edilir.
 
+## 8.6 Ankara canlı verisi (26 Eylül 2026)
+
+EGO'nun kendi "EGO Cepte" uygulamasının JSON servisi anahtarsız çalışıyor: `https://egocptsrvand.ego.gov.tr/mblSrv14/service.asp?VER=3.1.0&LAN=tr&FNC=...`. Uç noktalar ve alan anlamları MIT lisanslı EGO Mac projesinden (github.com/byigitt/egomac, `docs/api-discovery.md`). Görkem bu kaynağı kullanmayı onayladı.
+
+- `FNC=Otobus&HAT={hat}`: hattaki bütün canlı otobüsler (DURAK verilmezse ETA yok, `saniye=999999`). `FNC=Otobus&HAT={hat}&DURAK={durak}` aynı listeyi o durağa ETA ile verir.
+- `FNC=Otobusler&DURAK={durak}`: duraktan geçecek hatlar; canlı satırlarda plaka, konum, hız (`hiz`), yön (`aci`), `saniye` (ETA), `durak_sira_no` ve `secili_durak_sira_no` (fark = kaç durak kaldı), `detay` ("Körüklü‚ Engelli", ayraç U+201A). Tarifeli satırlarda `arac_no="-"` ve yalnızca `sure` metni var.
+- `konum_tarihi` Ankara saati (`dd.MM.yyyy HH:mm:ss`, UTC+3). Geçmiş otobüs `saniye=999999`, `sure="Geçti"`.
+- Hat listesi ve sefer saatleri web sitesinde: POST `www.ego.gov.tr/AjaxData/HatListesi` ve POST `www.ego.gov.tr/HareketSaatleri` (`hat_no1=`). Bir hattın sıralı durak listesi için doğrudan uç nokta yok.
+- Örnek cevaplar: `docs/api-samples/ankara/`.
+
 ## 9. Açık sorular ve riskler
 
 1. Raylı sistemde gerçek canlı veri yok. Ürünün "Google'dan iyi" iddiası ilk sürümde canlı konuma değil; hıza, sadeliğe, İstanbul'a özel doğru rotaya, hizmet durumuna ve dürüst etiketlemeye dayanmalı.

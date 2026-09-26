@@ -91,7 +91,7 @@ Bitti sayılması için: noktalar hat üzerinde düzgün hareket ediyor, etiketl
 ## Aşama 6: Ankara
 
 - [x] live: Ankara sağlayıcı arayüzü (`live/src/providers/ego.ts`), `/live/ankara/vehicles` ve `/live/ankara/arrivals` uç noktaları, sahte veri modu (EGO_MOCK=1), testler, sözleşme belgesi (docs/ankara-live-provider.md)
-- [ ] [Görkem] Ankara canlı veri kaynağını `ego.ts` içine uygula (sözleşme: docs/ankara-live-provider.md)
+- [x] Ankara canlı veri kaynağı `ego.ts` içinde: EGO Cepte servisi (hat bazında otobüsler, durak bazında kaç dk/sn kaldı, plaka, hız, yön, körüklü/engelli); uç noktalar EGO Mac projesinden (byigitt/egomac, MIT)
 - [ ] etl/ankara: EGO Hareket Saatleri sayfasından hat listesi, hat bilgisi, sefer saatleri ve sıralı durak listeleri (günde bir kez, istekler arası bekleme)
 - [ ] etl/ankara: durak koordinatlarını OSM'den durak numarasıyla eşleştir; eşleşmeyenleri raporla
 - [ ] etl/ankara: otobüs güzergah geometrisi OSM route=bus ilişkilerinden; yoksa sıralı duraklardan

@@ -2,13 +2,18 @@
 
 GitGel shows Ankara live buses and stop arrivals through one file:
 `live/src/providers/ego.ts`. Everything else (server routes, caching, the app)
-depends only on the contract below. This document does not cover where the
-data comes from; that is the implementer's choice.
+depends only on the contract below.
 
-## What to implement
+## Source
 
-Replace the `throw new NotImplemented()` lines in these two functions. Keep the
-signatures and the mock branch.
+The provider calls the JSON service behind EGO's "EGO Cepte" app
+(`egocptsrvand.ego.gov.tr/mblSrv14/service.asp`, no key): `FNC=Otobus&HAT=`
+for vehicles on a line, `FNC=Otobusler&DURAK=` for arrivals at a stop.
+Endpoint discovery credit: EGO Mac (github.com/byigitt/egomac, MIT). Field notes
+in docs/research.md section 8.6, samples in `docs/api-samples/ankara/`.
+`EGO_BASE` overrides the service URL if EGO moves it.
+
+## Functions
 
 ```ts
 getVehiclesByLine(line: string): Promise<AnkaraVehicle[]>
@@ -23,7 +28,9 @@ getArrivalsByStop(stopNo: string): Promise<AnkaraArrival[]>
 | line | string | EGO line code as shown on the website, e.g. `185-7`, `391` |
 | lat, lon | number | WGS84 decimal degrees. Drop records outside Ankara (lat 39.3 to 40.6, lon 31.8 to 33.8) |
 | speed | number or null | km/h |
+| heading | number or null | Degrees clockwise from north |
 | plate | string or null | Normalized `06 HO 1327` (single spaces, no trailing dash) |
+| features | string[] | Vehicle attributes from EGO, e.g. `Körüklü`, `Engelli` |
 | updatedAt | string | ISO 8601 UTC time of the position fix. Ankara local time is UTC+3 |
 
 Drop vehicles whose fix is older than 5 minutes.
@@ -35,6 +42,8 @@ Drop vehicles whose fix is older than 5 minutes.
 | line | string | Line code |
 | lineName | string | Human readable name, e.g. `(ÖHO) ORAN SİTESİ-GÜNEŞEVLER` |
 | plate | string or null | Same normalization as above |
+| features | string[] | As above |
+| speed | number or null | km/h |
 | etaSeconds | number | Integer, 0 means at the stop now. Never negative |
 | stopsAway | number or null | Stops between the bus and this stop |
 
@@ -79,5 +88,4 @@ curl ':8081/live/ankara/vehicles?line=185-7'
 curl ':8081/live/ankara/arrivals?stop=11654'
 ```
 
-HTTP responses: 200 with data, 400 for bad input, 501 while the provider is not
-implemented, 503 when the source is down and no cached value is left.
+HTTP responses: 200 with data, 400 for bad input, 503 when the source is down and no cached value is left.
