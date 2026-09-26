@@ -1,6 +1,7 @@
 import { Panel } from '../components/Panel'
 import { REPO_URL } from '../lib/config'
 import { t } from '../i18n'
+import { Logo } from '../components/Logo'
 import './Info.css'
 
 const SOURCES: { name: string; url: string; what: 'aboutTimetables' | 'aboutRail' | 'aboutBus' | 'aboutMap' | 'aboutTiles' | 'aboutRouting' }[] = [
@@ -15,6 +16,9 @@ const SOURCES: { name: string; url: string; what: 'aboutTimetables' | 'aboutRail
 export function About({ onBack }: { onBack: () => void }) {
   return (
     <Panel title={t('about')} onBack={onBack}>
+      <div className="about-logo">
+        <Logo height={40} />
+      </div>
       <p>{t('aboutIntro')}</p>
       <h2 className="about-h">{t('aboutSources')}</h2>
       <ul className="link-list">
