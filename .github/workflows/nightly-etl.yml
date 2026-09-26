@@ -89,7 +89,7 @@ jobs:
         run: |
           python -m ankara.ego_api
           python -m ankara.gtfs --validate
-          python -m static.build --gtfs out/ankara-gtfs.zip --out out/static/ankara --bus-network
+          python -m static.build --gtfs out/ankara-gtfs.zip --out out/static/ankara --bus-network --stop-codes
           cp out/ankara/lines.json out/ankara-lines.json
       - name: Merge and validate
         run: python -m merge.build --validate

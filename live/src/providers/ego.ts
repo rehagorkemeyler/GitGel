@@ -31,6 +31,21 @@ export type AnkaraArrival = {
   stopsAway: number | null // stops between the bus and this stop
 }
 
+/** A line at the stop with no live bus coming: what EGO says about its next trip. */
+export type AnkaraLineStatus = {
+  line: string
+  lineName: string
+  /** Next departure from the line's first stop, "HH:MM" (EGO writes "24:30" after midnight). */
+  nextStart: string | null
+  /** Minutes until that departure. */
+  nextStartInMin: number | null
+  /** EGO: "Hattın Bugün İçin Başka Servisi Yok". */
+  noMoreToday: boolean
+}
+
+/** Everything the stop card needs: live buses, and the other lines' next trips. */
+export type AnkaraStopBoard = { arrivals: AnkaraArrival[]; lines: AnkaraLineStatus[] }
+
 export class NotImplemented extends Error {
   constructor() {
     super('Ankara live provider is not implemented')
@@ -51,9 +66,11 @@ export async function getVehiclesByLine(line: string, now = Date.now()): Promise
   return parseVehicles(await call({ FNC: 'Otobus', HAT: line }), line, now)
 }
 
-export async function getArrivalsByStop(stopNo: string, now = Date.now()): Promise<AnkaraArrival[]> {
-  if (mock()) return mockArrivals(stopNo, now)
-  return parseArrivals(await call({ FNC: 'Otobusler', DURAK: stopNo }), now)
+export async function getStopBoard(stopNo: string, now = Date.now()): Promise<AnkaraStopBoard> {
+  if (mock()) return { arrivals: mockArrivals(stopNo, now), lines: mockLines() }
+  const json = await call({ FNC: 'Otobusler', DURAK: stopNo })
+  const arrivals = parseArrivals(json, now)
+  return { arrivals, lines: parseLineStatus(json, new Set(arrivals.map((a) => a.line))) }
 }
 
 async function call(params: Record<string, string>): Promise<string> {
@@ -173,6 +190,30 @@ export function parseArrivals(json: string, now: number): AnkaraArrival[] {
   return out.sort((a, b) => a.etaSeconds - b.etaSeconds)
 }
 
+/**
+ * Scheduled-only rows ("arac_no": "-") of lines with no live bus coming:
+ * "Sonraki Hareket Saati İlk Duraktan\n24:30 / 33 dk Sonra" or "Hattın Bugün İçin Başka Servisi Yok".
+ */
+export function parseLineStatus(json: string, live: Set<string>): AnkaraLineStatus[] {
+  const out = new Map<string, AnkaraLineStatus>()
+  for (const r of rows(json)) {
+    const line = lineOf(r)
+    if (!line || live.has(line) || out.has(line) || isLive(r)) continue
+    const sure = str(r.sure)
+    const m = sure.match(/(\d{1,2}):(\d{2})\s*\/\s*(\d+)\s*dk/i)
+    const noMore = /başka servisi yok/i.test(sure)
+    if (!m && !noMore) continue
+    out.set(line, {
+      line,
+      lineName: str(r.hat_ad),
+      nextStart: m ? `${m[1].padStart(2, '0')}:${m[2]}` : null,
+      nextStartInMin: m ? Number(m[3]) : null,
+      noMoreToday: !m && noMore,
+    })
+  }
+  return [...out.values()].sort((a, b) => (a.nextStartInMin ?? 1e9) - (b.nextStartInMin ?? 1e9))
+}
+
 // ---- mock data ------------------------------------------------------------
 
 function seed(s: string): number {
@@ -198,6 +239,13 @@ export function mockVehicles(line: string, now: number): AnkaraVehicle[] {
       updatedAt: new Date(now - 5_000).toISOString(),
     }
   })
+}
+
+export function mockLines(): AnkaraLineStatus[] {
+  return [
+    { line: '185-6', lineName: 'MOCK HAT 185-6', nextStart: '24:30', nextStartInMin: 33, noMoreToday: false },
+    { line: '173-2', lineName: 'MOCK HAT 173-2', nextStart: null, nextStartInMin: null, noMoreToday: true },
+  ]
 }
 
 export function mockArrivals(stopNo: string, now: number): AnkaraArrival[] {

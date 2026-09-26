@@ -1,0 +1,14 @@
+.stop-code {
+  display: inline-block;
+  flex-shrink: 0;
+  margin-left: var(--s-2);
+  padding: 0 6px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  font-size: var(--fs-s);
+  font-weight: normal;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-2);
+  vertical-align: middle;
+  line-height: 1.5;
+}

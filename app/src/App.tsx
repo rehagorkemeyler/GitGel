@@ -21,7 +21,7 @@ import { CITY, CITY_CHOSEN, switchCity } from './lib/city'
 import type { Place } from './lib/search'
 import type { Itinerary } from './lib/api'
 import { t } from './i18n'
-import { loadJson, loadSearchIndex } from './lib/data'
+import { loadJson, loadSearchIndex, loadStops } from './lib/data'
 import { useLineStatus, useLiveVehicles, type Vehicle } from './lib/live'
 import { StatusBand } from './components/StatusBand'
 import { LocationPicker } from './components/LocationPicker'
@@ -261,6 +261,21 @@ export function App() {
           myLocation={searchFor === 'from' ? (me ?? { name: t('myLocation'), kind: 'me', lat: 0, lon: 0 }) : null}
           onBack={() => setScreen('home')}
           onPick={(p) => {
+            // A stop picked by its number (Ankara) opens its card: that is what people look up.
+            if (searchFor === 'to' && p.code) {
+              setScreen('home')
+              loadStops().then((all) => {
+                const s = all.find((x) => x.id === `eg_${p.code}`)
+                if (!s) return setTo(p)
+                setLineId(null)
+                setTrain(null)
+                setBus(null)
+                setStation({ ...s, ids: [s.id] })
+                setExpanded(false)
+                map?.jumpTo({ center: [s.lon, s.lat], zoom: 16.5 })
+              }, () => setTo(p))
+              return
+            }
             if (searchFor === 'to') setTo(p)
             else if (p.kind === 'me') {
               setFromChoice(null)

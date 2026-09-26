@@ -17,7 +17,7 @@ in docs/research.md section 8.6, samples in `docs/api-samples/ankara/`.
 
 ```ts
 getVehiclesByLine(line: string): Promise<AnkaraVehicle[]>
-getArrivalsByStop(stopNo: string): Promise<AnkaraArrival[]>
+getStopBoard(stopNo: string): Promise<{ arrivals: AnkaraArrival[]; lines: AnkaraLineStatus[] }>
 ```
 
 ### AnkaraVehicle (map markers)
@@ -47,9 +47,18 @@ Drop vehicles whose fix is older than 5 minutes.
 | etaSeconds | number | Integer, 0 means at the stop now. Never negative |
 | stopsAway | number or null | Stops between the bus and this stop |
 
+### AnkaraLineStatus (stop panel, lines with no live bus coming)
+
+| Field | Type | Notes |
+|---|---|---|
+| line, lineName | string | As above |
+| nextStart | string or null | Next departure from the line's first stop, "HH:MM" (EGO writes "24:30" after midnight) |
+| nextStartInMin | number or null | Minutes until that departure |
+| noMoreToday | boolean | EGO: "Hattın Bugün İçin Başka Servisi Yok". The app then shows the next day's first trip from GTFS |
+
 Return arrivals sorted by `etaSeconds`, live buses only. Buses that already
-passed the stop are not returned. Schedule-only rows are not returned either;
-the app builds those itself from GTFS.
+passed the stop are not returned. Schedule-only rows go to `lines` instead, one
+per line that has no live bus coming, soonest `nextStartInMin` first.
 
 ## Rules
 
