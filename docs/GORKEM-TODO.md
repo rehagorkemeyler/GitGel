@@ -59,3 +59,14 @@ Uygulama rotaları `api.<alan-adın>` adresinden alacak. Sunucuda 22 dışında 
    Beklenen: `[{"type":"STOP",...` ile başlayan bir metin. İlk MOTIS içe aktarımı sunucuda 10 ila 20 dakika sürebilir; o sırada hata gelirse biraz bekle.
 
 7. Sohbete alan adını ve 6. adımın çıktısını yapıştır.
+
+## 3. GitHub Pages'i aç (Aşama 3)
+
+Uygulama https://rehagorkemeyler.github.io/GitGel/ adresinde yayınlanacak.
+
+1. https://github.com/rehagorkemeyler/GitGel/settings/pages sayfasını aç.
+2. "Build and deployment" altında "Source" kutusunda "GitHub Actions" seç. Başka bir şeye dokunma.
+3. https://github.com/rehagorkemeyler/GitGel/actions/workflows/deploy-pages.yml sayfasında "Run workflow" > "Run workflow".
+4. 2 dakika sonra https://rehagorkemeyler.github.io/GitGel/ adresini telefonda aç. Harita ve "Nereye?" paneli görünmeli.
+
+Alan adı ve tünel (2. bölüm) bitince bir değişken daha ekleyeceğiz: https://github.com/rehagorkemeyler/GitGel/settings/variables/actions/new sayfasında Name `API_BASE`, Value `https://api.ALANADI` (ALANADI senin alan adın). Sonra 3. adımı tekrarla.
