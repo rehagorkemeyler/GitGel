@@ -28,7 +28,8 @@ function send(res: ServerResponse, code: number, body: unknown, maxAge = 0) {
 
 export async function handle(req: IncomingMessage, res: ServerResponse) {
   const url = new URL(req.url ?? '/', 'http://x')
-  const path = url.pathname.replace(/\/+$/, '')
+  // Accept "/live/x" and "/x": a proxy may or may not strip the /live mount (Tailscale Funnel does).
+  const path = '/live' + url.pathname.replace(/\/+$/, '').replace(/^\/live(?=\/|$)/, '')
   if (req.method === 'OPTIONS') return send(res, 204, null)
   if (req.method !== 'GET') return send(res, 405, { error: 'method' })
   try {
