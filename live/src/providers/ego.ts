@@ -211,8 +211,8 @@ export function mockArrivals(stopNo: string, now: number): AnkaraArrival[] {
       plate: `06 MK ${1000 + ((base + i) % 9000)}`,
       features: ['Engelli'],
       speed: 20 + i * 5,
-      etaSeconds: ((base >> (i * 4)) % 20) * 60 + ((60 - (now / 1000) % 60) | 0) - (minute % 3) * 30 + 60,
-      stopsAway: ((base >> (i * 3)) % 12) + 1,
+      etaSeconds: ((base >>> (i * 4)) % 20) * 60 + ((60 - (now / 1000) % 60) | 0) - (minute % 3) * 30 + 60,
+      stopsAway: ((base >>> (i * 3)) % 12) + 1,
     }))
     .map((a) => ({ ...a, etaSeconds: Math.max(0, a.etaSeconds) }))
     .sort((a, b) => a.etaSeconds - b.etaSeconds)

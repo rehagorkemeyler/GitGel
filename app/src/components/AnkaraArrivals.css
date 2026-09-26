@@ -5,11 +5,26 @@
 }
 
 .arrival {
-  display: flex;
+  /* Grid, not flex: the middle column always shrinks, so the time never leaves the screen. */
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  gap: var(--s-2);
+  column-gap: var(--s-2);
+  width: 100%;
   min-height: 52px;
+  padding: 0;
+  text-align: left;
+  color: inherit;
   border-bottom: 1px solid var(--border);
+  overflow: hidden;
+}
+
+.arrival:disabled {
+  opacity: 1;
+}
+
+.arrival:active:not(:disabled) {
+  opacity: 0.6;
 }
 
 .arrival-main {
@@ -20,6 +35,8 @@
 }
 
 .arrival-name {
+  display: block;
+  max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

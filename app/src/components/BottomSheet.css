@@ -52,6 +52,8 @@
 
 .sheet-peek {
   padding: 0 var(--s-4) calc(var(--s-4) + env(safe-area-inset-bottom));
+  min-width: 0;
+  overflow-x: hidden; /* long names ellipsize; the sheet never scrolls sideways */
 }
 
 .sheet-body {

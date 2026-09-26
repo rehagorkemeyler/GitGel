@@ -84,7 +84,7 @@ export function StationSheet({
         </button>
       )}
 
-      {egoStop && <AnkaraArrivals stop={egoStop} lines={lines} />}
+      {egoStop && <AnkaraArrivals stop={egoStop} lines={lines} onLine={onLine} />}
       {!CITY.routing && !egoStop && <p className="muted">{t('routingSoonAnkara')}</p>}
       {CITY.routing && <h3 className="station-sub">{t('nextArrivals')}</h3>}
       {CITY.routing && !current && <p className="muted">…</p>}
