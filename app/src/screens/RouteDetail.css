@@ -54,3 +54,19 @@
 .next {
   margin-top: var(--s-1);
 }
+
+.live-note {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  margin: 0 0 var(--s-3);
+  font-size: var(--fs-s);
+  color: var(--live);
+}
+
+.live-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--live);
+}
