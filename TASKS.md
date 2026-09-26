@@ -47,7 +47,7 @@ Bitti sayılması için: test yolculuklarının hepsi internetten erişilebilen 
 - [x] Yakın duraklar ekranı
 - [x] Hat ve sefer ara ekranı: hat listesi, hat sayfası
 - [x] Bize ulaşın ve Destek olun ekranları
-- [ ] Türkçe ve İngilizce metinler
+- [x] Türkçe ve İngilizce metinler
 - [ ] GitHub Pages'e otomatik yayın
 - [ ] Performans testi: düşük seviye Android'de akıcılık, açılıştan rotaya 5 saniye
 
