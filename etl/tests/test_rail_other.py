@@ -1,6 +1,8 @@
 import datetime as dt
 
-from other.build import departures, find_stop
+import numpy as np
+
+from other.build import departures, find_stop, service_id, station_minutes
 from rail.build import match_station, norm, rep_dates, segment_minutes, trip_minutes
 
 
@@ -39,6 +41,21 @@ def test_rep_dates():
 
 def test_departures():
     assert departures([{"start": "06:00", "end": "06:30", "headway": 15}]) == [360, 375, 390]
+    # Past midnight: times continue above 24:00 on the same service day.
+    assert departures([{"start": "23:58", "end": "01:28", "headway": 30}]) == [1438, 1468, 1498, 1528]
+
+
+def test_service_id():
+    assert service_id({"start": "06:00"}) == "oth_daily"
+    assert service_id({"days": ["friday", "saturday"]}) == "oth_fri_sat"
+
+
+def test_station_minutes_interpolates_missing_stops():
+    stops = [{"name": n} for n in ["A", "B", "C", "D"]]
+    along = np.array([0.0, 1000.0, 3000.0, 4000.0])
+    cfg = {"stop_times": {"D": {"A": "23:50", "C": "00:05", "D": "00:10"}}}
+    m = station_minutes(cfg, stops, along)[3]
+    assert list(m) == [0, 5, 15, 20]
 
 
 def test_find_stop():
