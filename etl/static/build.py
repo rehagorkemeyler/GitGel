@@ -107,10 +107,12 @@ def build(gtfs: Path, out: Path) -> dict:
             fd = firsts[(firsts["line_id"] == line_id) & (firsts["direction_id"] == rt["direction_id"])]
             times = {}
             for svc, sg in fd.groupby("service_id"):
-                deps = sorted(sg["departure_time"])
+                # The service day starts at 04:00: earlier times are the previous night.
+                deps = sorted(sg["departure_time"], key=service_minutes)
                 for d in day_type.get(svc, []):
                     cur = times.get(d)
-                    times[d] = [min(deps[0], cur[0]) if cur else deps[0], max(deps[-1], cur[1]) if cur else deps[-1]]
+                    times[d] = [min(deps[0], cur[0], key=service_minutes) if cur else deps[0],
+                                max(deps[-1], cur[1], key=service_minutes) if cur else deps[-1]]
             dirs.append({"headsign": title_tr(stop_name.get(ids[-1], "")) if ids else "",
                          "stops": ids,
                          "first_last": {d: [hhmm(a), hhmm(b)] for d, (a, b) in times.items()}})
@@ -165,6 +167,12 @@ def build(gtfs: Path, out: Path) -> dict:
             "lines": len(lines_out), "stops": len(stops_out)}
     dump("meta.json", meta)
     return meta
+
+
+def service_minutes(t: str) -> int:
+    """HH:MM[:SS] as minutes into a service day that starts at 04:00."""
+    m = int(t[:2]) * 60 + int(t[3:5])
+    return m + 24 * 60 if m < 4 * 60 else m
 
 
 def natural(s: str):

@@ -45,7 +45,7 @@ Bitti sayılması için: test yolculuklarının hepsi internetten erişilebilen 
 - [x] Rota sonuçları: 2 ila 3 kart, süre, aktarma, yürüme, hat renkleri
 - [x] Rota detayı: adım adım, haritada çizim, sonraki kalkış
 - [x] Yakın duraklar ekranı
-- [ ] Hat ve sefer ara ekranı: hat listesi, hat sayfası
+- [x] Hat ve sefer ara ekranı: hat listesi, hat sayfası
 - [ ] Bize ulaşın ve Destek olun ekranları
 - [ ] Türkçe ve İngilizce metinler
 - [ ] GitHub Pages'e otomatik yayın
