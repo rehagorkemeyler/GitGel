@@ -44,3 +44,14 @@ def test_departures():
 def test_find_stop():
     stops = [{"name": "Halkalı"}, {"name": "İstanbul Havalimanı"}]
     assert find_stop("Istanbul Havalimani", stops) == 1
+
+
+def test_timetable_store_expires(tmp_path):
+    from rail.build import TimetableStore, today_service
+    st = TimetableStore(tmp_path / "t.json")
+    st.put(34, "wk", dt.date(2026, 9, 1), ["06:00"])
+    st.save()
+    st2 = TimetableStore(tmp_path / "t.json")
+    assert st2.get(34, "wk", dt.date(2026, 9, 10)) == ["06:00"]
+    assert st2.get(34, "wk", dt.date(2026, 10, 1)) is None
+    assert today_service(dt.date(2026, 9, 26)) == "sat"
