@@ -1,0 +1,14 @@
+# F2 Karaköy - Beyoğlu (Tünel) funicular. The OSM relation has no stop members,
+# so the stations are the two ends of its geometry.
+id: f2
+checked: 2026-09-26
+sources: [https://www.iett.istanbul]
+agency: {agency_id: iett, agency_name: İETT, agency_url: "https://www.iett.istanbul"}
+route: {route_short_name: F2, route_long_name: Karaköy - Beyoğlu (Tünel), route_type: 7, route_color: "7C7358"}
+osm_relation: 13313679         # "Tünel (F2): Beyoğlu → Karaköy"
+line_end_stops: [Beyoğlu (Tünel), Karaköy (Tünel)]
+patterns:
+  - from: Karaköy (Tünel)
+    to: Beyoğlu (Tünel)
+    minutes: 2
+    periods: [{start: "07:00", end: "22:45", headway: 5}]

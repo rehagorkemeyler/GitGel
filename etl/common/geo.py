@@ -82,7 +82,8 @@ def chain_ways(ways: list[list[tuple[float, float]]]) -> np.ndarray:
 def load_route_lines(pbf: Path, route_types: set[str]) -> list[dict]:
     """Read OSM route relations and build one polyline per relation.
 
-    Returns [{id, route, ref, name, colour, line: ndarray[(lat, lon)]}].
+    Returns [{id, route, ref, name, colour, line: ndarray[(lat, lon)],
+              stops: [{osm_id, name, lat, lon}] in relation order}].
     """
     import osmium
 
@@ -94,14 +95,23 @@ def load_route_lines(pbf: Path, route_types: set[str]) -> list[dict]:
             if t.get("type") == "route" and t.get("route") in route_types:
                 ways = [m.ref for m in r.members
                         if m.type == "w" and m.role in ("", "forward", "backward", "main")]
+                stops = [m.ref for m in r.members if m.type == "n" and m.role.startswith("stop")]
                 rels.append({"id": r.id, "route": t.get("route"), "ref": t.get("ref", ""),
-                             "name": t.get("name", ""), "colour": t.get("colour", ""), "ways": ways})
+                             "name": t.get("name", ""), "colour": t.get("colour", ""), "ways": ways,
+                             "stop_nodes": stops})
 
     Rels().apply_file(str(pbf))
     need = {w for r in rels for w in r["ways"]}
+    need_nodes = {n for r in rels for n in r["stop_nodes"]}
     geom: dict[int, list[tuple[float, float]]] = {}
+    nodes: dict[int, dict] = {}
 
     class Ways(osmium.SimpleHandler):
+        def node(self, n):
+            if n.id in need_nodes and n.location.valid():
+                nodes[n.id] = {"osm_id": n.id, "name": n.tags.get("name", ""),
+                               "lat": n.location.lat, "lon": n.location.lon}
+
         def way(self, w):
             if w.id in need:
                 try:
@@ -112,6 +122,7 @@ def load_route_lines(pbf: Path, route_types: set[str]) -> list[dict]:
     Ways().apply_file(str(pbf), locations=True)
     for r in rels:
         r["line"] = chain_ways([geom[w] for w in r.pop("ways") if w in geom])
+        r["stops"] = [nodes[n] for n in r.pop("stop_nodes") if n in nodes]
     return [r for r in rels if len(r["line"]) >= 2]
 
 
