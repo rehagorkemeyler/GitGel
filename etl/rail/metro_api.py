@@ -34,7 +34,10 @@ class MetroApi:
         key = endpoint + json.dumps(body, sort_keys=True)
         cp = self._cache_path(key)
         if cp and cp.exists():
-            return json.loads(cp.read_text())
+            cached = json.loads(cp.read_text())
+            if isinstance(cached, dict) and "__error__" in cached:
+                raise RuntimeError(f"{endpoint} {body}: {cached['__error__']} (cached)")
+            return cached
         last = None
         for i in range(self.tries):
             try:
@@ -48,9 +51,12 @@ class MetroApi:
                         if cp:
                             cp.write_text(json.dumps(d["Data"], ensure_ascii=False))
                         return d["Data"]
-                    last = d.get("Error", {}).get("Message")
-                    # Application errors are deterministic; do not hammer.
+                    last = (d.get("Error") or {}).get("Message")
+                    # Application errors are deterministic; do not hammer, and
+                    # remember them so a rerun does not ask again.
                     if i >= 2:
+                        if cp:
+                            cp.write_text(json.dumps({"__error__": last}))
                         break
                 else:
                     last = f"HTTP {r.status_code}"

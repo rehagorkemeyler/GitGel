@@ -13,7 +13,7 @@ echo "==> System updates"
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -q
 apt-get -yq -o Dpkg::Options::="--force-confold" upgrade
-apt-get install -yq git curl ca-certificates unattended-upgrades
+apt-get install -yq git curl ca-certificates unattended-upgrades osmium-tool
 
 echo "==> Automatic security updates"
 cat > /etc/apt/apt.conf.d/20auto-upgrades <<'CONF'
@@ -44,7 +44,8 @@ echo "==> Repository in $APP_DIR"
 if [ ! -d "$APP_DIR/.git" ]; then
   git clone "$REPO_URL" "$APP_DIR"
 fi
-chown -R "$APP_USER:$APP_USER" "$APP_DIR"
+mkdir -p /opt/gitgel-data/motis
+chown -R "$APP_USER:$APP_USER" "$APP_DIR" /opt/gitgel-data
 chmod +x "$APP_DIR/infra/deploy.sh"
 
 if [ -n "$DEPLOY_PUBKEY" ]; then

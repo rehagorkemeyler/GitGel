@@ -1,0 +1,28 @@
+# GitGel server stack. Started by infra/deploy.sh on every push to main.
+# Only SSH is open to the internet; public traffic reaches these services
+# through Cloudflare Tunnel (cloudflared joins when infra/.env has TUNNEL_TOKEN).
+name: gitgel
+
+services:
+  motis:
+    image: ghcr.io/motis-project/motis:2.11.3
+    command: ["/motis", "server", "/data"]
+    volumes:
+      - /opt/gitgel-data/motis/current:/data:ro
+    ports:
+      - "127.0.0.1:8080:8080"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:8080/ || exit 1"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    command: ["tunnel", "--no-autoupdate", "run"]
+    environment:
+      - TUNNEL_TOKEN=${TUNNEL_TOKEN:-}
+    restart: unless-stopped
+    profiles: ["tunnel"]
+    network_mode: host
