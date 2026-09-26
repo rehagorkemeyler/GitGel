@@ -9,7 +9,10 @@ import { inIstanbul } from '../lib/useGeolocation'
 import type { Itinerary } from '../lib/api'
 import { showRoute } from './routeLayer'
 import { LiveLayer } from './liveLayer'
-import { RailLayer } from './railLayer'
+import { RailLayer, type TrainInfo } from './railLayer'
+import { NetworkLayer, type Station } from './networkLayer'
+import { showLineView } from './lineViewLayer'
+import type { LineView } from '../lib/lineDetail'
 import type { Vehicle } from '../lib/live'
 import { t } from '../i18n'
 import './MapView.css'
@@ -30,10 +33,19 @@ type Props = {
   hiddenLines?: string[]
   /** Number of scheduled rail dots currently drawn. */
   onRailCount?: (n: number) => void
+  /** Tap on a station or stop marker. */
+  onStation?: (s: Station) => void
+  /** Tap on a scheduled train ring. */
+  onTrain?: (t: TrainInfo) => void
+  /** Line to emphasise (line page). */
+  focusLine?: string | null
+  /** Opened line page: path and stops. `pathInNetwork` = the base layer already draws its track. */
+  lineView?: LineView | null
+  pathInNetwork?: boolean
   onReady?: (map: MlMap) => void
 }
 
-export function MapView({ position, route = null, bottomInset = 0, vehicles, hiddenLines, onRailCount, onReady }: Props) {
+export function MapView({ position, route = null, bottomInset = 0, vehicles, hiddenLines, onRailCount, onStation, onTrain, focusLine = null, lineView = null, pathInNetwork = false, onReady }: Props) {
   const container = useRef<HTMLDivElement>(null)
   const map = useRef<MlMap | null>(null)
   const marker = useRef<maplibregl.Marker | null>(null)
@@ -41,6 +53,14 @@ export function MapView({ position, route = null, bottomInset = 0, vehicles, hid
   const routeRef = useRef<Itinerary | null>(null)
   const live = useRef<LiveLayer | null>(null)
   const rail = useRef<RailLayer | null>(null)
+  const net = useRef<NetworkLayer | null>(null)
+  // True between 'style.load' and the next setStyle. (isStyleLoaded() also turns
+  // false while any GeoJSON source is updating, which is constantly here.)
+  const styleReady = useRef(false)
+  const onStationRef = useRef(onStation)
+  onStationRef.current = onStation
+  const onTrainRef = useRef(onTrain)
+  onTrainRef.current = onTrain
   const insetRef = useRef(0)
   routeRef.current = route
   insetRef.current = bottomInset
@@ -63,14 +83,22 @@ export function MapView({ position, route = null, bottomInset = 0, vehicles, hid
     })
     m.touchZoomRotate.disableRotation()
     map.current = m
+    // Test hook for automated screenshots: only with ?debug in the URL.
+    if (location.search.includes('debug')) (window as unknown as { __map: MlMap }).__map = m
     m.once('load', () => onReady?.(m))
     // setStyle (theme change) drops our layers: add the route back.
     live.current = new LiveLayer(m)
+    net.current = new NetworkLayer(m)
+    net.current.onStation = (st) => onStationRef.current?.(st)
     rail.current = new RailLayer(m)
     rail.current.onCount = (n) => onRailCount?.(n)
+    rail.current.onTrain = (tr) => onTrainRef.current?.(tr)
     m.on('style.load', () => {
+      styleReady.current = true
+      net.current?.ensure()
       rail.current?.ensure()
       showRoute(m, routeRef.current, insetRef.current)
+      showLineView(m, lineViewRef.current.v, insetRef.current, !lineViewRef.current.inNet)
       live.current?.ensure()
     })
     return () => {
@@ -82,21 +110,37 @@ export function MapView({ position, route = null, bottomInset = 0, vehicles, hid
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  const firstScheme = useRef(scheme)
   useEffect(() => {
+    if (scheme === firstScheme.current) return
+    firstScheme.current = scheme
+    styleReady.current = false
     map.current?.setStyle(MAP_STYLE[scheme])
   }, [scheme])
 
   useEffect(() => {
     const m = map.current
-    if (m?.isStyleLoaded()) showRoute(m, route, insetRef.current)
+    if (m && styleReady.current) showRoute(m, route, insetRef.current)
   }, [route])
+
+  useEffect(() => {
+    net.current?.setFocus(focusLine)
+    rail.current?.setOnly(focusLine)
+  }, [focusLine])
+
+  const lineViewRef = useRef<{ v: LineView | null; inNet: boolean }>({ v: null, inNet: false })
+  useEffect(() => {
+    lineViewRef.current = { v: lineView, inNet: pathInNetwork }
+    const m = map.current
+    if (m && styleReady.current) showLineView(m, lineView, insetRef.current, !pathInNetwork)
+  }, [lineView, pathInNetwork])
 
   useEffect(() => {
     rail.current?.setHidden(hiddenLines ?? [])
   }, [hiddenLines])
 
   useEffect(() => {
-    if (!map.current?.isStyleLoaded()) return
+    if (!styleReady.current) return
     live.current?.ensure()
     live.current?.update(vehicles ?? [])
   }, [vehicles])
