@@ -53,6 +53,17 @@ const tr = {
   modeMetrobus: 'Metrobüs',
   modeFerry: 'Vapur',
   modeBus: 'Otobüs',
+  contactIntro: 'Yanlış bir rota, eksik bir durak ya da bir hata mı gördün? Bize yaz, düzeltelim.',
+  reportProblem: 'Hata bildir',
+  reportProblemSub: 'GitHub üzerinden, herkese açık',
+  email: 'E-posta',
+  sourceCode: 'Kaynak kod',
+  supportIntro1: 'GitGel ücretsiz, reklamsız ve üyeliksiz bir İstanbul toplu taşıma uygulaması. Kodu açık, veri kaynakları açık.',
+  supportIntro2: 'Sunucu ve alan adı giderlerini karşılamak için bağış kabul ediyoruz. Bağış hiçbir özelliği açmaz ya da kısıtlamaz.',
+  donate: 'Bağış yap',
+  donateSoon: 'Bağış bağlantısı yakında eklenecek.',
+  contribute: 'Koda katkı ver',
+  supportNoStrings: 'Bu ekran sadece sen açtığında görünür, asla kendiliğinden açılmaz.',
 }
 
 export type StringKey = keyof typeof tr
@@ -110,6 +121,17 @@ const en: Record<StringKey, string> = {
   modeMetrobus: 'Metrobüs',
   modeFerry: 'Ferry',
   modeBus: 'Bus',
+  contactIntro: 'Seen a wrong route, a missing stop or a bug? Tell us and we will fix it.',
+  reportProblem: 'Report a problem',
+  reportProblemSub: 'On GitHub, public',
+  email: 'Email',
+  sourceCode: 'Source code',
+  supportIntro1: 'GitGel is a free, ad-free, account-free Istanbul transit app. The code and the data sources are open.',
+  supportIntro2: 'Donations cover the server and domain costs. Donating never unlocks or limits any feature.',
+  donate: 'Donate',
+  donateSoon: 'The donation link will be added soon.',
+  contribute: 'Contribute code',
+  supportNoStrings: 'This screen only appears when you open it, never on its own.',
 }
 
 export const lang: 'tr' | 'en' =
