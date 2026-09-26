@@ -118,3 +118,33 @@ export async function stopTimes(stopId: string, time: Date, n = 10): Promise<Sto
   })
   return res.stopTimes ?? []
 }
+
+export type TripSegment = {
+  trips: { tripId: string; routeShortName?: string }[]
+  routeColor?: string
+  mode: string
+  departure: string
+  arrival: string
+  polyline: string
+}
+
+/** Scheduled trip segments inside a map box (MOTIS railviz). Polylines use precision 5. */
+export async function mapTrips(
+  min: [number, number],
+  max: [number, number],
+  zoom: number,
+  start: Date,
+  end: Date,
+): Promise<TripSegment[]> {
+  return get<TripSegment[]>(
+    '/api/v1/map/trips',
+    {
+      min: `${min[1]},${min[0]}`,
+      max: `${max[1]},${max[0]}`,
+      zoom: String(Math.round(zoom)),
+      startTime: start.toISOString(),
+      endTime: end.toISOString(),
+    },
+    10000,
+  )
+}
