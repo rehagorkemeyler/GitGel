@@ -1,0 +1,20 @@
+.map {
+  position: absolute;
+  inset: 0;
+  background: var(--bg);
+}
+
+.me-dot {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 3px solid #fff;
+  box-shadow: 0 0 0 6px color-mix(in srgb, var(--accent) 25%, transparent);
+}
+
+/* Keep the attribution clear of the bottom sheet's rounded top. */
+.maplibregl-ctrl-bottom-right,
+.maplibregl-ctrl-bottom-left {
+  bottom: var(--map-bottom-inset, 0px);
+}
