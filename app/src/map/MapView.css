@@ -18,3 +18,13 @@
 .maplibregl-ctrl-bottom-left {
   bottom: var(--map-bottom-inset, 0px);
 }
+
+.maplibregl-ctrl-attrib,
+.maplibregl-ctrl.maplibregl-ctrl-attrib {
+  background: color-mix(in srgb, var(--surface) 90%, transparent);
+  color: var(--text-2);
+}
+
+.maplibregl-ctrl-attrib a {
+  color: var(--text-2);
+}

@@ -2,9 +2,13 @@ import { useEffect, useRef } from 'react'
 import * as maplibregl from 'maplibre-gl'
 import type { Map as MlMap } from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
+import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url'
 import { ISTANBUL_BOUNDS, ISTANBUL_CENTER, MAP_STYLE } from '../lib/config'
 import { useColorScheme } from '../lib/useColorScheme'
 import './MapView.css'
+
+// Vite bundles MapLibre's module worker separately; tell MapLibre where it is.
+maplibregl.setWorkerUrl(workerUrl)
 
 type Props = {
   /** User position [lon, lat], when known. */
