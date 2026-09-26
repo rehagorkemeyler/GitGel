@@ -1,0 +1,69 @@
+{
+ "table": [
+  {
+   "id": "1",
+   "tur": "EGO, OTOBÜS",
+   "kod": "101",
+   "ad": "GÖLBAŞI-HAYMANA YOLU-BAHÇELİEVLER",
+   "sure": "73",
+   "mesafe": "43",
+   "detay": "Süresi 73 dk, Hat Uzunluğu 43 km"
+  },
+  {
+   "id": "2",
+   "tur": "EGO, OTOBÜS",
+   "kod": "101-1",
+   "ad": "GÖLBAŞI-HAYMANA YOLU-BAHÇELİEVLER-KARAOĞLAN MAHALLESİ",
+   "sure": "83",
+   "mesafe": "49",
+   "detay": "Süresi 83 dk, Hat Uzunluğu 49 km"
+  },
+  {
+   "id": "24",
+   "tur": "ÖTA, OTOBÜS",
+   "kod": "113-5",
+   "ad": "(ÖTA) TARIM BAKANLIĞI METRO-ANKARA BİLKENT ŞEHİR HASTANESİ",
+   "sure": "15",
+   "mesafe": "4",
+   "detay": "Süresi 15 dk, Hat Uzunluğu 4 km"
+  },
+  {
+   "id": "28",
+   "tur": "ÖHO, OTOBÜS",
+   "kod": "114-7",
+   "ad": "(ÖHO) KIRKKONAKLAR-ŞENYURT",
+   "sure": "110",
+   "mesafe": "37",
+   "detay": "Süresi 110 dk, Hat Uzunluğu 37 km"
+  },
+  {
+   "id": "663",
+   "tur": "METRO, METRO",
+   "kod": "M1-D",
+   "ad": "ÇAYYOLU-SİNCAN",
+   "sure": "59",
+   "mesafe": "46",
+   "detay": "Süresi 59 dk, Hat Uzunluğu 46 km"
+  },
+  {
+   "id": "659",
+   "tur": "ANKARAY, ANKARAY",
+   "kod": "A1-D",
+   "ad": "AŞTİ-DİKİMEVİ",
+   "sure": "15",
+   "mesafe": "8",
+   "detay": "Süresi 15 dk, Hat Uzunluğu 8 km"
+  },
+  {
+   "id": "661",
+   "tur": "BANLİYO, BANLİYO",
+   "kod": "B1-D",
+   "ad": "KAYAŞ-SİNCAN",
+   "sure": "39",
+   "mesafe": "36",
+   "detay": "Süresi 39 dk, Hat Uzunluğu 36 km"
+  }
+ ],
+ "message": "",
+ "status": "TRUE"
+}
