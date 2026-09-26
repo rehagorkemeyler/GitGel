@@ -2,6 +2,7 @@
 // device language is not Turkish.
 const tr = {
   whereTo: 'Nereye?',
+  map: 'Harita',
   nearby: 'Yakın duraklar',
   lines: 'Hat ve sefer ara',
   contact: 'Bize ulaşın',
@@ -70,6 +71,7 @@ export type StringKey = keyof typeof tr
 
 const en: Record<StringKey, string> = {
   whereTo: 'Where to?',
+  map: 'Map',
   nearby: 'Nearby stops',
   lines: 'Lines and timetables',
   contact: 'Contact us',
@@ -138,6 +140,8 @@ export const lang: 'tr' | 'en' =
   typeof navigator !== 'undefined' && !navigator.language.toLowerCase().startsWith('tr') ? 'en' : 'tr'
 
 const dict = lang === 'tr' ? tr : en
+
+if (typeof document !== 'undefined') document.documentElement.lang = lang
 
 export function t(key: StringKey): string {
   return dict[key]

@@ -7,6 +7,7 @@ import { ISTANBUL_BOUNDS, ISTANBUL_CENTER, MAP_STYLE } from '../lib/config'
 import { useColorScheme } from '../lib/useColorScheme'
 import type { Itinerary } from '../lib/api'
 import { showRoute } from './routeLayer'
+import { t } from '../i18n'
 import './MapView.css'
 
 // Vite bundles MapLibre's module worker separately; tell MapLibre where it is.
@@ -76,7 +77,7 @@ export function MapView({ position, route = null, bottomInset = 0, onReady }: Pr
     if (!marker.current) {
       const el = document.createElement('div')
       el.className = 'me-dot'
-      el.setAttribute('aria-label', 'Konumun')
+      el.setAttribute('aria-label', t('myLocation'))
       marker.current = new maplibregl.Marker({ element: el }).setLngLat(position).addTo(m)
       if (!routeRef.current) m.jumpTo({ center: position, zoom: 15 })
     } else {
@@ -84,5 +85,5 @@ export function MapView({ position, route = null, bottomInset = 0, onReady }: Pr
     }
   }, [position])
 
-  return <div ref={container} className="map" role="region" aria-label="Harita" />
+  return <div ref={container} className="map" role="region" aria-label={t('map')} />
 }
