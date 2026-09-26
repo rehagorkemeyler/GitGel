@@ -19,7 +19,7 @@ Bitti sayılması için: docs/api-samples/ dolu, her mod için veri kaynağı ka
 - [x] etl/other: Marmaray, M11, vapur ve eksik hatlar
 - [x] etl/merge: hepsini tek GTFS'te birleştir, gtfs-validator ile doğrula
 - [x] etl/static: uygulamanın ihtiyaç duyduğu küçük JSON'lar (hat listesi, renkler, istasyonlar, arama indeksi)
-- [ ] GitHub Actions: her gece ETL'i çalıştır, çıktıyı yayınla
+- [x] GitHub Actions: her gece ETL'i çalıştır, çıktıyı yayınla (release data-latest)
 
 Bitti sayılması için: doğrulayıcıdan hatasız geçen tek bir İstanbul GTFS'i her gece otomatik üretiliyor.
 
