@@ -149,7 +149,9 @@ class TimetableStore:
 
     def __init__(self, path: Path):
         self.path = path
-        self.data: dict = json.loads(path.read_text()) if path.exists() else {}
+        # First run: start from the timetables committed with the code.
+        src = path if path.exists() else Path(__file__).with_name("seed_timetables.json")
+        self.data: dict = json.loads(src.read_text()) if src.exists() else {}
 
     def get(self, direction_id: int, svc: str, today: dt.date) -> list[str] | None:
         e = self.data.get(str(direction_id), {}).get(svc)
