@@ -33,7 +33,7 @@ const BUS_MIN_ZOOM = 14
 
 export class NetworkLayer {
   private map: MlMap
-  private focus: string | null = null
+  private focus: string[] | null = null
   private busLoaded = false
   onStation?: (s: Station) => void
   private stations = new Map<string, Station>()
@@ -210,9 +210,9 @@ export class NetworkLayer {
     })
   }
 
-  /** Emphasise one line (line page) and fade the rest; null restores the network. */
-  setFocus(line: string | null) {
-    this.focus = line
+  /** Emphasise some lines (a line page, or every line of a tapped stop) and fade the rest; null restores the network. */
+  setFocus(lines: string[] | null) {
+    this.focus = lines && lines.length ? lines : null
     this.applyFocus()
   }
 
@@ -220,18 +220,17 @@ export class NetworkLayer {
     const m = this.map
     if (!m.getLayer(NET)) return
     const f = this.focus
+    const hit: ExpressionSpecification = ['in', ['get', 'line'], ['literal', f ?? []]]
     if (m.getLayer(BUSNET)) {
-      const hit: ExpressionSpecification = ['==', ['get', 'line'], f ?? '']
       m.setPaintProperty(BUSNET, 'line-opacity', f ? ['case', hit, 1, 0.05] : BUS_OPACITY)
       m.setPaintProperty(BUSNET, 'line-width', f
         ? (['interpolate', ['linear'], ['zoom'], 10, ['case', hit, 4, 0.5], 15, ['case', hit, 7, 1.2]] as ExpressionSpecification)
         : (['interpolate', ['linear'], ['zoom'], 10, 0.5, 15, 1.2] as ExpressionSpecification))
       m.setPaintProperty(BUSNET, 'line-color', f ? ['case', hit, this.accent, this.ink] : this.ink)
     }
-    m.setPaintProperty(NET, 'line-opacity', f ? ['case', ['==', ['get', 'line'], f], 1, 0.12] : LINE_OPACITY)
-    const on: ExpressionSpecification = ['==', ['get', 'line'], f ?? '']
+    m.setPaintProperty(NET, 'line-opacity', f ? ['case', hit, 1, 0.12] : LINE_OPACITY)
     m.setPaintProperty(NET, 'line-width', f
-      ? (['interpolate', ['linear'], ['zoom'], 10, ['case', on, 5, FERRY, 0.8, 2.5], 15, ['case', on, 9, FERRY, 2, 6]] as ExpressionSpecification)
+      ? (['interpolate', ['linear'], ['zoom'], 10, ['case', hit, 5, FERRY, 0.8, 2.5], 15, ['case', hit, 9, FERRY, 2, 6]] as ExpressionSpecification)
       : (LINE_WIDTH as ExpressionSpecification))
   }
 }
