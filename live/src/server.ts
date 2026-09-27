@@ -6,7 +6,7 @@
 //   GET /live/ankara/vehicles?line=185-7  Ankara buses on one line
 //   GET /live/ankara/arrivals?stop=11654  upcoming buses at one Ankara stop + other lines' next trips
 //   GET /live/ankara/calibration  Ankara bus stop-to-stop times measured from EGO positions (nightly ETL)
-//   GET /live/places/autocomplete?q=moda&session=<uuid>&lat=&lon=  Google Places (capped, see places.ts)
+//   GET /live/places/autocomplete?q=moda&session=<uuid>&lat=&lon=&city=istanbul|ankara  Google Places (capped, see places.ts)
 //   GET /live/places/details?id=<placeId>&session=<uuid>
 //   GET /live/search?q=popeyes&city=ankara&lat=39.87&lon=32.86  places and addresses (Photon), nearest first
 //   GET /live/health
@@ -20,7 +20,7 @@ import { Calibration, Sampler } from './calibration.ts'
 import { fetchLineVehicles, type Vehicle } from './iett.ts'
 import { getStopBoard, getVehiclesByLine, NotImplemented, type AnkaraStopBoard, type AnkaraVehicle } from './providers/ego.ts'
 import { CITIES, search, type SearchResult } from './search.ts'
-import { LimitReached, NotConfigured, Places } from './places.ts'
+import { LimitReached, NotConfigured, Places, RECTANGLES, type PlacesCity } from './places.ts'
 import { fetchAnnouncements, fetchStatus, type Announcement, type LineStatus } from './metro.ts'
 
 const PORT = Number(process.env.PORT ?? 8081)
@@ -113,8 +113,10 @@ export async function handle(req: IncomingMessage, res: ServerResponse) {
           const lon = Number(url.searchParams.get('lon'))
           const near: [number, number] | undefined =
             Number.isFinite(lat) && Number.isFinite(lon) && lat && lon ? [Math.round(lat * 1000) / 1000, Math.round(lon * 1000) / 1000] : undefined
+          const cityParam = url.searchParams.get('city') ?? 'istanbul'
+          if (!(cityParam in RECTANGLES)) return send(res, 400, { error: 'city' })
           places.allowClient(clientIp(req))
-          return send(res, 200, { results: await places.autocomplete(q, session, near) })
+          return send(res, 200, { results: await places.autocomplete(q, session, near, cityParam as PlacesCity) })
         }
         const id = url.searchParams.get('id') ?? ''
         if (!/^[A-Za-z0-9_-]{10,300}$/.test(id)) return send(res, 400, { error: 'id' })
