@@ -263,6 +263,7 @@ export function App() {
         <SearchPanel
           title={t(searchFor === 'to' ? 'whereTo' : 'from')}
           myLocation={searchFor === 'from' ? (me ?? { name: t('myLocation'), kind: 'me', lat: 0, lon: 0 }) : null}
+          near={stablePos}
           onBack={() => setScreen('home')}
           onPick={(p) => {
             // A stop picked by its number (Ankara) opens its card: that is what people look up.

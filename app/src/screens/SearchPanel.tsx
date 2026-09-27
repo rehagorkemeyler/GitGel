@@ -4,11 +4,11 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Panel } from '../components/Panel'
 import { Icon } from '../components/Icon'
 import { LineChip } from '../components/LineChip'
-import { geocode } from '../lib/api'
+import { formatDistance, searchPlaces } from '../lib/places'
 import { loadSearchIndex, lineColors, type Line } from '../lib/data'
 import { recentPlaces, rememberPlace, clearRecent } from '../lib/recent'
 import { searchIndex, type IndexRow, type Place } from '../lib/search'
-import { API_BASE } from '../lib/config'
+import { API_BASE, LIVE_BASE } from '../lib/config'
 import { lang, t } from '../i18n'
 import './SearchPanel.css'
 
@@ -18,9 +18,11 @@ type Props = {
   onBack: () => void
   /** Offer "my location" as the first choice (used for the origin). */
   myLocation?: Place | null
+  /** User position [lon, lat]: nearest results first, with distances. */
+  near?: [number, number] | null
 }
 
-export function SearchPanel({ title, onPick, onBack, myLocation }: Props) {
+export function SearchPanel({ title, onPick, onBack, myLocation, near = null }: Props) {
   const [query, setQuery] = useState('')
   const [index, setIndex] = useState<IndexRow[] | null>(null)
   const [indexError, setIndexError] = useState(false)
@@ -35,14 +37,14 @@ export function SearchPanel({ title, onPick, onBack, myLocation }: Props) {
     lineColors().then(setColors, () => {})
   }, [])
 
-  const local = useMemo(() => (index ? searchIndex(index, query) : []), [index, query])
+  const local = useMemo(() => (index ? searchIndex(index, query, 8, near) : []), [index, query, near])
 
   useEffect(() => {
-    // MOTIS geocoding only knows the cities it has data for.
-    if (!API_BASE || !CITY.routing || query.trim().length < 3) return
+    // Place search: the live service (Photon), else MOTIS geocoding where it has the city.
+    if (!(LIVE_BASE || (API_BASE && CITY.routing)) || query.trim().length < 2) return
     let alive = true
     const timer = setTimeout(() => {
-      geocode(query, lang).then(
+      searchPlaces(query, lang, near).then(
         (r) => alive && setRemote({ q: query, places: r }),
         () => {},
       )
@@ -51,7 +53,7 @@ export function SearchPanel({ title, onPick, onBack, myLocation }: Props) {
       alive = false
       clearTimeout(timer)
     }
-  }, [query])
+  }, [query, near])
 
   const pick = (p: Place) => {
     rememberPlace(p)
@@ -129,6 +131,7 @@ export function SearchPanel({ title, onPick, onBack, myLocation }: Props) {
                   p.sub && <span className="result-sub">{p.sub}</span>
                 )}
               </span>
+              {p.distance !== undefined && <span className="result-distance">{formatDistance(p.distance)}</span>}
             </button>
           </li>
         ))}

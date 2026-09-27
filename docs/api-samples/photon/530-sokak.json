@@ -1,0 +1,140 @@
+{
+ "type": "FeatureCollection",
+ "features": [
+  {
+   "type": "Feature",
+   "properties": {
+    "osm_key": "highway",
+    "osm_value": "residential",
+    "type": "street",
+    "name": "530. Sokak",
+    "district": "Sancak",
+    "city": "Çankaya",
+    "state": "Ankara",
+    "country": "Türkiye",
+    "countrycode": "TR",
+    "extent": [
+     32.8621041,
+     39.8665846,
+     32.8642713,
+     39.8654196
+    ]
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     32.863189,
+     39.8659997
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "osm_key": "highway",
+    "osm_value": "residential",
+    "type": "street",
+    "name": "530. Sokak",
+    "district": "General Zeki Doğan",
+    "city": "Mamak",
+    "state": "Ankara",
+    "country": "Türkiye",
+    "countrycode": "TR",
+    "extent": [
+     32.9101048,
+     39.9145461,
+     32.9103121,
+     39.9134134
+    ]
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     32.9101081,
+     39.9139723
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "osm_key": "highway",
+    "osm_value": "residential",
+    "type": "street",
+    "name": "530. Sokak",
+    "district": "Karşıyaka",
+    "city": "Yenimahalle",
+    "state": "Ankara",
+    "country": "Türkiye",
+    "countrycode": "TR",
+    "extent": [
+     32.7923365,
+     39.9747917,
+     32.7933422,
+     39.9743448
+    ]
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     32.7928393,
+     39.9745683
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "osm_key": "highway",
+    "osm_value": "residential",
+    "type": "street",
+    "name": "530. Sokak",
+    "district": "Avanos",
+    "city": "Avanos",
+    "state": "Nevşehir",
+    "country": "Türkiye",
+    "countrycode": "TR",
+    "extent": [
+     34.8457192,
+     38.711165,
+     34.8469556,
+     38.7103618
+    ]
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     34.8463498,
+     38.7107825
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "osm_key": "highway",
+    "osm_value": "residential",
+    "type": "street",
+    "name": "530. Sokak",
+    "district": "Arabacı Alanı",
+    "city": "Serdivan",
+    "state": "Sakarya",
+    "country": "Türkiye",
+    "countrycode": "TR",
+    "extent": [
+     30.3709234,
+     40.7835689,
+     30.3715377,
+     40.7810788
+    ]
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     30.371474,
+     40.7822415
+    ]
+   }
+  }
+ ]
+}

@@ -1,0 +1,118 @@
+{
+ "type": "FeatureCollection",
+ "features": [
+  {
+   "type": "Feature",
+   "properties": {
+    "osm_key": "amenity",
+    "osm_value": "cafe",
+    "type": "house",
+    "housenumber": "5A",
+    "name": "CoffeeLab",
+    "street": "Tuna Caddesi",
+    "locality": "Cumhuriyet",
+    "district": "Cumhuriyet",
+    "city": "Çankaya",
+    "state": "Ankara",
+    "country": "Türkiye",
+    "countrycode": "TR"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     32.8554392,
+     39.9232981
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "osm_key": "amenity",
+    "osm_value": "cafe",
+    "type": "house",
+    "name": "coffeelab",
+    "street": "Atatürk Bulvarı",
+    "district": "Kavaklıdere",
+    "city": "Çankaya",
+    "state": "Ankara",
+    "country": "Türkiye",
+    "countrycode": "TR"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     32.8547079,
+     39.9156246
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "osm_key": "amenity",
+    "osm_value": "cafe",
+    "type": "house",
+    "name": "CoffeeLab",
+    "street": "Mithatpaşa Caddesi",
+    "locality": "Sıhhiye",
+    "district": "Sağlık",
+    "city": "Çankaya",
+    "state": "Ankara",
+    "country": "Türkiye",
+    "countrycode": "TR"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     32.8559393,
+     39.9253781
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "osm_key": "amenity",
+    "osm_value": "cafe",
+    "type": "house",
+    "name": "Coffeelab",
+    "street": "Sahil Caddesi",
+    "district": "Gaziosmanpaşa",
+    "city": "Gölbaşı",
+    "state": "Ankara",
+    "country": "Türkiye",
+    "countrycode": "TR"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     32.8043683,
+     39.7864566
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "osm_key": "amenity",
+    "osm_value": "cafe",
+    "type": "house",
+    "name": "CoffeeLab",
+    "street": "2926. Cadde",
+    "district": "Prof. Dr. Ahmet Taner Kışlalı",
+    "city": "Çankaya",
+    "state": "Ankara",
+    "country": "Türkiye",
+    "countrycode": "TR"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     32.6802239,
+     39.8763375
+    ]
+   }
+  }
+ ]
+}

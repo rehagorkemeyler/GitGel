@@ -1,0 +1,97 @@
+{
+ "type": "FeatureCollection",
+ "features": [
+  {
+   "type": "Feature",
+   "properties": {
+    "osm_key": "place",
+    "osm_value": "quarter",
+    "type": "locality",
+    "name": "Kızılay",
+    "district": "Devlet",
+    "city": "Çankaya",
+    "state": "Ankara",
+    "country": "Türkiye",
+    "countrycode": "TR"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     32.8540559,
+     39.9206132
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "osm_key": "place",
+    "osm_value": "suburb",
+    "type": "district",
+    "name": "Kızılay",
+    "city": "Çankaya",
+    "state": "Ankara",
+    "country": "Türkiye",
+    "countrycode": "TR",
+    "extent": [
+     32.8471901,
+     39.9267284,
+     32.8552154,
+     39.9192802
+    ]
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     32.8517202,
+     39.9215522
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "osm_key": "highway",
+    "osm_value": "bus_stop",
+    "type": "house",
+    "name": "Kızılay",
+    "street": "Ziya Gökalp Caddesi",
+    "district": "Kültür",
+    "city": "Çankaya",
+    "state": "Ankara",
+    "country": "Türkiye",
+    "countrycode": "TR"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     32.8553127,
+     39.9207009
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "osm_key": "railway",
+    "osm_value": "station",
+    "type": "house",
+    "name": "15 Temmuz Kızılay Millî İrade",
+    "street": "Atatürk Bulvarı",
+    "locality": "Kızılay",
+    "district": "Devlet",
+    "city": "Çankaya",
+    "state": "Ankara",
+    "country": "Türkiye",
+    "countrycode": "TR"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     32.8539508,
+     39.920537
+    ]
+   }
+  }
+ ]
+}

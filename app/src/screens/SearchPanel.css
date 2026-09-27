@@ -97,3 +97,12 @@
   font-size: var(--fs-s);
   padding: 0 var(--s-2);
 }
+
+.result-distance {
+  flex-shrink: 0;
+  margin-left: auto;
+  padding-left: var(--s-2);
+  font-size: var(--fs-s);
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+}

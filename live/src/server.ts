@@ -6,6 +6,7 @@
 //   GET /live/ankara/vehicles?line=185-7  Ankara buses on one line
 //   GET /live/ankara/arrivals?stop=11654  upcoming buses at one Ankara stop + other lines' next trips
 //   GET /live/ankara/calibration  Ankara bus stop-to-stop times measured from EGO positions (nightly ETL)
+//   GET /live/search?q=popeyes&city=ankara&lat=39.87&lon=32.86  places and addresses (Photon), nearest first
 //   GET /live/health
 //
 // Every response is cached in memory and briefly by Cloudflare. When a source
@@ -16,6 +17,7 @@ import { Cache } from './cache.ts'
 import { Calibration, Sampler } from './calibration.ts'
 import { fetchLineVehicles, type Vehicle } from './iett.ts'
 import { getStopBoard, getVehiclesByLine, NotImplemented, type AnkaraStopBoard, type AnkaraVehicle } from './providers/ego.ts'
+import { CITIES, search, type SearchResult } from './search.ts'
 import { fetchAnnouncements, fetchStatus, type Announcement, type LineStatus } from './metro.ts'
 
 const PORT = Number(process.env.PORT ?? 8081)
@@ -47,6 +49,7 @@ const loadAnkaraVehicles = (line: string) => () =>
     return v
   })
 const ankaraArrivals = new Cache<AnkaraStopBoard>(10_000, 2 * 60_000)
+const searches = new Cache<SearchResult[]>(5 * 60_000, 60 * 60_000)
 const status = new Cache<{ lines: LineStatus[]; announcements: Announcement[] }>(60_000, 6 * 3600_000)
 
 function send(res: ServerResponse, code: number, body: unknown, maxAge = 0) {
@@ -83,6 +86,19 @@ export async function handle(req: IncomingMessage, res: ServerResponse) {
       if (!/^[0-9]{3,6}$/.test(stop)) return send(res, 400, { error: 'stop' })
       const c = await ankaraArrivals.get(stop, () => getStopBoard(stop))
       return send(res, 200, { stop, ...c.value, fetchedAt: new Date(c.fetchedAt).toISOString(), stale: c.stale }, 5)
+    }
+    if (path === '/live/search') {
+      const q = (url.searchParams.get('q') ?? '').trim()
+      const city = url.searchParams.get('city') ?? ''
+      if (!q || q.length > 100 || !CITIES[city]) return send(res, 400, { error: 'q/city' })
+      const lat = Number(url.searchParams.get('lat'))
+      const lon = Number(url.searchParams.get('lon'))
+      // Position rounded to ~100 m: better cache hits, and no exact location in logs.
+      const user: [number, number] | undefined =
+        Number.isFinite(lat) && Number.isFinite(lon) && lat && lon ? [Math.round(lat * 1000) / 1000, Math.round(lon * 1000) / 1000] : undefined
+      const key = `${city}|${q.toLocaleLowerCase('tr')}|${user?.join(',') ?? ''}`
+      const c = await searches.get(key, () => search(q, city, user))
+      return send(res, 200, { results: c.value }, 300)
     }
     if (path === '/live/status') {
       const lang = url.searchParams.get('lang') === 'en' ? 'en' : 'tr'

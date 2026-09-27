@@ -4,7 +4,7 @@ import { t } from '../i18n'
 import { Logo } from '../components/Logo'
 import './Info.css'
 
-const SOURCES: { name: string; url: string; what: 'aboutTimetables' | 'aboutRail' | 'aboutBus' | 'aboutEgo' | 'aboutEgoMac' | 'aboutMap' | 'aboutTiles' | 'aboutRouting' }[] = [
+const SOURCES: { name: string; url: string; what: 'aboutTimetables' | 'aboutRail' | 'aboutBus' | 'aboutEgo' | 'aboutEgoMac' | 'aboutMap' | 'aboutTiles' | 'aboutRouting' | 'aboutSearch' }[] = [
   { name: 'İBB Açık Veri Portalı', url: 'https://data.ibb.gov.tr', what: 'aboutTimetables' },
   { name: 'Metro İstanbul', url: 'https://www.metro.istanbul', what: 'aboutRail' },
   { name: 'İETT', url: 'https://www.iett.istanbul', what: 'aboutBus' },
@@ -13,6 +13,7 @@ const SOURCES: { name: string; url: string; what: 'aboutTimetables' | 'aboutRail
   { name: '© OpenStreetMap katkıcıları', url: 'https://www.openstreetmap.org/copyright', what: 'aboutMap' },
   { name: 'OpenFreeMap, OpenMapTiles', url: 'https://openfreemap.org', what: 'aboutTiles' },
   { name: 'MOTIS', url: 'https://github.com/motis-project/motis', what: 'aboutRouting' },
+  { name: 'Photon', url: 'https://github.com/komoot/photon', what: 'aboutSearch' },
 ]
 
 export function About({ onBack }: { onBack: () => void }) {
