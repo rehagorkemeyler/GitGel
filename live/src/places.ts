@@ -1,7 +1,7 @@
 // Google Places (New) proxy for the native app's "Nereye?" search. The key
 // never leaves the server, and hard daily caps keep it inside the free tier:
 //
-//   autocomplete  300 requests a day   (~9 000 a month, free cap 10 000)
+//   autocomplete  300 requests a day, Istanbul or Ankara   (~9 000 a month, free cap 10 000)
 //   details       160 requests a day   (~4 800 a month, free cap 5 000; Pro fields)
 //
 // Days are Istanbul days. Counters are written to disk so a restart does not
@@ -17,8 +17,12 @@ export const PER_IP_PER_HOUR = 60
 const DETAILS_TTL_MS = 30 * 24 * 3600_000
 const MAX_CACHED_DETAILS = 5000
 
-// Istanbul: 27.9,40.7 to 30.0,41.7 (lon,lat).
-const RECTANGLE = { low: { latitude: 40.7, longitude: 27.9 }, high: { latitude: 41.7, longitude: 30.0 } }
+// Results stay inside the city the app shows (same boxes as the app's lib/city.ts).
+export const RECTANGLES = {
+  istanbul: { low: { latitude: 40.7, longitude: 27.9 }, high: { latitude: 41.7, longitude: 30.0 } },
+  ankara: { low: { latitude: 39.5, longitude: 32.2 }, high: { latitude: 40.3, longitude: 33.4 } },
+} as const
+export type PlacesCity = keyof typeof RECTANGLES
 const API = 'https://places.googleapis.com/v1'
 
 export type Suggestion = { id: string; name: string; sub: string; types: string[]; distance?: number }
@@ -79,14 +83,14 @@ export class Places {
     e.count++
   }
 
-  async autocomplete(q: string, session: string, near?: [number, number]): Promise<Suggestion[]> {
+  async autocomplete(q: string, session: string, near?: [number, number], city: PlacesCity = 'istanbul'): Promise<Suggestion[]> {
     if (!this.key) throw new NotConfigured()
     this.take('autocomplete', AUTOCOMPLETE_PER_DAY)
     const body: Record<string, unknown> = {
       input: q,
       languageCode: 'tr',
       regionCode: 'TR',
-      locationRestriction: { rectangle: RECTANGLE },
+      locationRestriction: { rectangle: RECTANGLES[city] },
       sessionToken: session,
     }
     if (near) body.origin = { latitude: near[0], longitude: near[1] }

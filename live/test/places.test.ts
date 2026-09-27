@@ -24,6 +24,17 @@ function fakeGoogle() {
   return { f, calls }
 }
 
+test('autocomplete stays inside the chosen city', async () => {
+  let body = ''
+  const f = (async (_u: string | URL, init?: RequestInit) => {
+    body = String(init?.body ?? '')
+    return new Response(JSON.stringify({ suggestions: [] }))
+  }) as typeof fetch
+  const p = new Places({ key: 'k', fetch: f })
+  await p.autocomplete('kızılay', 'session-1234', undefined, 'ankara')
+  assert.equal(JSON.parse(body).locationRestriction.rectangle.low.latitude, 39.5)
+})
+
 test('istanbul day switches at 21:00 UTC', () => {
   assert.equal(istanbulDay(Date.parse('2026-09-27T20:59:00Z')), '2026-09-27')
   assert.equal(istanbulDay(Date.parse('2026-09-27T21:00:00Z')), '2026-09-28')
