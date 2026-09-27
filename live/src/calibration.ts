@@ -9,7 +9,8 @@
 
 import { mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
 import { dirname } from 'node:path'
-import type { Vehicle } from './iett.ts'
+/** What calibration needs from a live vehicle (İETT or EGO). */
+export type Tracked = { id: string; line: string; pattern: string; nearStop: string; at: string }
 
 export type Bucket = `${'wd' | 'we'}-${'am' | 'mid' | 'pm' | 'night'}`
 
@@ -43,7 +44,7 @@ export class Calibration {
   private samples = new Map<string, number[]>()
 
   /** Feed one poll of a line. Returns the new observations (for tests). */
-  observe(vehicles: Vehicle[], now = Date.now()): Observation[] {
+  observe(vehicles: Tracked[], now = Date.now()): Observation[] {
     const out: Observation[] = []
     for (const v of vehicles) {
       if (!v.nearStop || !v.pattern) continue

@@ -91,3 +91,22 @@ def test_shape_distances_follow_the_stops_on_an_out_and_back_line():
     sd = b["stop_dist"]
     assert np.all(np.diff(sd) > 0)  # the way back is further along, not a repeat of the way out
     assert abs(sd[5] - 2224) < 30 and abs(sd[-1] - b["shape_dist"][-1]) < 1e-6
+
+
+def test_gps_calibration_scales_travel_times_per_bucket(tmp_path):
+    import csv
+    import datetime as dt
+
+    from ankara.gtfs import bucket_of, build
+
+    stops = {c: {"name": c, "lat": 39.90 + i * 0.01, "lon": 32.85} for i, c in enumerate("abc")}
+    times = {"wk": [{"min": 8 * 60, "note": None}, {"min": 13 * 60, "note": None}], "sat": [], "sun": []}
+    line = {"code": "L", "name": "L", "mode": "bus", "minutes": 20, "stops": [{"stop": c} for c in "abc"],
+            "times": times, "shape": []}
+    # Measured: a->b takes 5 min where the model says 10 (morning peak only).
+    cal = [{"line": "L", "from": "a", "to": "b", "bucket": "wd-am", "median": 300, "n": 10}]
+    stats = build([line], stops, dt.date(2026, 9, 28), tmp_path, cal)
+    assert stats["calibrated_lines"] == 1
+    st = [r for r in csv.DictReader(open(tmp_path / "stop_times.txt")) if r["stop_sequence"] == "3"]
+    assert sorted(r["arrival_time"] for r in st) == ["08:10:00", "13:20:00"]  # morning halved, midday unchanged
+    assert bucket_of("wk", 8 * 60) == "wd-am" and bucket_of("sun", 25 * 60) == "we-night"

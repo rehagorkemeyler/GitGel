@@ -5,6 +5,7 @@
 //   GET /live/calibration         Bus stop-to-stop times measured from GPS (for the nightly ETL)
 //   GET /live/ankara/vehicles?line=185-7  Ankara buses on one line
 //   GET /live/ankara/arrivals?stop=11654  upcoming buses at one Ankara stop + other lines' next trips
+//   GET /live/ankara/calibration  Ankara bus stop-to-stop times measured from EGO positions (nightly ETL)
 //   GET /live/health
 //
 // Every response is cached in memory and briefly by Cloudflare. When a source
@@ -21,6 +22,8 @@ const PORT = Number(process.env.PORT ?? 8081)
 
 const CAL_FILE = process.env.CAL_FILE ?? '/data/calibration.json'
 const LINES_URL = process.env.LINES_URL ?? 'https://rehagorkemeyler.github.io/GitGel/data/lines.json'
+const ANKARA_CAL_FILE = process.env.ANKARA_CAL_FILE ?? '/data/calibration-ankara.json'
+const ANKARA_LINES_URL = process.env.ANKARA_LINES_URL ?? 'https://rehagorkemeyler.github.io/GitGel/data/ankara/lines.json'
 
 const vehicles = new Cache<Vehicle[]>(15_000, 10 * 60_000)
 const calibration = new Calibration()
@@ -33,6 +36,16 @@ const loadVehicles = (line: string) => () =>
   })
 
 const ankaraVehicles = new Cache<AnkaraVehicle[]>(10_000, 5 * 60_000)
+const ankaraCalibration = new Calibration()
+
+// Every EGO answer also feeds the Ankara calibration (a line code is one direction in Ankara).
+const loadAnkaraVehicles = (line: string) => () =>
+  getVehiclesByLine(line).then((v) => {
+    ankaraCalibration.observe(
+      v.filter((x) => x.stop).map((x) => ({ id: x.id, line: x.line, pattern: x.line, nearStop: x.stop!, at: x.updatedAt })),
+    )
+    return v
+  })
 const ankaraArrivals = new Cache<AnkaraStopBoard>(10_000, 2 * 60_000)
 const status = new Cache<{ lines: LineStatus[]; announcements: Announcement[] }>(60_000, 6 * 3600_000)
 
@@ -62,7 +75,7 @@ export async function handle(req: IncomingMessage, res: ServerResponse) {
     if (path === '/live/ankara/vehicles') {
       const line = (url.searchParams.get('line') ?? '').trim().toUpperCase()
       if (!/^[0-9A-ZÇĞİÖŞÜ-]{1,10}$/.test(line)) return send(res, 400, { error: 'line' })
-      const c = await ankaraVehicles.get(line, () => getVehiclesByLine(line))
+      const c = await ankaraVehicles.get(line, loadAnkaraVehicles(line))
       return send(res, 200, { line, vehicles: c.value, fetchedAt: new Date(c.fetchedAt).toISOString(), stale: c.stale }, 5)
     }
     if (path === '/live/ankara/arrivals') {
@@ -82,6 +95,9 @@ export async function handle(req: IncomingMessage, res: ServerResponse) {
     if (path === '/live/calibration') {
       return send(res, 200, { generatedAt: new Date().toISOString(), rows: calibration.summary() }, 600)
     }
+    if (path === '/live/ankara/calibration') {
+      return send(res, 200, { generatedAt: new Date().toISOString(), rows: ankaraCalibration.summary() }, 600)
+    }
     return send(res, 404, { error: 'not found' })
   } catch (e) {
     if (e instanceof NotImplemented) return send(res, 501, { error: 'not implemented' }, 60)
@@ -90,9 +106,9 @@ export async function handle(req: IncomingMessage, res: ServerResponse) {
   }
 }
 
-async function loadLines(sampler: Sampler) {
+async function loadLines(sampler: Sampler, url = LINES_URL) {
   try {
-    const r = await fetch(LINES_URL, { signal: AbortSignal.timeout(30_000) })
+    const r = await fetch(url, { signal: AbortSignal.timeout(30_000) })
     const lines = (await r.json()) as { name: string; mode: string }[]
     sampler.setLines(lines.filter((l) => l.mode === 'bus' || l.mode === 'metrobus').map((l) => l.name))
   } catch {
@@ -100,22 +116,34 @@ async function loadLines(sampler: Sampler) {
   }
 }
 
-function startCalibration() {
-  calibration.load(CAL_FILE)
-  const sampler = new Sampler()
-  void loadLines(sampler)
-  setInterval(() => void loadLines(sampler), 24 * 3600_000)
-  // One request every 5 s: with 12 lines per batch each is polled about once a minute.
+/** Poll one sampled line every 5 s, rotating batches through all bus lines of a city. */
+function sample(sampler: Sampler, poll: (line: string) => void) {
   let i = 0
   setInterval(() => {
     const batch = sampler.current()
-    if (!batch.length) return
-    const line = batch[i++ % batch.length]
-    vehicles.get(line, loadVehicles(line)).catch(() => {})
+    if (batch.length) poll(batch[i++ % batch.length])
   }, 5_000)
+}
+
+function startCalibration() {
+  calibration.load(CAL_FILE)
+  ankaraCalibration.load(ANKARA_CAL_FILE)
+  // Istanbul (İETT) and Ankara (EGO): one request every 5 s to each; with 12 lines per
+  // batch each line is polled about once a minute.
+  const sampler = new Sampler()
+  const ankaraSampler = new Sampler()
+  const refresh = () => {
+    void loadLines(sampler)
+    void loadLines(ankaraSampler, ANKARA_LINES_URL)
+  }
+  refresh()
+  setInterval(refresh, 24 * 3600_000)
+  sample(sampler, (line) => void vehicles.get(line, loadVehicles(line)).catch(() => {}))
+  sample(ankaraSampler, (line) => void ankaraVehicles.get(line, loadAnkaraVehicles(line)).catch(() => {}))
   const save = () => {
     try {
       calibration.save(CAL_FILE)
+      ankaraCalibration.save(ANKARA_CAL_FILE)
     } catch (e) {
       console.error('calibration save failed', e)
     }

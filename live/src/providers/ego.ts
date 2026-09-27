@@ -19,6 +19,7 @@ export type AnkaraVehicle = {
   plate: string | null // e.g. "06 HO 1327"
   features: string[] // e.g. ["Körüklü", "Engelli"]
   updatedAt: string // ISO time of the position fix
+  stop: string | null // EGO stop number the bus is at or heading to (durak_no), for timetable calibration
 }
 
 export type AnkaraArrival = {
@@ -162,6 +163,7 @@ export function parseVehicles(json: string, line: string, now: number): AnkaraVe
       plate: normalizePlate(r.plaka_no),
       features: parseFeatures(r.detay),
       updatedAt: at,
+      stop: str(r.durak_no) || null,
     })
   }
   return out
@@ -237,6 +239,7 @@ export function mockVehicles(line: string, now: number): AnkaraVehicle[] {
       plate: `06 MK ${1000 + ((base + i) % 9000)}`,
       features: i === 0 ? ['Körüklü', 'Engelli'] : ['Engelli'],
       updatedAt: new Date(now - 5_000).toISOString(),
+      stop: null,
     }
   })
 }
