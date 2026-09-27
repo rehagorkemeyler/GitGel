@@ -242,6 +242,10 @@ EGO'nun kendi "EGO Cepte" uygulamasının JSON servisi anahtarsız çalışıyor
 - EGO web sitesi (`www.ego.gov.tr/HareketSaatleri`) aynı hat ve tarife bilgisini HTML olarak veriyor ama koordinat ve güzergah yok; artık kullanılmıyor. OSM'de EGO durak numarası (`ref`) Ankara duraklarının yalnızca ~%57'sinde var.
 - Örnek cevaplar: `docs/api-samples/ankara/`.
 
+## 8.7 Yer ve adres araması (27 Eylül 2026)
+
+MOTIS'in adres araması kısaltmaları ("tedü", "mcd"), "sancak 530" gibi mahalle + sokak aramalarını ve yakınlığa göre sıralamayı karşılamıyordu. Sunucuda Photon (komoot, Apache-2.0, OpenStreetMap verisi) çalışıyor; GraphHopper haftalık Türkiye dökümünü yayımlıyor (`photon-dump-turkey-1.0-latest.jsonl.zst`, ~140 MB, içe aktarma ~4 dk, ~450 MB). Canlı servis `/live/search` üzerinden sorar ve şunları ekler: şehir sınırı, en yakın önce ve mesafe, "530 13" → 530. Sokak No 13, "coffeelab kızılay" → Kızılay çevresinde coffeelab, sonuç yoksa daha az kelimeyle yeniden arama. OSM'de olmayan yerler (ör. ODTÜ Vişnelik Tesisleri) bulunamaz; Ankara'da kapı numaraları OSM'de çok seyrek.
+
 ## 9. Açık sorular ve riskler
 
 1. Raylı sistemde gerçek canlı veri yok. Ürünün "Google'dan iyi" iddiası ilk sürümde canlı konuma değil; hıza, sadeliğe, İstanbul'a özel doğru rotaya, hizmet durumuna ve dürüst etiketlemeye dayanmalı.

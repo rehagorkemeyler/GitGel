@@ -56,6 +56,31 @@ main() {
     rm -rf "$old" 2>/dev/null || docker run --rm --user 0 -v "$base:/b" --entrypoint rm "$image" -rf "/b/$(basename "$old")" || true
   done
   echo "motis data updated: $new"
+  update_photon
+}
+
+# Place search index (Photon): the weekly Turkey dump, imported into a fresh folder, then switched.
+update_photon() {
+  local base=/opt/gitgel-data/photon
+  local image=ghcr.io/rtuszik/photon-docker@sha256:21549c60f9e6488fff3217e40429a652c4b445f374800333fe32859e47cec293
+  mkdir -p "$base"
+  if [ -L "$base/current" ] && [ -z "$(find -L "$base/current" -maxdepth 0 -mtime +6)" ]; then return; fi
+  local new="$base/build-$(date +%Y%m%d%H%M)"
+  mkdir -p "$new" && chmod a+rwx "$new"
+  curl -fsSL --retry 5 -o "$base/turkey.jsonl.zst" \
+    https://download1.graphhopper.com/public/europe/turkey/photon-dump-turkey-1.0-latest.jsonl.zst || return 0
+  # Decompress inside the image (its Python has zstandard): nothing extra on the server.
+  docker run --rm -v "$new:/data" -v "$base/turkey.jsonl.zst:/in.zst:ro" --entrypoint sh "$image" -c \
+    'python -c "import sys, zstandard; zstandard.ZstdDecompressor().copy_stream(open(\"/in.zst\", \"rb\"), sys.stdout.buffer)" \
+     | java -Xmx3g -jar /photon/photon.jar import -import-file - -data-dir /data -languages tr,en' \
+    || { rm -rf "$new"; return 0; }
+  [ -L "$base/current" ] || rm -rf "$base/current"
+  ln -sfn "$new" "$base/current.new" && mv -T "$base/current.new" "$base/current"
+  docker compose -f /opt/gitgel/infra/docker-compose.yml up -d --force-recreate photon
+  for old in $(ls -1dt "$base"/build-* | tail -n +3); do
+    rm -rf "$old" 2>/dev/null || docker run --rm --user 0 -v "$base:/b" --entrypoint rm "$image" -rf "/b/$(basename "$old")" || true
+  done
+  echo "photon data updated: $new"
 }
 main "$@"
 exit

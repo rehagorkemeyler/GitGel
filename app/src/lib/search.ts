@@ -13,6 +13,8 @@ export type Place = {
   sub?: string
   /** Stop number (Ankara). */
   code?: string
+  /** Metres from the user, when known. */
+  distance?: number
 }
 
 /** One search.json row: [name, folded name, lat, lon, mode, line names, stop code (Ankara)]. */
@@ -64,7 +66,14 @@ function wordScore(q: string, w: string): number | null {
   return null
 }
 
-export function searchIndex(index: IndexRow[], query: string, limit = 8): Place[] {
+/** `near` ([lon, lat]): among equally good matches the nearer stop comes first, and gets a distance. */
+function km(near: [number, number], row: IndexRow): number {
+  const k = Math.PI / 180
+  const x = (row[3] - near[0]) * k * Math.cos(((row[2] + near[1]) / 2) * k)
+  return Math.hypot(x, (row[2] - near[1]) * k) * 6371
+}
+
+export function searchIndex(index: IndexRow[], query: string, limit = 8, near: [number, number] | null = null): Place[] {
   const q = fold(query)
   if (!q) return []
   const qWords = q.split(' ')
@@ -93,10 +102,11 @@ export function searchIndex(index: IndexRow[], query: string, limit = 8): Place[
     if (!ok) continue
     // Whole-name prefix beats word matches; rail beats bus; shorter names first.
     if (row[1].startsWith(q)) total -= 1
-    scored.push([total * 10 + MODE_RANK[row[4]] + row[1].length / 100, row])
+    scored.push([total * 10 + MODE_RANK[row[4]] + row[1].length / 100 + (near ? Math.min(km(near, row), 40) * 0.05 : 0), row])
   }
   scored.sort((a, b) => a[0] - b[0])
   return scored.slice(0, limit).map(([, r]) => ({
     name: r[0], lat: r[2], lon: r[3], kind: 'stop', mode: r[4], lines: r[5], code: r[6],
+    distance: near ? Math.round(km(near, r) * 1000) : undefined,
   }))
 }
