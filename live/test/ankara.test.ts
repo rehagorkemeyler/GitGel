@@ -147,10 +147,14 @@ test('lines without a live bus: next trip from the first stop, or none today', (
     { arac_no: '-', hat_no: '190', hat_ad: 'X', sure: 'Sonraki Hareket Saati İlk Duraktan\n6:05 / 5 dk Sonra' },
     { arac_no: '-', hat_no: '999', hat_ad: 'Y', sure: 'bilinmeyen' },
     { arac_no: '-', hat_no: '481', hat_ad: 'Z', sure: 'Hattın Bugün İçin Başka Servisi Yok' },
+    { arac_no: '-', hat_no: '185-1', hat_ad: 'H', sure: 'Sonraki Hareket Saati İlk Duraktan\n23:35 / 8 sa 39 dk Sonra' },
+    { arac_no: '-', hat_no: '185-2', hat_ad: 'I', sure: 'Sonraki Hareket Saati İlk Duraktan\n06:10 / 2 sa Sonra' },
   ] })
   assert.deepEqual(parseLineStatus(doc, new Set(['481'])), [
     { line: '190', lineName: 'X', nextStart: '06:05', nextStartInMin: 5, noMoreToday: false },
     { line: '185-6', lineName: 'ORAN SİTESİ-ULUS', nextStart: '24:30', nextStartInMin: 33, noMoreToday: false },
+    { line: '185-2', lineName: 'I', nextStart: '06:10', nextStartInMin: 120, noMoreToday: false },
+    { line: '185-1', lineName: 'H', nextStart: '23:35', nextStartInMin: 519, noMoreToday: false },
     { line: '173-2', lineName: 'ULUS-ORAN', nextStart: null, nextStartInMin: null, noMoreToday: true },
   ])
 })
