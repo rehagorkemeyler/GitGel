@@ -202,14 +202,16 @@ export function parseLineStatus(json: string, live: Set<string>): AnkaraLineStat
     const line = lineOf(r)
     if (!line || live.has(line) || out.has(line) || isLive(r)) continue
     const sure = str(r.sure)
-    const m = sure.match(/(\d{1,2}):(\d{2})\s*\/\s*(\d+)\s*dk/i)
+    // "15:25 / 29 dk Sonra", "23:35 / 8 sa 39 dk Sonra", "06:10 / 2 sa Sonra"
+    const m = sure.match(/(\d{1,2}):(\d{2})\s*\/\s*(?:(\d+)\s*sa)?\s*(?:(\d+)\s*dk)?/i)
+    const hasIn = !!m && (m[3] !== undefined || m[4] !== undefined)
     const noMore = /başka servisi yok/i.test(sure)
     if (!m && !noMore) continue
     out.set(line, {
       line,
       lineName: str(r.hat_ad),
       nextStart: m ? `${m[1].padStart(2, '0')}:${m[2]}` : null,
-      nextStartInMin: m ? Number(m[3]) : null,
+      nextStartInMin: m && hasIn ? Number(m[3] ?? 0) * 60 + Number(m[4] ?? 0) : null,
       noMoreToday: !m && noMore,
     })
   }
