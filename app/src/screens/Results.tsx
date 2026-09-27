@@ -17,11 +17,13 @@ type Props = {
   onEditTo: () => void
   onClose: () => void
   onOpen: (it: Itinerary) => void
+  /** The options on screen, fastest first (drawn on the map). */
+  onOptions?: (its: Itinerary[] | null) => void
 }
 
 type State = { key: string } & ({ status: 'loading' } | { status: 'error' } | { status: 'ok'; options: Itinerary[] })
 
-export function Results({ from, to, onEditFrom, onEditTo, onClose, onOpen }: Props) {
+export function Results({ from, to, onEditFrom, onEditTo, onClose, onOpen, onOptions }: Props) {
   const [attempt, setAttempt] = useState(0)
   const [when, setWhen] = useState<When>({ kind: 'now' })
   const whenKey = when.kind === 'now' ? 'now' : `${when.kind}@${when.at.getTime()}`
@@ -29,6 +31,11 @@ export function Results({ from, to, onEditFrom, onEditTo, onClose, onOpen }: Pro
   const [raw, setState] = useState<State>({ key: '', status: 'loading' })
   // A new query shows "loading" once; the same query never flickers.
   const state: State = raw.key === key ? raw : { key, status: 'loading' }
+  const shown = state.status === 'ok' ? state.options : null
+  useEffect(() => {
+    onOptions?.(shown)
+  }, [shown]) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => () => onOptions?.(null), []) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!from || !CITY.routing) return
@@ -78,9 +85,9 @@ export function Results({ from, to, onEditFrom, onEditTo, onClose, onOpen }: Pro
       {from && state.status === 'ok' && state.options.length === 0 && <p className="muted pad">{t('noRoute')}</p>}
       {from && state.status === 'ok' && (
         <ul className="options">
-          {state.options.map((it) => (
+          {state.options.map((it, i) => (
             <li key={it.startTime + it.endTime + it.legs.length}>
-              <OptionCard it={it} onOpen={() => onOpen(it)} />
+              <OptionCard it={it} slower={i > 0 ? Math.round((it.duration - state.options[0].duration) / 60) : 0} onOpen={() => onOpen(it)} />
             </li>
           ))}
         </ul>
@@ -89,7 +96,7 @@ export function Results({ from, to, onEditFrom, onEditTo, onClose, onOpen }: Pro
   )
 }
 
-function OptionCard({ it, onOpen }: { it: Itinerary; onOpen: () => void }) {
+function OptionCard({ it, slower, onOpen }: { it: Itinerary; slower: number; onOpen: () => void }) {
   const s = summarize(it)
   const live = it.legs.some((l) => l.realTime)
   return (
@@ -98,6 +105,7 @@ function OptionCard({ it, onOpen }: { it: Itinerary; onOpen: () => void }) {
         <span className="option-min">
           {s.minutes} <small>{t('min')}</small>
         </span>
+        {slower > 0 && <span className="option-slower">{`${slower} ${t('min')} ${t('slower')}`}</span>}
         <span className="option-time">
           {hhmm(s.start)} – {hhmm(s.end)}
         </span>
