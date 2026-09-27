@@ -153,3 +153,13 @@
   flex-direction: column;
   margin-top: var(--s-3);
 }
+
+.option-slower {
+  font-size: var(--fs-s);
+  color: var(--text-2);
+}
+
+.option-top .option-slower {
+  margin-left: var(--s-2);
+  margin-right: auto;
+}

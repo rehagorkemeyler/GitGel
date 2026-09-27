@@ -41,6 +41,7 @@ export function App() {
   const [to, setTo] = useState<Place | null>(null)
   const [fromChoice, setFromChoice] = useState<Place | null>(null)
   const [open, setOpen] = useState<Itinerary | null>(null)
+  const [options, setOptions] = useState<Itinerary[] | null>(null)
   const [station, setStation] = useState<Station | null>(null)
   const [train, setTrain] = useState<TrainInfo | null>(null)
   const [bus, setBus] = useState<Vehicle | null>(null)
@@ -105,6 +106,7 @@ export function App() {
         <MapView
           position={geo.position}
           route={open}
+          alternatives={to ? options : null}
           vehicles={vehicles}
           hiddenLines={hiddenLines}
           onRailCount={setRailCount}
@@ -233,6 +235,7 @@ export function App() {
                 setFromChoice(null)
               }}
               onOpen={setOpen}
+              onOptions={setOptions}
             />
           ) : train ? (
             <TrainSheet train={train} onClose={() => setTrain(null)} />

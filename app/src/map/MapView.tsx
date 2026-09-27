@@ -26,6 +26,8 @@ type Props = {
   position?: [number, number] | null
   /** Itinerary to draw, or null. */
   route?: Itinerary | null
+  /** Route results: every option, fastest first (drawn grey behind the first). */
+  alternatives?: Itinerary[] | null
   /** Height covered by the bottom sheet, so the route is framed above it. */
   bottomInset?: number
   /** Live GPS vehicles (filled dots). */
@@ -50,12 +52,18 @@ type Props = {
   onReady?: (map: MlMap) => void
 }
 
-export function MapView({ position, route = null, bottomInset = 0, vehicles, hiddenLines, onRailCount, onStation, onTrain, onVehicle, focusLine = null, focusLines = null, lineView = null, pathInNetwork = false, onReady }: Props) {
+/** The opened itinerary alone, else every option of the route results. */
+function routesOf(route: Itinerary | null, alternatives: Itinerary[] | null): Itinerary[] {
+  return route ? [route] : (alternatives ?? [])
+}
+
+export function MapView({ position, route = null, alternatives = null, bottomInset = 0, vehicles, hiddenLines, onRailCount, onStation, onTrain, onVehicle, focusLine = null, focusLines = null, lineView = null, pathInNetwork = false, onReady }: Props) {
   const container = useRef<HTMLDivElement>(null)
   const map = useRef<MlMap | null>(null)
   const marker = useRef<maplibregl.Marker | null>(null)
   const scheme = useColorScheme()
   const routeRef = useRef<Itinerary | null>(null)
+  const altRef = useRef<Itinerary[] | null>(null)
   const live = useRef<LiveLayer | null>(null)
   const rail = useRef<RailLayer | null>(null)
   const net = useRef<NetworkLayer | null>(null)
@@ -70,6 +78,7 @@ export function MapView({ position, route = null, bottomInset = 0, vehicles, hid
   onVehicleRef.current = onVehicle
   const insetRef = useRef(0)
   routeRef.current = route
+  altRef.current = alternatives
   insetRef.current = bottomInset
 
   useEffect(() => {
@@ -105,7 +114,7 @@ export function MapView({ position, route = null, bottomInset = 0, vehicles, hid
       styleReady.current = true
       net.current?.ensure()
       rail.current?.ensure()
-      showRoute(m, routeRef.current, insetRef.current)
+      showRoute(m, routesOf(routeRef.current, altRef.current), insetRef.current)
       showLineView(m, lineViewRef.current.v, insetRef.current, !lineViewRef.current.inNet)
       live.current?.ensure()
     })
@@ -136,8 +145,8 @@ export function MapView({ position, route = null, bottomInset = 0, vehicles, hid
 
   useEffect(() => {
     const m = map.current
-    if (m && styleReady.current) showRoute(m, route, insetRef.current)
-  }, [route])
+    if (m && styleReady.current) showRoute(m, routesOf(route, alternatives), insetRef.current)
+  }, [route, alternatives])
 
   useEffect(() => {
     rail.current?.setOnly(focusLine)

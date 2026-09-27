@@ -119,6 +119,7 @@ def build_line(line: dict, stops: dict, candidates: list[np.ndarray]) -> dict | 
         if n > best_n:
             best, best_n = (cand, pieces), n
     shape, dist = [np.array([pts[0]])], [0.0]
+    at_vertex = [0]  # index of each stop's point in the concatenated shape
     for k in range(1, len(pts)):
         piece = best[1][k - 1] if best else None
         if piece:
@@ -128,14 +129,21 @@ def build_line(line: dict, stops: dict, candidates: list[np.ndarray]) -> dict | 
             part = np.array([pts[k - 1], pts[k]])
             dist.append(dist[-1] + float(haversine_m(*pts[k - 1], *pts[k])))
         shape.append(part[1:] if len(part) > 1 else part)
+        at_vertex.append(at_vertex[-1] + len(shape[-1]))
     dist = np.array(dist)
     if dist[-1] <= 0:
         return None
     total_min = line.get("minutes") or 0
     if total_min <= 0:
         total_min = dist[-1] / 1000 / FALLBACK_KMH * 60
-    return {"stops": seq, "offsets": dist / dist[-1] * total_min * 60, "shape": np.vstack(shape),
-            "fitted": best_n >= 0.5 * (len(pts) - 1)}
+    geom = np.vstack(shape)
+    # Distance along the shape of every vertex and every stop (GTFS shape_dist_traveled): without
+    # it MOTIS has to guess where a stop sits on loop and out-and-back shapes, and then draws a
+    # ride from the start of the line instead of from the boarding stop.
+    seg = [float(haversine_m(*a, *b)) for a, b in zip(geom, geom[1:])]
+    along = np.concatenate([[0.0], np.cumsum(seg)])
+    return {"stops": seq, "offsets": dist / dist[-1] * total_min * 60, "shape": geom, "shape_dist": along,
+            "stop_dist": along[np.array(at_vertex)], "fitted": best_n >= 0.5 * (len(pts) - 1)}
 
 
 def build(lines: list[dict], stops: dict, today: dt.date, out: Path) -> dict:
@@ -159,7 +167,8 @@ def build(lines: list[dict], stops: dict, today: dt.date, out: Path) -> dict:
                        "route_long_name": name_tr(ln["name"]), "route_type": ROUTE_TYPE[mode],
                        "route_color": color, "route_text_color": text})
         shapes += [{"shape_id": rid, "shape_pt_lat": round(p[0], 6), "shape_pt_lon": round(p[1], 6),
-                    "shape_pt_sequence": k} for k, p in enumerate(b["shape"])]
+                    "shape_pt_sequence": k, "shape_dist_traveled": round(float(d), 1)}
+                   for k, (p, d) in enumerate(zip(b["shape"], b["shape_dist"]))]
         headsign = name_tr(stops[b["stops"][-1]]["name"])
         used.update(b["stops"])
         for svc, mins in days.items():
@@ -168,10 +177,10 @@ def build(lines: list[dict], stops: dict, today: dt.date, out: Path) -> dict:
                 # EGO publishes each direction as its own line code (M1-D / M1-G, 102-1 / 102-2).
                 trips.append({"route_id": rid, "service_id": P + svc, "trip_id": tid,
                               "trip_headsign": headsign, "direction_id": 0, "shape_id": rid})
-                for k, (s, off) in enumerate(zip(b["stops"], b["offsets"])):
+                for k, (s, off, sd) in enumerate(zip(b["stops"], b["offsets"], b["stop_dist"])):
                     ts = hms(m * 60 + off)
                     stop_times.append({"trip_id": tid, "arrival_time": ts, "departure_time": ts,
-                                       "stop_id": P + s, "stop_sequence": k + 1})
+                                       "stop_id": P + s, "stop_sequence": k + 1, "shape_dist_traveled": round(float(sd), 1)})
 
     # Start a day early: the nightly runs after midnight, and yesterday's service day
     # still has trips after midnight (night buses, weekend night metro).
