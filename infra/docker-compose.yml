@@ -31,6 +31,9 @@ services:
     build: ../live
     ports:
       - "127.0.0.1:8081:8081"
+    environment:
+      # Google Places (New) key for the native app's search; empty = Places off (Photon only).
+      - PLACES_API_KEY=${PLACES_API_KEY:-}
     volumes:
       - live-data:/data
     restart: unless-stopped
