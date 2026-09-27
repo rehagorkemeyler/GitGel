@@ -133,6 +133,7 @@ export function App() {
             setExpanded(false)
           }}
           focusLine={lineId}
+          focusLines={lineId ? [lineId] : station ? station.lines : null}
           lineView={view}
           pathInNetwork={!!lineData.line && (railModes.includes(lineData.line.mode) || (CITY.ego && lineData.line.mode === 'bus'))}
         />

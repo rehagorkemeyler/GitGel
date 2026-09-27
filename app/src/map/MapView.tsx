@@ -42,13 +42,15 @@ type Props = {
   onVehicle?: (v: Vehicle) => void
   /** Line to emphasise (line page). */
   focusLine?: string | null
+  /** Lines to emphasise on the base map (open line, or every line of a tapped stop). */
+  focusLines?: string[] | null
   /** Opened line page: path and stops. `pathInNetwork` = the base layer already draws its track. */
   lineView?: LineView | null
   pathInNetwork?: boolean
   onReady?: (map: MlMap) => void
 }
 
-export function MapView({ position, route = null, bottomInset = 0, vehicles, hiddenLines, onRailCount, onStation, onTrain, onVehicle, focusLine = null, lineView = null, pathInNetwork = false, onReady }: Props) {
+export function MapView({ position, route = null, bottomInset = 0, vehicles, hiddenLines, onRailCount, onStation, onTrain, onVehicle, focusLine = null, focusLines = null, lineView = null, pathInNetwork = false, onReady }: Props) {
   const container = useRef<HTMLDivElement>(null)
   const map = useRef<MlMap | null>(null)
   const marker = useRef<maplibregl.Marker | null>(null)
@@ -138,9 +140,13 @@ export function MapView({ position, route = null, bottomInset = 0, vehicles, hid
   }, [route])
 
   useEffect(() => {
-    net.current?.setFocus(focusLine)
     rail.current?.setOnly(focusLine)
   }, [focusLine])
+
+  const focusKey = (focusLines ?? []).join(',')
+  useEffect(() => {
+    net.current?.setFocus(focusKey ? focusKey.split(',') : null)
+  }, [focusKey])
 
   const lineViewRef = useRef<{ v: LineView | null; inNet: boolean }>({ v: null, inNet: false })
   // Camera before a line page opened; restored when it closes.
