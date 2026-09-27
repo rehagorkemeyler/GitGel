@@ -39,4 +39,12 @@ describe('itinerary', () => {
     const later = { ...it1, startTime: '2026-09-29T05:10:00Z', endTime: '2026-09-29T05:40:00Z' }
     expect(pickOptions([later, it1])).toEqual([it1])
   })
+
+  it('fastest first; much later departures are dropped', () => {
+    const slowNow = { ...it1, duration: 48 * 60, legs: [it1.legs[0], { ...it1.legs[1], routeShortName: '185' }] }
+    const fastSoon = { ...it1, startTime: '2026-09-29T05:20:00Z', endTime: '2026-09-29T05:47:00Z', duration: 27 * 60 }
+    const fastLate = { ...it1, startTime: '2026-09-29T07:00:00Z', endTime: '2026-09-29T07:20:00Z', duration: 20 * 60,
+      legs: [it1.legs[0], { ...it1.legs[1], routeShortName: 'M4' }] }
+    expect(pickOptions([slowNow, fastSoon, fastLate])).toEqual([fastSoon, slowNow])
+  })
 })

@@ -81,3 +81,13 @@ def test_calendar_starts_a_day_early_for_night_trips(tmp_path):
     assert {c["start_date"] for c in cal} == {"20260926"}
     st = list(csv.DictReader(open(tmp_path / "stop_times.txt")))
     assert sorted({r["departure_time"] for r in st if r["stop_sequence"] == "1"}) == ["23:35:00", "26:00:00"]
+
+
+def test_shape_distances_follow_the_stops_on_an_out_and_back_line():
+    street = np.array([(39.90 + i * 0.001, 32.85) for i in range(21)] + [(39.92 - i * 0.001, 32.85) for i in range(1, 21)])
+    stops = {str(i): {"name": f"S{i}", "lat": 39.90 + k * 0.004, "lon": 32.85} for i, k in
+             enumerate([0, 1, 2, 3, 4, 5, 4, 3, 2, 1, 0])}
+    b = build_line({"stops": [{"stop": str(i)} for i in range(11)], "minutes": 20}, stops, [street])
+    sd = b["stop_dist"]
+    assert np.all(np.diff(sd) > 0)  # the way back is further along, not a repeat of the way out
+    assert abs(sd[5] - 2224) < 30 and abs(sd[-1] - b["shape_dist"][-1]) < 1e-6
