@@ -54,6 +54,7 @@ test('line sample becomes vehicles, scheduled rows dropped', () => {
     plate: '06 GCC 576',
     features: ['Körüklü', 'Engelli'],
     updatedAt: '2026-09-26T19:04:13.000Z',
+    stop: '21070',
   })
 })
 
@@ -152,4 +153,15 @@ test('lines without a live bus: next trip from the first stop, or none today', (
     { line: '185-6', lineName: 'ORAN SİTESİ-ULUS', nextStart: '24:30', nextStartInMin: 33, noMoreToday: false },
     { line: '173-2', lineName: 'ULUS-ORAN', nextStart: null, nextStartInMin: null, noMoreToday: true },
   ])
+})
+
+test('EGO positions feed the stop-to-stop calibration', async () => {
+  const { Calibration } = await import('../src/calibration.ts')
+  const cal = new Calibration()
+  const at = (hms: string) => `2026-09-28T${hms}Z` // Monday 09:xx Ankara time
+  const bus = (stop: string, t: string) => [{ id: '12-423', line: '481', pattern: '481', nearStop: stop, at: at(t) }]
+  cal.observe(bus('10880', '06:00:00'), Date.parse(at('06:00:00')))
+  cal.observe(bus('10991', '06:01:00'), Date.parse(at('06:01:00'))) // first change: start of an exact track
+  cal.observe(bus('10940', '06:02:30'), Date.parse(at('06:02:30')))
+  assert.deepEqual(cal.summary(), [{ line: '481', from: '10991', to: '10940', bucket: 'wd-am', median: 90, n: 1 }])
 })

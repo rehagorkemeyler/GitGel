@@ -146,15 +146,78 @@ def build_line(line: dict, stops: dict, candidates: list[np.ndarray]) -> dict | 
             "stop_dist": along[np.array(at_vertex)], "fitted": best_n >= 0.5 * (len(pts) - 1)}
 
 
-def build(lines: list[dict], stops: dict, today: dt.date, out: Path) -> dict:
+# GPS calibration (live/src/calibration.ts): stop-to-stop times measured on real EGO buses,
+# per line and bucket = weekday/weekend x morning peak / midday / evening peak / rest.
+CAL_MIN_SAMPLES = 8  # a line needs this many measured stop pairs in a bucket to get its own factor
+CAL_CLAMP = (0.4, 2.0)
+
+
+def bucket_of(svc: str, minute: int) -> str:
+    """Calibration bucket of a trip leaving at `minute` of a service day (as in bucketOf in the live service)."""
+    h = (minute // 60) % 24
+    part = "am" if 6 <= h < 10 else "mid" if 10 <= h < 16 else "pm" if 16 <= h < 20 else "night"
+    return f"{'wd' if svc == 'wk' else 'we'}-{part}"
+
+
+def weighted_median(pairs: list[tuple[float, int]]) -> float:
+    pairs = sorted(pairs)
+    half, acc = sum(n for _, n in pairs) / 2, 0
+    for r, n in pairs:
+        acc += n
+        if acc >= half:
+            return r
+    return 1.0
+
+
+def calibration_factors(built: dict[str, dict], rows: list[dict]) -> tuple[dict, dict]:
+    """(line, bucket) -> factor on the model's travel times, and bucket -> city-wide factor.
+
+    Each row is the median of measured seconds between two stops of a line; the model's
+    time between the same stops gives a ratio. A line's factor is the weighted median of
+    its ratios; lines with few measurements fall back to the city-wide factor of the bucket."""
+    per_line: dict[tuple[str, str], list[tuple[float, int]]] = {}
+    for r in rows:
+        b = built.get(r.get("line", ""))
+        if not b:
+            continue
+        idx = b["index"]
+        i = idx.get(r.get("from"))
+        if i is None:
+            continue
+        j = next((k for k in range(i + 1, len(b["stops"])) if b["stops"][k] == r.get("to")), None)
+        if j is None:
+            continue
+        model = b["offsets"][j] - b["offsets"][i]
+        if model <= 0 or not r.get("median"):
+            continue
+        per_line.setdefault((r["line"], r["bucket"]), []).append((r["median"] / model, int(r.get("n", 1))))
+    city: dict[str, list[tuple[float, int]]] = {}
+    for (line, bucket), v in per_line.items():
+        city.setdefault(bucket, []).extend(v)
+    clamp = lambda x: min(CAL_CLAMP[1], max(CAL_CLAMP[0], x))  # noqa: E731
+    lines = {k: clamp(weighted_median(v)) for k, v in per_line.items() if sum(n for _, n in v) >= CAL_MIN_SAMPLES}
+    buckets = {k: clamp(weighted_median(v)) for k, v in city.items() if sum(n for _, n in v) >= CAL_MIN_SAMPLES}
+    return lines, buckets
+
+
+def build(lines: list[dict], stops: dict, today: dt.date, out: Path, calibration: list[dict] | None = None) -> dict:
     out.mkdir(parents=True, exist_ok=True)
+    built: dict[str, dict] = {}
+    for ln in lines:
+        shape = ln.get("shape") or []
+        b = build_line(ln, stops, [np.array(shape)] if len(shape) >= 2 else [])
+        if b:
+            b["index"] = {}
+            for k, s in enumerate(b["stops"]):
+                b["index"].setdefault(s, k)
+            built[ln["code"]] = b
+    f_line, f_bucket = calibration_factors(built, calibration or [])
 
     routes, trips, stop_times, shapes, used = [], [], [], [], set()
     stats = {"lines": 0, "skipped": [], "ego_shape": 0, "straight_shape": 0}
     for ln in lines:
         code, mode = ln["code"], ln.get("mode", "bus")
-        shape = ln.get("shape") or []
-        b = build_line(ln, stops, [np.array(shape)] if len(shape) >= 2 else [])
+        b = built.get(code)
         days = {d: service_minutes(ln["times"][d]) for d in SERVICES}
         if not b or not any(days.values()):
             stats["skipped"].append(code)
@@ -177,8 +240,10 @@ def build(lines: list[dict], stops: dict, today: dt.date, out: Path) -> dict:
                 # EGO publishes each direction as its own line code (M1-D / M1-G, 102-1 / 102-2).
                 trips.append({"route_id": rid, "service_id": P + svc, "trip_id": tid,
                               "trip_headsign": headsign, "direction_id": 0, "shape_id": rid})
+                bucket = bucket_of(svc, m)
+                f = f_line.get((code, bucket), f_bucket.get(bucket, 1.0))
                 for k, (s, off, sd) in enumerate(zip(b["stops"], b["offsets"], b["stop_dist"])):
-                    ts = hms(m * 60 + off)
+                    ts = hms(m * 60 + off * f)
                     stop_times.append({"trip_id": tid, "arrival_time": ts, "departure_time": ts,
                                        "stop_id": P + s, "stop_sequence": k + 1, "shape_dist_traveled": round(float(sd), 1)})
 
@@ -200,7 +265,9 @@ def build(lines: list[dict], stops: dict, today: dt.date, out: Path) -> dict:
     write(out / "shapes.txt", shapes)
     (out / "feed_info.txt").write_text("feed_publisher_name,feed_publisher_url,feed_lang,feed_version\n"
                                        f"GitGel,https://github.com/rehagorkemeyler/GitGel,tr,{today.isoformat()}\n")
-    stats.update(trips=len(trips), stop_times=len(stop_times), stops=len(used))
+    stats.update(trips=len(trips), stop_times=len(stop_times), stops=len(used),
+                 calibrated_lines=len({k[0] for k in f_line}),
+                 calibration_city={k: round(v, 2) for k, v in sorted(f_bucket.items())})
     return stats
 
 
@@ -213,11 +280,16 @@ def zip_feed(src: Path, dst: Path) -> None:
 def main(argv=None) -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--validate", action="store_true")
+    ap.add_argument("--calibration", type=Path, default=ETL / "cache" / "ankara" / "calibration.json",
+                    help="live service /live/ankara/calibration output")
     a = ap.parse_args(argv)
     today = dt.datetime.now(dt.timezone(dt.timedelta(hours=3))).date()
     lines = json.loads((OUT / "lines.json").read_text(encoding="utf-8"))
     stops = json.loads((OUT / "stops.json").read_text(encoding="utf-8"))
-    stats = build(lines, stops, today, OUT / "gtfs")
+    cal = []
+    if a.calibration.exists():
+        cal = json.loads(a.calibration.read_text(encoding="utf-8")).get("rows", [])
+    stats = build(lines, stops, today, OUT / "gtfs", cal)
     zp = ETL / "out" / "ankara-gtfs.zip"
     zip_feed(OUT / "gtfs", zp)
     skipped = stats.pop("skipped")

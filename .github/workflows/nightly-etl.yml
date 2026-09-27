@@ -86,11 +86,20 @@ jobs:
       # the step is skipped and the last good answers in cache/ankara are reused tomorrow.
       - name: Ankara (EGO Cepte lines, stops, timetables, shapes -> GTFS)
         continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          LIVE_BASE: ${{ vars.LIVE_BASE }}
         run: |
+          # GPS calibration: fresh from the server, else last night's copy, else none.
+          mkdir -p cache/ankara
+          { test -n "$LIVE_BASE" && curl -fsS --retry 3 -m 60 -o cache/ankara/calibration.json "${LIVE_BASE%/}/live/ankara/calibration"; } \
+            || gh release download data-latest -p ankara-calibration.json -O cache/ankara/calibration.json --clobber --repo "$GITHUB_REPOSITORY" \
+            || echo "no Ankara calibration yet"
           python -m ankara.ego_api
           python -m ankara.gtfs --validate
           python -m static.build --gtfs out/ankara-gtfs.zip --out out/static/ankara --bus-network --stop-codes
           cp out/ankara/lines.json out/ankara-lines.json
+          test -f cache/ankara/calibration.json && cp cache/ankara/calibration.json out/ankara-calibration.json || true
       - name: Merge and validate
         run: python -m merge.build --validate
       - name: Static JSON
@@ -103,7 +112,7 @@ jobs:
         run: |
           gh release view data-latest >/dev/null 2>&1 || \
             gh release create data-latest --title "Latest data" --notes "Nightly GTFS and static JSON built by the ETL." --latest=false
-          gh release upload data-latest out/istanbul-gtfs.zip out/static.tar.gz cache/rail/timetables.json $(ls cache/iett/calibration.json out/ankara-lines.json out/ankara-gtfs.zip 2>/dev/null) --clobber
+          gh release upload data-latest out/istanbul-gtfs.zip out/static.tar.gz cache/rail/timetables.json $(ls cache/iett/calibration.json out/ankara-lines.json out/ankara-gtfs.zip out/ankara-calibration.json 2>/dev/null) --clobber
           gh release edit data-latest --notes "Built $(date -u +%FT%TZ) from ${GITHUB_SHA::7}."
       - name: Rebuild the site with fresh data
         env:
