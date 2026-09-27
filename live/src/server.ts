@@ -6,6 +6,8 @@
 //   GET /live/ankara/vehicles?line=185-7  Ankara buses on one line
 //   GET /live/ankara/arrivals?stop=11654  upcoming buses at one Ankara stop + other lines' next trips
 //   GET /live/ankara/calibration  Ankara bus stop-to-stop times measured from EGO positions (nightly ETL)
+//   GET /live/places/autocomplete?q=moda&session=<uuid>&lat=&lon=  Google Places (capped, see places.ts)
+//   GET /live/places/details?id=<placeId>&session=<uuid>
 //   GET /live/search?q=popeyes&city=ankara&lat=39.87&lon=32.86  places and addresses (Photon), nearest first
 //   GET /live/health
 //
@@ -18,6 +20,7 @@ import { Calibration, Sampler } from './calibration.ts'
 import { fetchLineVehicles, type Vehicle } from './iett.ts'
 import { getStopBoard, getVehiclesByLine, NotImplemented, type AnkaraStopBoard, type AnkaraVehicle } from './providers/ego.ts'
 import { CITIES, search, type SearchResult } from './search.ts'
+import { LimitReached, NotConfigured, Places } from './places.ts'
 import { fetchAnnouncements, fetchStatus, type Announcement, type LineStatus } from './metro.ts'
 
 const PORT = Number(process.env.PORT ?? 8081)
@@ -50,6 +53,18 @@ const loadAnkaraVehicles = (line: string) => () =>
   })
 const ankaraArrivals = new Cache<AnkaraStopBoard>(10_000, 2 * 60_000)
 const searches = new Cache<SearchResult[]>(5 * 60_000, 60 * 60_000)
+const places = new Places({ key: process.env.PLACES_API_KEY ?? '', file: process.env.PLACES_FILE ?? '/data/places.json' })
+
+/** The client's address: Cloudflare, then the first proxy hop, then the socket. */
+function clientIp(req: IncomingMessage): string {
+  const cf = req.headers['cf-connecting-ip']
+  if (typeof cf === 'string' && cf) return cf
+  const xff = req.headers['x-forwarded-for']
+  if (typeof xff === 'string' && xff) return xff.split(',')[0].trim()
+  return req.socket.remoteAddress ?? '?'
+}
+
+const SESSION = /^[A-Za-z0-9-]{8,64}$/
 const status = new Cache<{ lines: LineStatus[]; announcements: Announcement[] }>(60_000, 6 * 3600_000)
 
 function send(res: ServerResponse, code: number, body: unknown, maxAge = 0) {
@@ -86,6 +101,30 @@ export async function handle(req: IncomingMessage, res: ServerResponse) {
       if (!/^[0-9]{3,6}$/.test(stop)) return send(res, 400, { error: 'stop' })
       const c = await ankaraArrivals.get(stop, () => getStopBoard(stop))
       return send(res, 200, { stop, ...c.value, fetchedAt: new Date(c.fetchedAt).toISOString(), stale: c.stale }, 5)
+    }
+    if (path === '/live/places/autocomplete' || path === '/live/places/details') {
+      const session = url.searchParams.get('session') ?? ''
+      if (!SESSION.test(session)) return send(res, 400, { error: 'session' })
+      try {
+        if (path === '/live/places/autocomplete') {
+          const q = (url.searchParams.get('q') ?? '').trim()
+          if (q.length < 3 || q.length > 100) return send(res, 400, { error: 'q' })
+          const lat = Number(url.searchParams.get('lat'))
+          const lon = Number(url.searchParams.get('lon'))
+          const near: [number, number] | undefined =
+            Number.isFinite(lat) && Number.isFinite(lon) && lat && lon ? [Math.round(lat * 1000) / 1000, Math.round(lon * 1000) / 1000] : undefined
+          places.allowClient(clientIp(req))
+          return send(res, 200, { results: await places.autocomplete(q, session, near) })
+        }
+        const id = url.searchParams.get('id') ?? ''
+        if (!/^[A-Za-z0-9_-]{10,300}$/.test(id)) return send(res, 400, { error: 'id' })
+        places.allowClient(clientIp(req))
+        return send(res, 200, { place: await places.place(id, session) })
+      } catch (e) {
+        if (e instanceof LimitReached) return send(res, 429, { fallback: true })
+        if (e instanceof NotConfigured) return send(res, 503, { fallback: true })
+        return send(res, 503, { fallback: true }, 0)
+      }
     }
     if (path === '/live/search') {
       const q = (url.searchParams.get('q') ?? '').trim()
