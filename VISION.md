@@ -8,7 +8,7 @@
 
 ## Misyon
 
-İstanbul'un zaten halka açık olan ulaşım verisini, sade, hızlı ve dürüst bir araçla halka geri vermek. Kod açık kaynak (AGPL-3.0), veri kaynakları açık, sunucu maliyeti sıfır.
+Türkiye şehirlerinin (İstanbul ve Ankara ile başlayarak) zaten halka açık olan ulaşım verisini, sade, hızlı ve dürüst bir araçla halka geri vermek. Kod açık kaynak (AGPL-3.0), veri kaynakları açık, sunucu maliyeti sıfır.
 
 ## İlkeler
 
