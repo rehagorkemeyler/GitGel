@@ -110,3 +110,36 @@ def test_gps_calibration_scales_travel_times_per_bucket(tmp_path):
     st = [r for r in csv.DictReader(open(tmp_path / "stop_times.txt")) if r["stop_sequence"] == "3"]
     assert sorted(r["arrival_time"] for r in st) == ["08:10:00", "13:20:00"]  # morning halved, midday unchanged
     assert bucket_of("wk", 8 * 60) == "wd-am" and bucket_of("sun", 25 * 60) == "we-night"
+
+
+def test_pass_times_chain_into_trips_with_short_workings():
+    from ankara.gtfs import chain_passes
+
+    # Every 10 min from the first stop; one extra trip starts at the second stop at 10:06.
+    trips = chain_passes([[600, 610], [602, 606, 612], [605, 609, 615]])
+    assert sorted(trips) == [(0, [600, 602, 605]), (0, [610, 612, 615]), (1, [606, 609])]
+    # Trains closer together than one hop keep their order.
+    assert sorted(chain_passes([[600, 602, 604], [603, 605, 607]])) == [(0, [600, 603]), (0, [602, 605]), (0, [604, 607])]
+    # A trip that ends early simply stops.
+    assert sorted(chain_passes([[600, 620], [601, 621], [603]])) == [(0, [600, 601, 603]), (0, [620, 621])]
+
+
+def test_gtfs_uses_ego_pass_times_and_falls_back_to_the_model(tmp_path):
+    import csv
+    import datetime as dt
+
+    from ankara.gtfs import build
+
+    stops = {c: {"name": c, "lat": 39.90 + i * 0.01, "lon": 32.85} for i, c in enumerate("abc")}
+    times = {"wk": [{"min": 600, "note": None}, {"min": 1430, "note": None}], "sat": [{"min": 600, "note": None}], "sun": []}
+    line = {"code": "A1-D", "name": "L", "mode": "ankaray", "minutes": 10,
+            "stops": [{"seq": i + 1, "stop": c} for i, c in enumerate("abc")], "times": times, "shape": []}
+    wk = [{"seq": 1, "stop": "a", "mins": [600, 1430]}, {"seq": 2, "stop": "b", "mins": [601, 1432]},
+          {"seq": 3, "stop": "c", "mins": [603, 5]}]
+    stats = build([line], stops, dt.date(2026, 9, 28), tmp_path, passes={"A1-D": {"wk": wk}})
+    assert stats["pass_time_days"] == 1 and stats["model_days"] == 1
+    st = list(csv.DictReader(open(tmp_path / "stop_times.txt")))
+    wk_c = sorted(r["arrival_time"] for r in st if "_wk_" in r["trip_id"] and r["stop_id"] == "eg_c")
+    assert wk_c == ["10:03:00", "24:05:00"]  # EGO's minutes, the night trip after midnight
+    sat_c = [r["arrival_time"] for r in st if "_sat_" in r["trip_id"] and r["stop_id"] == "eg_c"]
+    assert sat_c == ["10:10:00"]  # no pass times on Saturday: departure + duration

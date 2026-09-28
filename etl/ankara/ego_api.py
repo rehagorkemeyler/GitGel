@@ -1,6 +1,6 @@
 """EGO Cepte service: every line with its stops (exact coordinates), timetable and route geometry.
 
-    python -m ankara.ego_api            # -> out/ankara/lines.json, out/ankara/stops.json
+    python -m ankara.ego_api            # -> out/ankara/lines.json, stops.json, passes.json
     python -m ankara.ego_api --offline  # only use cache/ankara/api
 
 Two calls on https://egocptsrvand.ego.gov.tr/hibrit/ (no key, no session):
@@ -8,6 +8,10 @@ Two calls on https://egocptsrvand.ego.gov.tr/hibrit/ (no key, no session):
   act.asp?FNC=HatBilgileri&YOL=TRUE&KOD={hat} one line: details, table_durak (ordered stops
                                               with lat/lng), table_saat (weekday/Saturday/
                                               Sunday departures with notes), yol (geometry)
+  act.asp?FNC=DuraklardanGecisSaatleri&HAT={hat}&TUR={day}
+                                              EGO's scheduled pass times at every stop of
+                                              the line ("Tahmini Durak Geçiş Saatleri"), one
+                                              call per day type (HAFTA İÇİ / CUMARTESİ / PAZAR)
 Notes and samples: docs/research.md section 8.6, docs/api-samples/ankara/.
 
 One request per line with a pause in between (~665 lines, ~40 min). A line that
@@ -21,6 +25,7 @@ import json
 import re
 import sys
 import time
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 import requests
@@ -33,6 +38,7 @@ OUT = ETL / "out" / "ankara"
 
 MODES = {"OTOBÜS": "bus", "METRO": "metro", "ANKARAY": "ankaray", "BANLİYO": "suburban"}
 DAYS = {"HAFTA İÇİ": "wk", "CUMARTESİ": "sat", "PAZAR": "sun"}
+PASS_WORKERS = 4
 BBOX = (39.3, 31.8, 40.6, 33.8)
 
 
@@ -115,6 +121,16 @@ def parse_line(text: str) -> dict | None:
     }
 
 
+def parse_passes(text: str) -> list[dict] | None:
+    """Pass times per stop in line order: [{"seq", "stop", "mins": [minute of day, ...]}]; None if empty."""
+    out = []
+    for r in json.loads(text).get("table") or []:
+        mins = [int(h) * 60 + int(m) for h, m in re.findall(r"\b(\d{1,2}):(\d{2})\b", str(r.get("saat", "")))]
+        out.append({"seq": int(_num(r.get("sira")) or 0), "stop": str(r.get("kod", "")).strip(), "mins": mins})
+    out.sort(key=lambda s: s["seq"])
+    return out if any(s["mins"] for s in out) else None
+
+
 def stops_index(lines: list[dict]) -> dict[str, dict]:
     """Every stop with coordinates, keyed by EGO stop code."""
     out: dict[str, dict] = {}
@@ -187,12 +203,30 @@ def main(argv=None) -> None:
             p["code"] = p["code"] or ln["code"]
             lines.append(p)
 
+    # EGO's own per-stop times, for every day the line runs. Kept apart from lines.json (large).
+    day_name = {v: k for k, v in DAYS.items()}
+
+    def passes_of(p: dict) -> tuple[str, dict]:
+        with requests.Session() as ps:
+            got = {}
+            for day, times in p["times"].items():
+                if times:
+                    v, _ = cached(ps, f"{p['code']}__{day}", {"FNC": "DuraklardanGecisSaatleri", "HAT": p["code"],
+                                                            "TUR": day_name[day]}, parse_passes, a.offline, a.pause)
+                    if v:
+                        got[day] = v
+            return p["code"], got
+
+    with ThreadPoolExecutor(PASS_WORKERS) as ex:
+        passes = {code: got for code, got in ex.map(passes_of, lines) if got}
+    (OUT / "passes.json").write_text(json.dumps(passes, separators=(",", ":")), encoding="utf-8")
+
     stops = stops_index(lines)
     (OUT / "lines.json").write_text(json.dumps(lines, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     (OUT / "stops.json").write_text(json.dumps(stops, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     total = len({st["stop"] for p in lines for st in p["stops"]})
     print(f"ankara: {len(lines)}/{len(index)} lines, {len(stops)}/{total} stops with coordinates, "
-          f"{sum(1 for p in lines if p['shape'])} shapes; {stats}")
+          f"{sum(1 for p in lines if p['shape'])} shapes, {len(passes)} with stop pass times; {stats}")
     if len(lines) < 0.8 * len(index):
         sys.exit("ankara: fewer than 80% of lines downloaded")
 
