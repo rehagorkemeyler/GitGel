@@ -2,16 +2,19 @@
 
     python -m ankara.gtfs [--validate]   # -> out/ankara/gtfs/*.txt, out/ankara-gtfs.zip
 
-Timing model (everything here is "tarifeye göre"): EGO publishes departures
-from the first stop and one trip duration per line. Intermediate stops get
-times proportional to distance along EGO's route geometry. Stops without
-coordinates are left out of the trip rather than guessed. Short-working notes
-("...DEN BAŞLAR", "...DA BİTER") are not modelled yet; those trips run the
-full route.
+Timing (everything here is "tarifeye göre"): EGO publishes its scheduled pass
+time at every stop ("Tahmini Durak Geçiş Saatleri", ankara.ego_api passes.json).
+Trips are rebuilt from those lists by chaining each pass to the matching pass at
+the next stop, so trips that start or end mid-line come out as they are. Lines
+or days without pass times fall back to the model: departures from the first
+stop plus the trip duration spread by distance along EGO's route geometry,
+scaled by GPS calibration. Stops without coordinates are left out of the trip
+rather than guessed.
 """
 from __future__ import annotations
 
 import argparse
+import bisect
 import datetime as dt
 import json
 import re
@@ -51,6 +54,72 @@ def service_minutes(times: list[dict]) -> list[int]:
     if mins and mins[-1] >= NIGHT_END:
         mins = sorted(m + 1440 if m < NIGHT_END else m for m in mins)
     return mins
+
+
+PASS_TOL_MIN = 3  # a pass may be this many minutes (or half the typical hop) off the usual hop
+
+
+def chain_passes(stops_mins: list[list[int]]) -> list[tuple[int, list[int]]]:
+    """Trips from per-stop pass times: (index of the first stop, minutes at it and the following stops).
+
+    Usually every stop lists the same number of passes and the k-th pass at one stop is the k-th
+    at the next. Otherwise (trips starting or ending mid-line) each pass continues with the pass
+    at the next stop closest to "its time plus the hop of the trip before", keeping trips in
+    order; a pass with no continuation ends its trip, a pass nothing leads to starts one.
+    Single-stop trips are dropped."""
+    first = sorted(stops_mins[0]) if stops_mins else []
+    open_: list[tuple[int, list[int]]] = [(0, [m]) for m in first]
+    done: list[tuple[int, list[int]]] = []
+    for j in range(1, len(stops_mins)):
+        nxt = sorted(stops_mins[j])
+        if len(nxt) == len(open_) and all(b >= t[1][-1] for t, b in zip(open_, nxt)):
+            for t, b in zip(open_, nxt):
+                t[1].append(b)
+            continue
+        gaps = []
+        for _, mins in open_[:5]:
+            k = bisect.bisect_left(nxt, mins[-1])
+            if k < len(nxt):
+                gaps.append(nxt[k] - mins[-1])
+        hop = float(np.median(gaps)) if gaps else 0.0
+        used = [False] * len(nxt)
+        lo = 0
+        carried = []
+        for trip in open_:
+            a = trip[1][-1]
+            want, tol = a + hop, max(PASS_TOL_MIN, hop / 2)
+            best = None
+            k = max(lo, bisect.bisect_left(nxt, a))
+            while k < len(nxt) and nxt[k] <= want + tol:
+                if abs(nxt[k] - want) <= tol and (best is None or abs(nxt[k] - want) < abs(nxt[best] - want)):
+                    best = k
+                k += 1
+            if best is None:
+                done.append(trip)
+                continue
+            used[best] = True
+            lo = best + 1
+            hop = (hop + nxt[best] - a) / 2  # hops drift through the day (peaks)
+            trip[1].append(nxt[best])
+            carried.append(trip)
+        carried += [(j, [m]) for k, m in enumerate(nxt) if not used[k]]
+        open_ = sorted(carried, key=lambda t: t[1][-1])
+    return [t for t in done + open_ if len(t[1]) >= 2]
+
+
+def pass_trips(line: dict, rows: list[dict] | None, b: dict) -> list[list[tuple[int, int]]] | None:
+    """Trips of one line and day from EGO's pass times, as (index in b["stops"], minute) lists.
+
+    None when there are no pass times or they do not describe this line's stop list."""
+    if not rows or [r["stop"] for r in rows] != [s["stop"] for s in line["stops"]]:
+        return None
+    at = {seq: k for k, seq in enumerate(b["seqno"])}
+    out = []
+    for start, mins in chain_passes([service_minutes([{"min": m} for m in r["mins"]]) for r in rows]):
+        trip = [(at[rows[start + i]["seq"]], m) for i, m in enumerate(mins) if rows[start + i]["seq"] in at]
+        if len(trip) >= 2:
+            out.append(trip)
+    return out or None
 
 
 class Line:
@@ -109,6 +178,7 @@ def piecewise(cand: Line, pts: list[tuple[float, float]], near: float = 60.0) ->
 
 def build_line(line: dict, stops: dict, candidates: list[np.ndarray]) -> dict | None:
     seq = [s["stop"] for s in line["stops"] if s["stop"] in stops]
+    seqno = [s.get("seq") for s in line["stops"] if s["stop"] in stops]
     if len(seq) < 2:
         return None
     pts = [(stops[s]["lat"], stops[s]["lon"]) for s in seq]
@@ -142,7 +212,7 @@ def build_line(line: dict, stops: dict, candidates: list[np.ndarray]) -> dict | 
     # ride from the start of the line instead of from the boarding stop.
     seg = [float(haversine_m(*a, *b)) for a, b in zip(geom, geom[1:])]
     along = np.concatenate([[0.0], np.cumsum(seg)])
-    return {"stops": seq, "offsets": dist / dist[-1] * total_min * 60, "shape": geom, "shape_dist": along,
+    return {"stops": seq, "seqno": seqno, "offsets": dist / dist[-1] * total_min * 60, "shape": geom, "shape_dist": along,
             "stop_dist": along[np.array(at_vertex)], "fitted": best_n >= 0.5 * (len(pts) - 1)}
 
 
@@ -200,7 +270,8 @@ def calibration_factors(built: dict[str, dict], rows: list[dict]) -> tuple[dict,
     return lines, buckets
 
 
-def build(lines: list[dict], stops: dict, today: dt.date, out: Path, calibration: list[dict] | None = None) -> dict:
+def build(lines: list[dict], stops: dict, today: dt.date, out: Path, calibration: list[dict] | None = None,
+          passes: dict | None = None) -> dict:
     out.mkdir(parents=True, exist_ok=True)
     built: dict[str, dict] = {}
     for ln in lines:
@@ -214,7 +285,7 @@ def build(lines: list[dict], stops: dict, today: dt.date, out: Path, calibration
     f_line, f_bucket = calibration_factors(built, calibration or [])
 
     routes, trips, stop_times, shapes, used = [], [], [], [], set()
-    stats = {"lines": 0, "skipped": [], "ego_shape": 0, "straight_shape": 0}
+    stats = {"lines": 0, "skipped": [], "ego_shape": 0, "straight_shape": 0, "pass_time_days": 0, "model_days": 0}
     for ln in lines:
         code, mode = ln["code"], ln.get("mode", "bus")
         b = built.get(code)
@@ -235,6 +306,21 @@ def build(lines: list[dict], stops: dict, today: dt.date, out: Path, calibration
         headsign = name_tr(stops[b["stops"][-1]]["name"])
         used.update(b["stops"])
         for svc, mins in days.items():
+            timed = pass_trips(ln, (passes or {}).get(code, {}).get(svc), b)
+            if timed:
+                stats["pass_time_days"] += 1
+                for i, trip in enumerate(timed):
+                    tid = f"{rid}_{svc}_{i}"
+                    trips.append({"route_id": rid, "service_id": P + svc, "trip_id": tid,
+                                  "trip_headsign": headsign, "direction_id": 0, "shape_id": rid})
+                    for k, m in trip:
+                        ts = hms(m * 60)
+                        stop_times.append({"trip_id": tid, "arrival_time": ts, "departure_time": ts,
+                                           "stop_id": P + b["stops"][k], "stop_sequence": k + 1,
+                                           "shape_dist_traveled": round(float(b["stop_dist"][k]), 1)})
+                continue
+            if mins:
+                stats["model_days"] += 1
             for i, m in enumerate(mins):
                 tid = f"{rid}_{svc}_{i}"
                 # EGO publishes each direction as its own line code (M1-D / M1-G, 102-1 / 102-2).
@@ -289,7 +375,9 @@ def main(argv=None) -> None:
     cal = []
     if a.calibration.exists():
         cal = json.loads(a.calibration.read_text(encoding="utf-8")).get("rows", [])
-    stats = build(lines, stops, today, OUT / "gtfs", cal)
+    pp = OUT / "passes.json"
+    passes = json.loads(pp.read_text(encoding="utf-8")) if pp.exists() else {}
+    stats = build(lines, stops, today, OUT / "gtfs", cal, passes)
     zp = ETL / "out" / "ankara-gtfs.zip"
     zip_feed(OUT / "gtfs", zp)
     skipped = stats.pop("skipped")
