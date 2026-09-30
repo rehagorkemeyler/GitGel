@@ -12,16 +12,22 @@ main() {
 
   local rel=https://github.com/rehagorkemeyler/GitGel/releases/download/data-latest
   curl -fsSL --retry 5 -o "$base/input/istanbul-gtfs.zip" "$rel/istanbul-gtfs.zip"
-  # Ankara is optional: a failed download keeps the last copy; none at all skips Ankara.
-  curl -fsSL --retry 5 -o "$base/input/ankara-gtfs.zip.part" "$rel/ankara-gtfs.zip" \
-    && mv "$base/input/ankara-gtfs.zip.part" "$base/input/ankara-gtfs.zip" \
-    || rm -f "$base/input/ankara-gtfs.zip.part"
+  # Ankara and Bursa are optional: a failed download keeps the last copy; none at all skips the city.
+  for c in ankara bursa; do
+    curl -fsSL --retry 5 -o "$base/input/$c-gtfs.zip.part" "$rel/$c-gtfs.zip" \
+      && mv "$base/input/$c-gtfs.zip.part" "$base/input/$c-gtfs.zip" \
+      || rm -f "$base/input/$c-gtfs.zip.part"
+  done
   # OSM changes slowly: refresh at most once a week.
-  if [ ! -f "$base/input/istanbul.osm.pbf" ] || [ -n "$(find "$base/input/istanbul.osm.pbf" -mtime +6)" ]; then
+  # Istanbul and Bursa both come from the Marmara file.
+  if [ ! -f "$base/input/istanbul.osm.pbf" ] || [ -n "$(find "$base/input/istanbul.osm.pbf" -mtime +6)" ] \
+     || [ ! -f "$base/input/bursa.osm.pbf" ]; then
     curl -fsSL --retry 5 -o "$base/input/marmara.osm.pbf" \
       https://download.openstreetmap.fr/extracts/europe/turkey/marmara-latest.osm.pbf
     osmium extract -b 27.95,40.75,29.95,41.60 --strategy complete_ways --overwrite \
       "$base/input/marmara.osm.pbf" -o "$base/input/istanbul.osm.pbf"
+    osmium extract -b 28.20,39.70,29.90,40.55 --strategy complete_ways --overwrite \
+      "$base/input/marmara.osm.pbf" -o "$base/input/bursa.osm.pbf"
   fi
   if [ ! -f "$base/input/ankara.osm.pbf" ] || [ -n "$(find "$base/input/ankara.osm.pbf" -mtime +6)" ]; then
     curl -fsSL --retry 5 -o "$base/input/central_anatolia.osm.pbf" \
@@ -31,18 +37,21 @@ main() {
   fi
   # Mapping quirks that abort the MOTIS street import (ways leaving the regional
   # download, a plaza of 38 area slices around one node) are removed first.
-  for c in istanbul ankara; do
+  for c in istanbul ankara bursa; do
     python3 "$repo/infra/motis/clean-osm.py" "$base/input/$c.osm.pbf" "$base/input/$c.clean.osm.pbf"
   done
-  # MOTIS reads one OSM file: both cities in one.
-  osmium merge --overwrite "$base/input/istanbul.clean.osm.pbf" "$base/input/ankara.clean.osm.pbf" -o "$base/input/cities.osm.pbf"
+  # MOTIS reads one OSM file: all cities in one.
+  osmium merge --overwrite "$base/input/istanbul.clean.osm.pbf" "$base/input/ankara.clean.osm.pbf" \
+    "$base/input/bursa.clean.osm.pbf" -o "$base/input/cities.osm.pbf"
 
   cp "$base/input/istanbul-gtfs.zip" "$base/input/cities.osm.pbf" "$repo/infra/motis/config.yml" "$new/"
-  if [ -f "$base/input/ankara-gtfs.zip" ]; then
-    cp "$base/input/ankara-gtfs.zip" "$new/"
-  else
-    sed -i '/# ankara-begin/,/# ankara-end/d' "$new/config.yml"
-  fi
+  for c in ankara bursa; do
+    if [ -f "$base/input/$c-gtfs.zip" ]; then
+      cp "$base/input/$c-gtfs.zip" "$new/"
+    else
+      sed -i "/# $c-begin/,/# $c-end/d" "$new/config.yml"
+    fi
+  done
   chmod -R a+rwX "$new"
   # Run as the server user so old builds can be deleted later without root.
   docker run --rm --user "$(id -u):$(id -g)" -v "$new:/work" -w /work "$image" /motis import -c config.yml -d data

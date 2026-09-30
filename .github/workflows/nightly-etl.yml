@@ -53,6 +53,7 @@ jobs:
             etl/cache/old_gtfs
             etl/cache/osm
             etl/cache/ankara
+            etl/cache/bursa
           key: etl-downloads-${{ github.run_id }}
           restore-keys: etl-downloads-
       - name: Download OSM and validator
@@ -100,6 +101,17 @@ jobs:
           python -m static.build --gtfs out/ankara-gtfs.zip --out out/static/ankara --bus-network --stop-codes
           cp out/ankara/lines.json out/ankara-lines.json
           test -f cache/ankara/calibration.json && cp cache/ankara/calibration.json out/ankara-calibration.json || true
+      # Bursa, like Ankara, must never block the other cities: its own time limit, skipped on
+      # failure, and lines not refreshed within the budget come from last night's cache/bursa.
+      - name: Bursa (BursaKart lines, stops, timetables, shapes -> GTFS)
+        continue-on-error: true
+        timeout-minutes: 30
+        run: |
+          # A half-built Bursa must not reach the release or the site.
+          trap 'rm -rf out/bursa-gtfs.zip out/static/bursa' ERR
+          python -m bursa.burulas_api --budget 20
+          python -m bursa.gtfs --validate
+          python -m static.build --gtfs out/bursa-gtfs.zip --out out/static/bursa --bus-network --stop-codes
       - name: Merge and validate
         run: python -m merge.build --validate
       - name: Static JSON
@@ -112,7 +124,7 @@ jobs:
         run: |
           gh release view data-latest >/dev/null 2>&1 || \
             gh release create data-latest --title "Latest data" --notes "Nightly GTFS and static JSON built by the ETL." --latest=false
-          gh release upload data-latest out/istanbul-gtfs.zip out/static.tar.gz cache/rail/timetables.json $(ls cache/iett/calibration.json out/ankara-lines.json out/ankara-gtfs.zip out/ankara-calibration.json 2>/dev/null) --clobber
+          gh release upload data-latest out/istanbul-gtfs.zip out/static.tar.gz cache/rail/timetables.json $(ls cache/iett/calibration.json out/ankara-lines.json out/ankara-gtfs.zip out/ankara-calibration.json out/bursa-gtfs.zip 2>/dev/null) --clobber
           gh release edit data-latest --notes "Built $(date -u +%FT%TZ) from ${GITHUB_SHA::7}."
       - name: Rebuild the site with fresh data
         env:
