@@ -15,6 +15,7 @@ export type City = { bbox: [number, number, number, number]; center: [number, nu
 export const CITIES: Record<string, City> = {
   istanbul: { bbox: [27.9, 40.7, 30.0, 41.7], center: [41.03, 28.98] },
   ankara: { bbox: [32.2, 39.5, 33.4, 40.3], center: [39.92, 32.854] },
+  bursa: { bbox: [28.2, 39.7, 29.9, 40.55], center: [40.195, 29.06] }, // centre: Kent Meydanı
 }
 
 export type SearchResult = {

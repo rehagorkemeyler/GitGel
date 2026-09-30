@@ -6,7 +6,9 @@
 //   GET /live/ankara/vehicles?line=185-7  Ankara buses on one line
 //   GET /live/ankara/arrivals?stop=11654  upcoming buses at one Ankara stop + other lines' next trips
 //   GET /live/ankara/calibration  Ankara bus stop-to-stop times measured from EGO positions (nightly ETL)
-//   GET /live/places/autocomplete?q=moda&session=<uuid>&lat=&lon=&city=istanbul|ankara  Google Places (capped, see places.ts)
+//   GET /live/bursa/vehicles?line=38      Bursa buses and trams on one line (with boardings this trip)
+//   GET /live/bursa/arrivals?stop=4702    upcoming buses at one Bursa stop + the stop's other lines
+//   GET /live/places/autocomplete?q=moda&session=<uuid>&lat=&lon=&city=istanbul|ankara|bursa  Google Places (capped, see places.ts)
 //   GET /live/places/details?id=<placeId>&session=<uuid>
 //   GET /live/search?q=popeyes&city=ankara&lat=39.87&lon=32.86  places and addresses (Photon), nearest first
 //   GET /live/health
@@ -19,6 +21,7 @@ import { Cache } from './cache.ts'
 import { Calibration, Sampler } from './calibration.ts'
 import { fetchLineVehicles, type Vehicle } from './iett.ts'
 import { getStopBoard, getVehiclesByLine, NotImplemented, type AnkaraStopBoard, type AnkaraVehicle } from './providers/ego.ts'
+import { getBursaStopBoard, getBursaVehicles, type BursaStopBoard, type BursaVehicle } from './providers/burulas.ts'
 import { CITIES, search, type SearchResult } from './search.ts'
 import { LimitReached, NotConfigured, Places, RECTANGLES, type PlacesCity } from './places.ts'
 import { fetchAnnouncements, fetchStatus, type Announcement, type LineStatus } from './metro.ts'
@@ -52,6 +55,8 @@ const loadAnkaraVehicles = (line: string) => () =>
     return v
   })
 const ankaraArrivals = new Cache<AnkaraStopBoard>(10_000, 2 * 60_000)
+const bursaVehicles = new Cache<BursaVehicle[]>(10_000, 2 * 60_000)
+const bursaArrivals = new Cache<BursaStopBoard>(10_000, 2 * 60_000)
 const searches = new Cache<SearchResult[]>(5 * 60_000, 60 * 60_000)
 const places = new Places({ key: process.env.PLACES_API_KEY ?? '', file: process.env.PLACES_FILE ?? '/data/places.json' })
 
@@ -100,6 +105,19 @@ export async function handle(req: IncomingMessage, res: ServerResponse) {
       const stop = (url.searchParams.get('stop') ?? '').trim()
       if (!/^[0-9]{3,6}$/.test(stop)) return send(res, 400, { error: 'stop' })
       const c = await ankaraArrivals.get(stop, () => getStopBoard(stop))
+      return send(res, 200, { stop, ...c.value, fetchedAt: new Date(c.fetchedAt).toISOString(), stale: c.stale }, 5)
+    }
+    if (path === '/live/bursa/vehicles') {
+      // Bursa line codes keep their case ("19İ") and may carry "/" or a space ("Bursaray Gece 1").
+      const line = (url.searchParams.get('line') ?? '').trim()
+      if (!/^[0-9A-Za-zÇĞİÖŞÜçğıöşü/ -]{1,20}$/.test(line)) return send(res, 400, { error: 'line' })
+      const c = await bursaVehicles.get(line, () => getBursaVehicles(line))
+      return send(res, 200, { line, vehicles: c.value, fetchedAt: new Date(c.fetchedAt).toISOString(), stale: c.stale }, 5)
+    }
+    if (path === '/live/bursa/arrivals') {
+      const stop = (url.searchParams.get('stop') ?? '').trim()
+      if (!/^[0-9]{1,6}$/.test(stop)) return send(res, 400, { error: 'stop' })
+      const c = await bursaArrivals.get(stop, () => getBursaStopBoard(Number(stop)))
       return send(res, 200, { stop, ...c.value, fetchedAt: new Date(c.fetchedAt).toISOString(), stale: c.stale }, 5)
     }
     if (path === '/live/places/autocomplete' || path === '/live/places/details') {

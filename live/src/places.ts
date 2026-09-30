@@ -1,7 +1,7 @@
 // Google Places (New) proxy for the native app's "Nereye?" search. The key
 // never leaves the server, and hard daily caps keep it inside the free tier:
 //
-//   autocomplete  300 requests a day, Istanbul or Ankara   (~9 000 a month, free cap 10 000)
+//   autocomplete  300 requests a day, all cities together  (~9 000 a month, free cap 10 000)
 //   details       160 requests a day   (~4 800 a month, free cap 5 000; Pro fields)
 //
 // Days are Istanbul days. Counters are written to disk so a restart does not
@@ -21,6 +21,7 @@ const MAX_CACHED_DETAILS = 5000
 export const RECTANGLES = {
   istanbul: { low: { latitude: 40.7, longitude: 27.9 }, high: { latitude: 41.7, longitude: 30.0 } },
   ankara: { low: { latitude: 39.5, longitude: 32.2 }, high: { latitude: 40.3, longitude: 33.4 } },
+  bursa: { low: { latitude: 39.7, longitude: 28.2 }, high: { latitude: 40.55, longitude: 29.9 } },
 } as const
 export type PlacesCity = keyof typeof RECTANGLES
 const API = 'https://places.googleapis.com/v1'

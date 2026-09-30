@@ -1,0 +1,79 @@
+{
+ "version": 1,
+ "statusCode": 200,
+ "message": "Success!",
+ "result": [
+  {
+   "routeId": 1012,
+   "routeCode": "38",
+   "routeDay": 1,
+   "stopTime": "06:00:00"
+  },
+  {
+   "routeId": 1012,
+   "routeCode": "38",
+   "routeDay": 1,
+   "stopTime": "06:30:00"
+  },
+  {
+   "routeId": 1012,
+   "routeCode": "38",
+   "routeDay": 1,
+   "stopTime": "06:50:00"
+  },
+  {
+   "routeId": 1012,
+   "routeCode": "38",
+   "routeDay": 1,
+   "stopTime": "07:10:00"
+  },
+  {
+   "routeId": 1012,
+   "routeCode": "38",
+   "routeDay": 1,
+   "stopTime": "07:30:00"
+  },
+  {
+   "routeId": 1012,
+   "routeCode": "38",
+   "routeDay": 1,
+   "stopTime": "07:50:00"
+  },
+  {
+   "routeId": 1012,
+   "routeCode": "38",
+   "routeDay": 1,
+   "stopTime": "08:10:00"
+  },
+  {
+   "routeId": 1012,
+   "routeCode": "38",
+   "routeDay": 1,
+   "stopTime": "08:30:00"
+  },
+  {
+   "routeId": 1012,
+   "routeCode": "38",
+   "routeDay": 1,
+   "stopTime": "08:50:00"
+  },
+  {
+   "routeId": 1012,
+   "routeCode": "38",
+   "routeDay": 1,
+   "stopTime": "09:10:00"
+  },
+  {
+   "routeId": 1012,
+   "routeCode": "38",
+   "routeDay": 1,
+   "stopTime": "09:30:00"
+  },
+  {
+   "routeId": 1012,
+   "routeCode": "38",
+   "routeDay": 1,
+   "stopTime": "09:45:00"
+  }
+ ]
+}

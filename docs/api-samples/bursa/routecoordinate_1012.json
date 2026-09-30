@@ -1,0 +1,91 @@
+{
+ "version": 1,
+ "statusCode": 200,
+ "message": "Success",
+ "result": [
+  {
+   "latitude": "40.26453",
+   "logitude": "29.05438",
+   "sequence": 0,
+   "route": "1012",
+   "routeDirection": "R"
+  },
+  {
+   "latitude": "40.26493000000001",
+   "logitude": "29.054170000000003",
+   "sequence": 1,
+   "route": "1012",
+   "routeDirection": "R"
+  },
+  {
+   "latitude": "40.26498",
+   "logitude": "29.05431",
+   "sequence": 2,
+   "route": "1012",
+   "routeDirection": "R"
+  },
+  {
+   "latitude": "40.26503",
+   "logitude": "29.054340000000003",
+   "sequence": 3,
+   "route": "1012",
+   "routeDirection": "R"
+  },
+  {
+   "latitude": "40.26518",
+   "logitude": "29.05431",
+   "sequence": 4,
+   "route": "1012",
+   "routeDirection": "R"
+  },
+  {
+   "latitude": "40.26527",
+   "logitude": "29.054280000000002",
+   "sequence": 5,
+   "route": "1012",
+   "routeDirection": "R"
+  },
+  {
+   "latitude": "40.265350000000005",
+   "logitude": "29.054280000000002",
+   "sequence": 6,
+   "route": "1012",
+   "routeDirection": "R"
+  },
+  {
+   "latitude": "40.26541",
+   "logitude": "29.054340000000003",
+   "sequence": 7,
+   "route": "1012",
+   "routeDirection": "R"
+  },
+  {
+   "latitude": "40.26547",
+   "logitude": "29.0545",
+   "sequence": 8,
+   "route": "1012",
+   "routeDirection": "R"
+  },
+  {
+   "latitude": "40.26618353658748",
+   "logitude": "29.05674793005943",
+   "sequence": 9,
+   "route": "1012",
+   "routeDirection": "R"
+  },
+  {
+   "latitude": "40.266213536577055",
+   "logitude": "29.056863906745924",
+   "sequence": 10,
+   "route": "1012",
+   "routeDirection": "R"
+  },
+  {
+   "latitude": "40.2662442364478",
+   "logitude": "29.05695641410354",
+   "sequence": 11,
+   "route": "1012",
+   "routeDirection": "R"
+  }
+ ]
+}

@@ -1,0 +1,22 @@
+{
+ "version": 1,
+ "statusCode": 200,
+ "message": "Success",
+ "result": [
+  {
+   "routeId": 1517,
+   "routeCode": "97A",
+   "routeTitle": "Yeni Kent - Terminal",
+   "passTime": "00:05:00",
+   "realTime": "00:05:00",
+   "vehicleLat": 40,
+   "vehicleLng": 29,
+   "vehicleSpeed": 0,
+   "licencePlate": "16 BR 163",
+   "direction": "R",
+   "gpsDirections": 0,
+   "isAirConditioner": true,
+   "isSuitableForDisabled": true
+  }
+ ]
+}
