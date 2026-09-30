@@ -1,0 +1,49 @@
+{
+ "version": 1,
+ "statusCode": 200,
+ "message": "Success",
+ "result": [
+  {
+   "type": "S",
+   "stationId": 18348,
+   "stationName": "SU UÇTU TABİAT PARKI VE ŞELALESİ 2 (MK0053)",
+   "longitude": 28,
+   "latitude": 40
+  },
+  {
+   "type": "S",
+   "stationId": 18347,
+   "stationName": "SU UÇTU TABİAT PARKI VE ŞELALESİ 1 (MK0052)",
+   "longitude": 28,
+   "latitude": 40
+  },
+  {
+   "type": "S",
+   "stationId": 5747,
+   "stationName": "KARAPINAR 7 (M.KEMALPAŞA) (D10-69)",
+   "longitude": 28,
+   "latitude": 40
+  },
+  {
+   "type": "S",
+   "stationId": 7239,
+   "stationName": "DALLICA (D10-348)",
+   "longitude": 28,
+   "latitude": 40
+  },
+  {
+   "type": "S",
+   "stationId": 4915,
+   "stationName": "ÇELTİKÇİ 10 (M.KEMALPAŞA) (D10-80)",
+   "longitude": 28,
+   "latitude": 40
+  },
+  {
+   "type": "S",
+   "stationId": 4914,
+   "stationName": "ÇELTİKÇİ 9 (M.KEMALPAŞA) (D10-79)",
+   "longitude": 28,
+   "latitude": 40
+  }
+ ]
+}

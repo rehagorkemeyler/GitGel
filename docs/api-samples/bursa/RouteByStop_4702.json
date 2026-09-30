@@ -1,0 +1,22 @@
+{
+ "version": 1,
+ "statusCode": 200,
+ "message": "Success",
+ "result": [
+  {
+   "routeNo": 1153,
+   "routeCode": "B17A",
+   "routeName": "B17A"
+  },
+  {
+   "routeNo": 1159,
+   "routeCode": "B25",
+   "routeName": "B25"
+  },
+  {
+   "routeNo": 1517,
+   "routeCode": "97A",
+   "routeName": "97A"
+  }
+ ]
+}

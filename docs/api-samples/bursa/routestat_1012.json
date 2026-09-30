@@ -1,0 +1,103 @@
+{
+ "version": 1,
+ "statusCode": 200,
+ "message": "Success",
+ "result": [
+  {
+   "stopId": 4677,
+   "stopName": "TERMİNAL PERON 1",
+   "sequence": 1,
+   "latitude": "40.26453",
+   "longitude": "29.05438",
+   "direction": "R"
+  },
+  {
+   "stopId": 1577,
+   "stopName": "TERMİNAL 1",
+   "sequence": 2,
+   "latitude": "40.26585",
+   "longitude": "29.05736",
+   "direction": "R"
+  },
+  {
+   "stopId": 1578,
+   "stopName": "ALİ OSMAN SÖNMEZ E.M.L 1",
+   "sequence": 3,
+   "latitude": "40.262435",
+   "longitude": "29.059108",
+   "direction": "R"
+  },
+  {
+   "stopId": 1579,
+   "stopName": "U.Ü. ALİ OSMAN SÖNMEZ KAMPÜSÜ 1",
+   "sequence": 4,
+   "latitude": "40.25865",
+   "longitude": "29.06103",
+   "direction": "R"
+  },
+  {
+   "stopId": 1580,
+   "stopName": "MESLEK Y.O İSTASYONU 1",
+   "sequence": 5,
+   "latitude": "40.25618761050918",
+   "longitude": "29.06259146627046",
+   "direction": "R"
+  },
+  {
+   "stopId": 1581,
+   "stopName": "YENİCEABAT İSTASYONU 1",
+   "sequence": 6,
+   "latitude": "40.251225",
+   "longitude": "29.063718",
+   "direction": "R"
+  },
+  {
+   "stopId": 1582,
+   "stopName": "PANAYIR İSTASYONU 1",
+   "sequence": 7,
+   "latitude": "40.2465",
+   "longitude": "29.06353",
+   "direction": "R"
+  },
+  {
+   "stopId": 1583,
+   "stopName": "PANAYIR 1",
+   "sequence": 8,
+   "latitude": "40.24317",
+   "longitude": "29.06327",
+   "direction": "R"
+  },
+  {
+   "stopId": 1584,
+   "stopName": "BUTTİM İSTASYONU 1",
+   "sequence": 9,
+   "latitude": "40.23788",
+   "longitude": "29.062883",
+   "direction": "R"
+  },
+  {
+   "stopId": 1585,
+   "stopName": "OTOKOOP - ORMAN BÖLGE İSTASYONU 1",
+   "sequence": 10,
+   "latitude": "40.23291",
+   "longitude": "29.062452",
+   "direction": "R"
+  },
+  {
+   "stopId": 1586,
+   "stopName": "ÖZDİLEK 1",
+   "sequence": 11,
+   "latitude": "40.227976",
+   "longitude": "29.062181",
+   "direction": "R"
+  },
+  {
+   "stopId": 3118,
+   "stopName": "BÖLGE ADLİYE - MÜFTÜLÜK İSTASYONU 2",
+   "sequence": 12,
+   "latitude": "40.224646",
+   "longitude": "29.061912",
+   "direction": "R"
+  }
+ ]
+}

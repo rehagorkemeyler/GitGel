@@ -1,0 +1,48 @@
+{
+ "version": 1,
+ "statusCode": 200,
+ "message": "Success!!",
+ "result": [
+  {
+   "type": "R",
+   "kod": "T1",
+   "aciklama": "T1",
+   "hatNo": 1401
+  },
+  {
+   "type": "S",
+   "stationId": 107,
+   "stationName": "T1-ADLİYE (B69)",
+   "longitude": 29.069909,
+   "latitude": 40.193454
+  },
+  {
+   "type": "S",
+   "stationId": 100,
+   "stationName": "T1-ALTIPARMAK (B62)",
+   "longitude": 29.049541,
+   "latitude": 40.190832
+  },
+  {
+   "type": "S",
+   "stationId": 98,
+   "stationName": "T1-ÇARŞAMBA MERİNOS (B60)",
+   "longitude": 29.053562,
+   "latitude": 40.194763
+  },
+  {
+   "type": "S",
+   "stationId": 101,
+   "stationName": "T1-ÇATALFIRIN (B63)",
+   "longitude": 29.056739,
+   "latitude": 40.188703
+  },
+  {
+   "type": "S",
+   "stationId": 18538,
+   "stationName": "T1-DARMSTAD (B84)",
+   "longitude": 29.0504479,
+   "latitude": 40.195247
+  }
+ ]
+}
