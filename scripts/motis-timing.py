@@ -16,8 +16,8 @@ BASE = (sys.argv[1] if len(sys.argv) > 1 else "https://gitgel.tail90b397.ts.net"
 TRIPS = [
     ("Yenikapı", (41.0053, 28.9510), "Ayrılık Çeşmesi", (41.0006, 29.0290)),
     ("Kadıköy", (40.9910, 29.0240), "Alibeyköy", (41.0760, 28.9460)),
-    ("Taksim", (41.0369, 28.9850), "Sabiha Gökçen", (40.9050, 29.3160)),
-    ("İstanbul Havalimanı", (41.2610, 28.7420), "Kadıköy", (40.9910, 29.0240)),
+    ("Taksim", (41.0369, 28.9850), "Sabiha Gökçen", (40.905974, 29.310554)),
+    ("İstanbul Havalimanı", (41.256033, 28.742603), "Kadıköy", (40.9910, 29.0240)),
     ("Üsküdar", (41.0260, 29.0150), "Beşiktaş", (41.0420, 29.0070)),
     ("Kabataş", (41.0330, 28.9930), "Bağcılar", (41.0340, 28.8330)),
     ("Eminönü", (41.0170, 28.9700), "Eyüpsultan", (41.0470, 28.9340)),
@@ -27,6 +27,8 @@ TRIPS = [
     ("Kızılay", (39.9208, 32.8541), "AŞTİ", (39.9180, 32.8100)),
     ("Ulus", (39.9420, 32.8540), "ODTÜ", (39.8910, 32.7840)),
     ("Batıkent", (39.9680, 32.7300), "Kızılay", (39.9208, 32.8541)),
+    ("Kent Meydanı", (40.1956, 29.0610), "Görükle", (40.2263, 28.8718)),
+    ("Emek", (40.2575, 28.9615), "Kestel", (40.1985, 29.2140)),
 ]
 when = (dt.datetime.now(dt.timezone(dt.timedelta(hours=3))) + dt.timedelta(days=1)).replace(hour=8, minute=30, second=0, microsecond=0)
 total = []
