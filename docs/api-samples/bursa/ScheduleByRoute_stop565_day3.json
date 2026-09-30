@@ -1,0 +1,67 @@
+{
+ "version": 1,
+ "statusCode": 200,
+ "message": "Success!",
+ "result": [
+  {
+   "routeId": true,
+   "routeCode": "38/G",
+   "stopTime": "00:00:00",
+   "information": "38/G - Terminal - Ring"
+  },
+  {
+   "routeId": true,
+   "routeCode": "97/G",
+   "stopTime": "00:10:00",
+   "information": "97/G - Terminal - Ring"
+  },
+  {
+   "routeId": true,
+   "routeCode": "38/B-2",
+   "stopTime": "00:15:00",
+   "information": "38/B-2 - Terminal - Görükle"
+  },
+  {
+   "routeId": true,
+   "routeCode": "38/D",
+   "stopTime": "00:20:00",
+   "information": "38/D - Terminal - Ring"
+  },
+  {
+   "routeId": true,
+   "routeCode": "38/G",
+   "stopTime": "00:30:00",
+   "information": "38/G - Terminal - Ring"
+  },
+  {
+   "routeId": true,
+   "routeCode": "38/B",
+   "stopTime": "00:40:00",
+   "information": "38/B - Terminal - Ring"
+  },
+  {
+   "routeId": true,
+   "routeCode": "38/G",
+   "stopTime": "01:00:00",
+   "information": "38/G - Terminal - Ring"
+  },
+  {
+   "routeId": true,
+   "routeCode": "38/D",
+   "stopTime": "01:20:00",
+   "information": "38/D - Terminal - Ring"
+  },
+  {
+   "routeId": true,
+   "routeCode": "38/B",
+   "stopTime": "01:40:00",
+   "information": "38/B - Terminal - Ring"
+  },
+  {
+   "routeId": true,
+   "routeCode": "38/G",
+   "stopTime": "02:00:00",
+   "information": "38/G - Terminal - Ring"
+  }
+ ]
+}
