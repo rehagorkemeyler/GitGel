@@ -8,11 +8,14 @@
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  background: var(--surface);
+  background: var(--glass-bg);
+  background-image: var(--glass-shine);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
   border-radius: var(--r-sheet) var(--r-sheet) 0 0;
-  border: 1px solid var(--border);
+  border: 1px solid var(--glass-edge);
   border-bottom: 0;
-  box-shadow: var(--shadow);
+  box-shadow: var(--glass-rim), var(--shadow);
   transition: transform var(--dur) var(--ease-spring);
   will-change: transform;
   touch-action: none;

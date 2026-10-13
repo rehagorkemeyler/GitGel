@@ -78,7 +78,7 @@ License: İBB Open Data License allows commercial and non-commercial reuse with 
 1. Never show a modal or popup the user did not open.
 2. Live data is labeled live; anything computed from schedules is labeled "tarifeye göre" and drawn as a hollow dot. If GetServiceStatuses reports a problem on a line, hide its schedule-based dots and show the notice.
 3. No analytics that identify users. No third-party trackers. Recent searches live in localStorage only.
-4. The app must work on low-end Android: no backdrop-filter, animate only transform and opacity, respect prefers-reduced-motion.
+4. Liquid glass surfaces use backdrop-filter on every device (tokens in app/src/styles/tokens.css). Browsers without it, and "reduce transparency" users, get solid surfaces with the same layout. Animate only transform and opacity, respect prefers-reduced-motion.
 5. Every data source can go down. Cache last good responses and degrade gracefully with a clear, calm message.
 
 ## Test trips (must all return a sensible route)

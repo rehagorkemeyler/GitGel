@@ -11,10 +11,13 @@
   min-height: 36px;
   padding: var(--s-2) var(--s-3);
   border-radius: 18px;
-  background: var(--warning-bg);
+  background: var(--glass-warning);
+  background-image: var(--glass-shine);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
   color: var(--warning-text);
-  border: 1px solid var(--border);
-  box-shadow: var(--shadow);
+  border: 1px solid var(--glass-edge);
+  box-shadow: var(--glass-rim), var(--shadow);
   text-align: left;
   font-size: var(--fs-s);
   line-height: 20px;

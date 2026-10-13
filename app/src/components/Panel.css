@@ -5,7 +5,10 @@
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  background: var(--surface);
+  background: var(--glass-bg);
+  background-image: var(--glass-shine);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
   z-index: 20;
   animation: panel-in var(--dur) var(--ease-spring);
 }

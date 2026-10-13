@@ -1,6 +1,7 @@
 /* Design tokens (VISION.md "Tasarım dili").
    Spacing on an 8 px grid, one radius scale, 3 font sizes, 2 weights,
-   neutral greys + one accent. No blur, light shadows, thin borders. */
+   neutral greys + one accent. Liquid glass on floating surfaces, light shadows,
+   thin borders. */
 :root {
   --s-1: 4px;
   --s-2: 8px;
@@ -38,6 +39,15 @@
   --warning-bg: #fff4e5;
   --warning-text: #7a4100;
 
+  /* Liquid glass: a translucent, blurred surface with a light rim and a soft sheen.
+     Floating surfaces (sheet, panels, notices, buttons, banners) use these tokens. */
+  --glass-bg: rgba(255, 255, 255, 0.6);
+  --glass-warning: rgba(255, 244, 229, 0.72);
+  --glass-edge: rgba(255, 255, 255, 0.75);
+  --glass-rim: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  --glass-shine: linear-gradient(180deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.06) 60%);
+  --glass-blur: blur(28px) saturate(180%);
+
   color-scheme: light dark;
   font-family: -apple-system, BlinkMacSystemFont, system-ui, 'Segoe UI', Roboto, sans-serif;
   font-size: var(--fs-m);
@@ -63,6 +73,31 @@
     --live: #3fb950;
     --warning-bg: #3d2a0a;
     --warning-text: #ffd699;
+    --glass-bg: rgba(44, 44, 46, 0.6);
+    --glass-warning: rgba(61, 42, 10, 0.72);
+    --glass-edge: rgba(255, 255, 255, 0.16);
+    --glass-rim: inset 0 1px 0 rgba(255, 255, 255, 0.14);
+    --glass-shine: linear-gradient(180deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.01) 60%);
+  }
+}
+
+/* Browsers without backdrop-filter, and people who asked for less transparency,
+   get the same layout on solid surfaces. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  :root {
+    --glass-bg: var(--surface);
+    --glass-warning: var(--warning-bg);
+    --glass-shine: none;
+    --glass-blur: none;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  :root {
+    --glass-bg: var(--surface);
+    --glass-warning: var(--warning-bg);
+    --glass-shine: none;
+    --glass-blur: none;
   }
 }
 
