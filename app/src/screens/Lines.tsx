@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Panel } from '../components/Panel'
 import { LineChip } from '../components/LineChip'
 import { loadLines, type Line } from '../lib/data'
+import { frequentLines } from '../lib/recent'
 import { fold, type Mode } from '../lib/search'
 import { t, type StringKey } from '../i18n'
 import './Lines.css'
@@ -23,10 +24,17 @@ export function Lines({ onBack, onOpen }: { onBack: () => void; onOpen: (id: str
   const [lines, setLines] = useState<Line[] | null>(null)
   const [error, setError] = useState(false)
   const [q, setQ] = useState('')
+  // Lines opened most often on this phone, shown first while nothing is typed.
+  const [frequentIds] = useState(() => frequentLines(3))
 
   useEffect(() => {
     loadLines().then(setLines, () => setError(true))
   }, [])
+
+  const frequent = useMemo(
+    () => frequentIds.map((id) => (lines ?? []).find((l) => l.id === id)).filter((l): l is Line => !!l),
+    [frequentIds, lines],
+  )
 
   const groups = useMemo(() => {
     const f = fold(q)
@@ -50,6 +58,21 @@ export function Lines({ onBack, onOpen }: { onBack: () => void; onOpen: (id: str
         />
       </div>
       {error && <p className="muted">{t('dataUnavailable')}</p>}
+      {!q && frequent.length > 0 && (
+        <section className="line-group">
+          <h2>{t('frequent')}</h2>
+          <ul className="results">
+            {frequent.map((l) => (
+              <li key={l.id}>
+                <button className="result" onClick={() => onOpen(l.id)}>
+                  <LineChip name={l.name} line={l} />
+                  <span className="result-name">{l.long_name}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
       {groups.map((g) => (
         <section key={g.mode} className="line-group">
           <h2>{t(MODE_LABEL[g.mode])}</h2>

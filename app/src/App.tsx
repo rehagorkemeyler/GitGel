@@ -17,11 +17,13 @@ import { LineHeader, LineStops } from './screens/LineSheet'
 import { lineView, useLineDetail } from './lib/lineDetail'
 import type { Station } from './map/networkLayer'
 import { inCity, useGeolocation, useStablePosition } from './lib/useGeolocation'
-import { CITY, CITY_CHOSEN, switchCity, type CityId } from './lib/city'
+import { CITY, CITY_CHOSEN, busShapes, switchCity, type CityId } from './lib/city'
 import type { Place } from './lib/search'
 import type { Itinerary } from './lib/api'
 import { cityName, t, type StringKey } from './i18n'
 import { rememberLine, rememberStation, type RecentPlace } from './lib/recent'
+import { prepareAlerts, useTracking } from './lib/tracking'
+import { TrackingBanner } from './components/TrackingBanner'
 import { loadJson, loadSearchIndex, loadStops } from './lib/data'
 import { useLineStatus, useLiveVehicles, type Vehicle } from './lib/live'
 import { StatusBand } from './components/StatusBand'
@@ -61,7 +63,7 @@ export function App() {
   const railModes = ['metro', 'rail', 'tram', 'funicular', 'cablecar']
   // Buses (and Metrobüs) of the open route: İETT or EGO publish their GPS positions.
   // Ankara: EGO publishes bus positions per line, so the open line page shows its buses too.
-  const openBusLine = CITY.live === 'ego' && lineData.line?.mode === 'bus' ? lineData.line.name : null
+  const openBusLine = busShapes() && lineData.line?.mode === 'bus' ? lineData.line.name : null
   const busLines = useMemo(
     () => [
       ...(open?.legs ?? []).filter((l) => l.mode === 'BUS' && l.routeShortName).map((l) => l.routeShortName!),
@@ -76,6 +78,9 @@ export function App() {
   const [map, setMap] = useState<MlMap | null>(null)
   const [picking, setPicking] = useState(false)
   const [choosingCity, setChoosingCity] = useState(false)
+  // "Başla": the trip is followed while the page is open; alerts are asked only when the user starts it.
+  const [tracking, setTracking] = useState<Itinerary | null>(null)
+  const track = useTracking(tracking, geo.position)
   // A stop card and a line page count as uses (frequent places and lines); the search counts places itself.
   useEffect(() => {
     if (station) rememberStation(station)
@@ -163,7 +168,7 @@ export function App() {
           focusLine={lineId}
           focusLines={lineId ? [lineId] : station ? station.lines : null}
           lineView={view}
-          pathInNetwork={!!lineData.line && (railModes.includes(lineData.line.mode) || (CITY.live === 'ego' && lineData.line.mode === 'bus'))}
+          pathInNetwork={!!lineData.line && (railModes.includes(lineData.line.mode) || (busShapes() && lineData.line.mode === 'bus'))}
         />
       </Suspense>
       {status && <StatusBand lines={status.lines} />}
@@ -184,6 +189,7 @@ export function App() {
       <button className="locate" onClick={geo.start} aria-label={t('locateMe')}>
         <Icon name="locate" />
       </button>
+      {tracking && track && <TrackingBanner it={tracking} state={track} onStop={() => setTracking(null)} />}
       {!picking && cityPrompt && (
         <div className="notice" role="status">
           <span>{t('pickCity')}</span>
@@ -247,7 +253,16 @@ export function App() {
           ) : lineId ? (
             <LineHeader {...lineData} dir={lineDir} onDir={setLineDir} onClose={() => setLineId(null)} />
           ) : open ? (
-            <RouteDetail it={open} liveCount={vehicles.length} onBack={() => setOpen(null)} />
+            <RouteDetail
+              it={open}
+              liveCount={vehicles.length}
+              onBack={() => setOpen(null)}
+              onStart={() => {
+                void prepareAlerts()
+                geo.start()
+                setTracking(open)
+              }}
+            />
           ) : to ? (
             <Results
               from={from}

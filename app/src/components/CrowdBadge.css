@@ -1,0 +1,44 @@
+.crowd {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  --crowd: var(--live);
+}
+
+.crowd-medium {
+  --crowd: #c98a00;
+}
+
+.crowd-high {
+  --crowd: #d93636;
+}
+
+.crowd-word {
+  color: var(--crowd);
+  font-size: var(--fs-s);
+  font-weight: var(--fw-bold);
+  white-space: nowrap;
+}
+
+.crowd-body,
+.crowd-wheel {
+  fill: none;
+  stroke: var(--text-2);
+  stroke-width: 1.5;
+}
+
+.crowd-wheel {
+  fill: var(--text-2);
+  stroke: none;
+}
+
+.crowd-bar {
+  fill: var(--text-2);
+  fill-opacity: 0.25;
+}
+
+.crowd-bar.on {
+  fill: var(--crowd);
+  fill-opacity: 1;
+}
