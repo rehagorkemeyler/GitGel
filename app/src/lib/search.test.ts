@@ -34,4 +34,19 @@ describe('search', () => {
     expect(searchIndex(index, 'ayr')[0]?.name).toBe('Ayrılık Çeşmesi')
     expect(searchIndex(index, 'kadı').map((p) => p.name)).toContain('Kadırga')
   })
+
+  it('finds stops by code: Ankara numbers, Bursa letters and digits', () => {
+    const coded: IndexRow[] = [
+      ['Güvenpark', 'guvenpark', 39.92, 32.85, 'bus', ['185'], '11654'],
+      ['Kent Meydanı 1', 'kent meydani 1', 40.197, 29.06, 'bus', ['38'], 'D0441'],
+      ['Kent Meydanı 2', 'kent meydani 2', 40.196, 29.061, 'bus', ['38'], 'D0442'],
+      ['Adliye', 'adliye', 40.193, 29.07, 'tram', ['T1'], 'B69'],
+    ]
+    expect(searchIndex(coded, '11654')[0]?.name).toBe('Güvenpark')
+    expect(searchIndex(coded, 'D0441')[0]?.name).toBe('Kent Meydanı 1')
+    expect(searchIndex(coded, 'd441')[0]?.name).toBe('Kent Meydanı 1')
+    expect(searchIndex(coded, '0442')[0]?.name).toBe('Kent Meydanı 2')
+    expect(searchIndex(coded, 'd044').map((r) => r.name)).toEqual(['Kent Meydanı 1', 'Kent Meydanı 2'])
+    expect(searchIndex(coded, 'b441')).toEqual([])
+  })
 })

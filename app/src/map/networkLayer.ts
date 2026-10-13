@@ -2,7 +2,7 @@ import type { ExpressionSpecification, GeoJSONSource, Map as MlMap, MapLayerMous
 import type * as GeoJSON from 'geojson'
 import { loadJson, loadStops, type StopRow } from '../lib/data'
 import { addTransitIcons, glyphFor } from './icons'
-import { CITY } from '../lib/city'
+import { busShapes } from '../lib/city'
 
 // Base transit layer, like Google Maps: rail/tram/funicular/cable car/ferry lines
 // in their official colours, station markers, and bus stops when zoomed in.
@@ -70,7 +70,7 @@ export class NetworkLayer {
     m.addSource(NET, { type: 'geojson', data: { type: 'FeatureCollection', features: [] } })
     m.addSource(ST, { type: 'geojson', data: { type: 'FeatureCollection', features: [] } })
     m.addSource(BUS, { type: 'geojson', data: { type: 'FeatureCollection', features: [] } })
-    if (CITY.ego) {
+    if (busShapes()) {
       m.addSource(BUSNET, { type: 'geojson', data: { type: 'FeatureCollection', features: [] } })
       m.addLayer({
         id: BUSNET,
@@ -174,7 +174,7 @@ export class NetworkLayer {
       loadJson<{ id: string; color: string }[]>('lines.json'),
     ]).catch(() => [null, null, null] as const)
     if (!net || !stations || !lines) return
-    if (CITY.ego)
+    if (busShapes())
       loadJson<GeoJSON.FeatureCollection>('bus-network.geojson').then(
         (b) => (this.map.getSource(BUSNET) as GeoJSONSource | undefined)?.setData(b),
         () => {},

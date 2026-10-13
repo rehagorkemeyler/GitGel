@@ -53,7 +53,7 @@ export function App() {
   const railModes = ['metro', 'rail', 'tram', 'funicular', 'cablecar']
   // Buses (and Metrobüs) of the open route: İETT or EGO publish their GPS positions.
   // Ankara: EGO publishes bus positions per line, so the open line page shows its buses too.
-  const openBusLine = CITY.ego && lineData.line?.mode === 'bus' ? lineData.line.name : null
+  const openBusLine = CITY.live === 'ego' && lineData.line?.mode === 'bus' ? lineData.line.name : null
   const busLines = useMemo(
     () => [
       ...(open?.legs ?? []).filter((l) => l.mode === 'BUS' && l.routeShortName).map((l) => l.routeShortName!),
@@ -137,7 +137,7 @@ export function App() {
           focusLine={lineId}
           focusLines={lineId ? [lineId] : station ? station.lines : null}
           lineView={view}
-          pathInNetwork={!!lineData.line && (railModes.includes(lineData.line.mode) || (CITY.ego && lineData.line.mode === 'bus'))}
+          pathInNetwork={!!lineData.line && (railModes.includes(lineData.line.mode) || (CITY.live === 'ego' && lineData.line.mode === 'bus'))}
         />
       </Suspense>
       {status && <StatusBand lines={status.lines} />}

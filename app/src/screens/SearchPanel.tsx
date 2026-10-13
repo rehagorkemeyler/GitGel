@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Panel } from '../components/Panel'
 import { Icon } from '../components/Icon'
 import { LineChip } from '../components/LineChip'
-import { formatDistance, searchPlaces } from '../lib/places'
+import { formatDistance, freePlaces } from '../lib/places'
 import { loadSearchIndex, lineColors, type Line } from '../lib/data'
 import { recentPlaces, rememberPlace, clearRecent } from '../lib/recent'
 import { searchIndex, type IndexRow, type Place } from '../lib/search'
@@ -44,7 +44,7 @@ export function SearchPanel({ title, onPick, onBack, myLocation, near = null }: 
     if (!(LIVE_BASE || (API_BASE && CITY.routing)) || query.trim().length < 2) return
     let alive = true
     const timer = setTimeout(() => {
-      searchPlaces(query, lang, near).then(
+      freePlaces(query, lang, near).then(
         (r) => alive && setRemote({ q: query, places: r }),
         () => {},
       )

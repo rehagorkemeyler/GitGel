@@ -40,7 +40,7 @@ export function StationSheet({
   }, [])
 
   // Ankara bus stops: "eg_12345" -> EGO stop number 12345 (rail stations use codes like M33).
-  const egoStop = CITY.ego ? /^eg_(\d{3,6})$/.exec(station.id)?.[1] : undefined
+  const egoStop = CITY.live === 'ego' ? /^eg_(\d{3,6})$/.exec(station.id)?.[1] : undefined
   // Ankara bus stops show EGO's own board (live + next trip per line) instead of the timetable list.
   const timetable = CITY.routing && !egoStop
 
