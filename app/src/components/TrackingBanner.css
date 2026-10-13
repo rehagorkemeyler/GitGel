@@ -1,6 +1,6 @@
 .tracking {
   position: absolute;
-  top: var(--s-3);
+  top: 68px;
   left: var(--s-3);
   right: var(--s-3);
   z-index: 5;
