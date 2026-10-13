@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { LineChip } from './LineChip'
 import { loadJson, type Line } from '../lib/data'
-import { useAnkaraArrivals, type AnkaraLineStatus } from '../lib/live'
+import { useLiveArrivals, type LiveLineStatus } from '../lib/live'
 import { useNow } from '../lib/useNow'
 import { eta, inTime } from '../lib/eta'
 import { nextFirstArrival } from '../lib/firstTrip'
@@ -12,7 +12,7 @@ import './AnkaraArrivals.css'
 
 /** Ankara stop card: live EGO buses heading to this stop, soonest first. */
 export function AnkaraArrivals({ stop, lines, onLine }: { stop: string; lines: Map<string, Line>; onLine?: (id: string) => void }) {
-  const state = useAnkaraArrivals(stop)
+  const state = useLiveArrivals(stop)
   const now = useNow(1000)
   const byName = new Map([...lines.values()].map((l) => [l.name, l]))
 
@@ -91,7 +91,7 @@ function LineStatusRow({
   now,
   onLine,
 }: {
-  status: AnkaraLineStatus
+  status: LiveLineStatus
   line: Line | undefined
   stopId: string
   sinceMs: number

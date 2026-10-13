@@ -56,3 +56,30 @@ it('gives the direction of travel as a compass bearing', () => {
   const r = positionAndBearing(s, Date.parse('2026-09-29T05:01:00Z'))!
   expect(r.bearing).toBeCloseTo(90, 0) // due east
 })
+
+it('waits at the stations and keeps the timetable times', () => {
+  const [s] = prepare([seg], new Set())
+  // 2 min hop: 15 s at each end standing still.
+  expect(positionAt(s, Date.parse('2026-09-29T05:00:10Z'))![0]).toBeCloseTo(29.0, 4)
+  expect(positionAt(s, Date.parse('2026-09-29T05:01:50Z'))![0]).toBeCloseTo(29.1, 4)
+  // Slow near the stations, fastest in the middle.
+  const x = (iso: string) => positionAt(s, Date.parse(iso))![0]
+  expect(x('2026-09-29T05:00:25Z') - x('2026-09-29T05:00:20Z')).toBeLessThan(x('2026-09-29T05:01:02Z') - x('2026-09-29T05:00:57Z'))
+})
+
+it('stands at the station through a scheduled dwell', () => {
+  const next: TripSegment = {
+    ...seg,
+    departure: '2026-09-29T05:03:00Z',
+    arrival: '2026-09-29T05:05:00Z',
+    polyline: encode([
+      [41.0, 29.1],
+      [41.0, 29.2],
+    ]),
+  }
+  const segs = prepare([seg, next], new Set())
+  const at = Date.parse('2026-09-29T05:02:30Z')
+  const here = segs.map((s) => positionAt(s, at)).filter(Boolean)
+  expect(here).toHaveLength(1)
+  expect(here[0]![0]).toBeCloseTo(29.1, 4)
+})

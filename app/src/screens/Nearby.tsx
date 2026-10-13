@@ -75,7 +75,7 @@ export function Nearby({ position, onLocate, onBack }: Props) {
               </span>
             </button>
             {open === s.id &&
-              (CITY.ego && /^eg_\d{3,6}$/.test(s.id) ? (
+              (CITY.live === 'ego' && /^eg_\d{3,6}$/.test(s.id) ? (
                 <AnkaraArrivals stop={s.id.slice(3)} lines={colors} />
               ) : CITY.routing ? (
                 <Departures stopId={CITY.motisPrefix + s.id} colors={colors} />

@@ -78,9 +78,19 @@ export function searchIndex(index: IndexRow[], query: string, limit = 8, near: [
   if (!q) return []
   const qWords = q.split(' ')
   const scored: [number, IndexRow][] = []
-  // A number is a stop code (Ankara: "11654"): exact first, then prefixes.
-  if (/^\d{3,6}$/.test(q)) {
-    for (const row of index) if (row[6]?.startsWith(q)) scored.push([row[6] === q ? 0 : 1 + row[6].length / 100, row])
+  // A stop code (Ankara: "11654"; Bursa: "D0441", also typed as "0441" or "d441"): exact first, then prefixes.
+  const code = /^([a-z]{0,2})(\d{3,6})$/.exec(q.replace(' ', ''))
+  if (code) {
+    for (const row of index) {
+      const c = row[6]?.toLowerCase()
+      if (!c) continue
+      const m = /^([a-z]{0,3})(\d+)$/.exec(c)
+      // Letters must match when typed; digits may leave out leading zeros ("441" = "0441").
+      const digits = m && (!code[1] || code[1] === m[1]) ? m[2].replace(/^0+/, '') : null
+      const want = code[2].replace(/^0+/, '')
+      if (c === q || digits === want) scored.push([0, row])
+      else if (c.startsWith(q) || (digits && digits.startsWith(want))) scored.push([1 + c.length / 100, row])
+    }
   }
   if (!scored.length) for (const row of index) {
     const words = row[1].split(' ')
