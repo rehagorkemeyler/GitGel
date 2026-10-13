@@ -17,10 +17,11 @@ import { LineHeader, LineStops } from './screens/LineSheet'
 import { lineView, useLineDetail } from './lib/lineDetail'
 import type { Station } from './map/networkLayer'
 import { inCity, useGeolocation, useStablePosition } from './lib/useGeolocation'
-import { CITY, CITY_CHOSEN, switchCity } from './lib/city'
+import { CITY, CITY_CHOSEN, switchCity, type CityId } from './lib/city'
 import type { Place } from './lib/search'
 import type { Itinerary } from './lib/api'
-import { t } from './i18n'
+import { cityName, t, type StringKey } from './i18n'
+import { rememberLine, rememberStation, type RecentPlace } from './lib/recent'
 import { loadJson, loadSearchIndex, loadStops } from './lib/data'
 import { useLineStatus, useLiveVehicles, type Vehicle } from './lib/live'
 import { StatusBand } from './components/StatusBand'
@@ -32,6 +33,13 @@ import './App.css'
 const MapView = lazy(() => import('./map/MapView').then((m) => ({ default: m.MapView })))
 
 export type Screen = 'home' | 'search' | 'nearby' | 'lines' | 'contact' | 'support' | 'about'
+
+const CITY_IDS: CityId[] = ['istanbul', 'ankara', 'bursa']
+const OUTSIDE_KEY: Record<CityId, StringKey> = {
+  istanbul: 'outsideIstanbul',
+  ankara: 'outsideAnkara',
+  bursa: 'outsideBursa',
+}
 
 
 export function App() {
@@ -68,6 +76,24 @@ export function App() {
   const [map, setMap] = useState<MlMap | null>(null)
   const [picking, setPicking] = useState(false)
   const [choosingCity, setChoosingCity] = useState(false)
+  // A stop card and a line page count as uses (frequent places and lines); the search counts places itself.
+  useEffect(() => {
+    if (station) rememberStation(station)
+  }, [station])
+  useEffect(() => {
+    if (lineId) rememberLine(lineId)
+  }, [lineId])
+  // A recent stop opens its card again; a recent place becomes the destination.
+  const openRecent = (p: RecentPlace) => {
+    if (p.station) {
+      setLineId(null)
+      setTrain(null)
+      setBus(null)
+      setStation(p.station)
+      setExpanded(false)
+      map?.jumpTo({ center: [p.station.lon, p.station.lat], zoom: 16.5 })
+    } else setTo(p)
+  }
   const outside = !!geo.position && !inCity(geo.position)
   // First visit outside the default city: ask for the city before offering a test location.
   const cityPrompt = choosingCity || (!CITY_CHOSEN && outside)
@@ -162,12 +188,11 @@ export function App() {
         <div className="notice" role="status">
           <span>{t('pickCity')}</span>
           <div className="notice-actions">
-            <button className="link" onClick={() => switchCity('istanbul')}>
-              {t('cityIstanbul')}
-            </button>
-            <button className="link" onClick={() => switchCity('ankara')}>
-              {t('cityAnkara')}
-            </button>
+            {CITY_IDS.map((id) => (
+              <button key={id} className="link" onClick={() => switchCity(id)}>
+                {cityName(id)}
+              </button>
+            ))}
             {choosingCity && (
               <button className="link quiet" onClick={() => setChoosingCity(false)}>
                 {t('close')}
@@ -184,7 +209,7 @@ export function App() {
       {!picking && !cityPrompt && !dataMissing && (outside || geo.status === 'denied' || geo.status === 'unavailable') && (
         <div className="notice" role="status">
           <span>
-            {t(outside ? (CITY.id === 'ankara' ? 'outsideAnkara' : 'outsideIstanbul') : geo.status === 'denied' ? 'locationDenied' : 'locationUnavailable')}
+            {t(outside ? OUTSIDE_KEY[CITY.id] : geo.status === 'denied' ? 'locationDenied' : 'locationUnavailable')}
           </span>
           <button className="link" onClick={() => setPicking(true)}>
             {t('pickLocation')}
@@ -253,7 +278,11 @@ export function App() {
               }}
             />
           ) : (
-            <HomePeek go={(s) => (s === 'search' ? openSearch('to') : setScreen(s))} onCity={() => setChoosingCity(true)} />
+            <HomePeek
+              go={(s) => (s === 'search' ? openSearch('to') : setScreen(s))}
+              onCity={() => setChoosingCity(true)}
+              onRecent={openRecent}
+            />
           )
         }
       >
