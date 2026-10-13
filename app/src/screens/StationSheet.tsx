@@ -5,9 +5,9 @@ import { stopTimes } from '../lib/api'
 import { groupDepartures, type DepartureGroup } from '../lib/departures'
 import { loadLines, type Line } from '../lib/data'
 import { hhmm } from '../lib/itinerary'
-import { CITY } from '../lib/city'
+import { CITY, liveStop } from '../lib/city'
 import type { Station } from '../map/networkLayer'
-import { AnkaraArrivals } from '../components/AnkaraArrivals'
+import { LiveArrivals } from '../components/LiveArrivals'
 import { StopCode } from '../components/StopCode'
 import { stopCode } from '../lib/city'
 import { t } from '../i18n'
@@ -39,10 +39,9 @@ export function StationSheet({
     loadLines().then((ls) => setLines(new Map(ls.map((l) => [l.id, l]))), () => {})
   }, [])
 
-  // Ankara bus stops: "eg_12345" -> EGO stop number 12345 (rail stations use codes like M33).
-  const egoStop = CITY.live === 'ego' ? /^eg_(\d{3,6})$/.exec(station.id)?.[1] : undefined
-  // Ankara bus stops show EGO's own board (live + next trip per line) instead of the timetable list.
-  const timetable = CITY.routing && !egoStop
+  // Ankara and Bursa bus stops have a live board (EGO, BURULAŞ); it comes first and the timetable follows it.
+  const boardStop = liveStop(station.id)
+  const timetable = CITY.routing
 
   useEffect(() => {
     if (!timetable) return
@@ -92,8 +91,8 @@ export function StationSheet({
         </button>
       )}
 
-      {egoStop && <AnkaraArrivals stop={egoStop} lines={lines} onLine={onLine} />}
-      {!CITY.routing && !egoStop && <p className="muted">{t('routingSoonAnkara')}</p>}
+      {boardStop && <LiveArrivals stop={boardStop} stopId={station.id} lines={lines} onLine={onLine} />}
+      {!CITY.routing && !boardStop && <p className="muted">{t('routingSoonAnkara')}</p>}
       {timetable && <h3 className="station-sub">{t('nextArrivals')}</h3>}
       {timetable && !current && <p className="muted">…</p>}
       {current?.error && <p className="muted">{t('routingUnavailable')}</p>}

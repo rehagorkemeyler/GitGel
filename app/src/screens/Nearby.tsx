@@ -6,8 +6,8 @@ import { nearestStops, type NearbyStop } from '../lib/nearby'
 import { walkMinutes } from '../lib/geo'
 import { stopTimes, type StopTime } from '../lib/api'
 import { hhmm } from '../lib/itinerary'
-import { CITY } from '../lib/city'
-import { AnkaraArrivals } from '../components/AnkaraArrivals'
+import { CITY, liveStop } from '../lib/city'
+import { LiveArrivals } from '../components/LiveArrivals'
 import { StopCode } from '../components/StopCode'
 import { stopCode } from '../lib/city'
 import { t } from '../i18n'
@@ -74,19 +74,20 @@ export function Nearby({ position, onLocate, onBack }: Props) {
                 <small>{Math.round(s.distance / 10) * 10} m</small>
               </span>
             </button>
-            {open === s.id &&
-              (CITY.live === 'ego' && /^eg_\d{3,6}$/.test(s.id) ? (
-                <AnkaraArrivals stop={s.id.slice(3)} lines={colors} />
-              ) : CITY.routing ? (
-                <Departures stopId={CITY.motisPrefix + s.id} colors={colors} />
-              ) : (
-                <p className="muted departures">{t('routingSoonAnkara')}</p>
-              ))}
+            {open === s.id && <StopDetail id={s.id} colors={colors} />}
           </li>
         ))}
       </ul>
     </Panel>
   )
+}
+
+/** What opens under a nearby stop: the live board where the city has one, else the timetable. */
+function StopDetail({ id, colors }: { id: string; colors: Map<string, Line> }) {
+  const board = liveStop(id)
+  if (board) return <LiveArrivals stop={board} stopId={id} lines={colors} />
+  if (CITY.routing) return <Departures stopId={CITY.motisPrefix + id} colors={colors} />
+  return <p className="muted departures">{t('routingSoonAnkara')}</p>
 }
 
 function Departures({ stopId, colors }: { stopId: string; colors: Map<string, Line> }) {

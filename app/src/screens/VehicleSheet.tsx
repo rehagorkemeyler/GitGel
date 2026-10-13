@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
+import { CrowdBadge } from '../components/CrowdBadge'
 import { LineChip } from '../components/LineChip'
 import { loadLines, type Line } from '../lib/data'
-import type { Vehicle } from '../lib/live'
+import { crowding, type Vehicle } from '../lib/live'
 import { useNow } from '../lib/useNow'
 import { ago } from '../lib/eta'
 import { t } from '../i18n'
@@ -20,6 +21,8 @@ export function VehicleSheet({ vehicle, onClose, onLine }: { vehicle: Vehicle; o
     vehicle.features?.includes('Engelli') ? `♿ ${t('accessible')}` : null,
     vehicle.features?.includes('Körüklü') ? t('articulated') : null,
   ].filter(Boolean)
+  // Bursa only: card taps this trip (BURULAŞ). Other cities send no count.
+  const crowd = crowding(vehicle.tripBoardings)
   return (
     <div className="station">
       <div className="station-head">
@@ -37,6 +40,7 @@ export function VehicleSheet({ vehicle, onClose, onLine }: { vehicle: Vehicle; o
         </button>
       </div>
       {facts.length > 0 && <p>{facts.join(' · ')}</p>}
+      {crowd && <CrowdBadge level={crowd} />}
       {line && (
         <button className="directions" onClick={() => onLine(line.id)}>
           {t('openLine')}

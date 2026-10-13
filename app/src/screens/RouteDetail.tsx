@@ -7,7 +7,18 @@ import { t } from '../i18n'
 import './RouteDetail.css'
 
 /** Step-by-step view of one itinerary; the map shows it at the same time. */
-export function RouteDetail({ it, liveCount = 0, onBack }: { it: Itinerary; liveCount?: number; onBack: () => void }) {
+export function RouteDetail({
+  it,
+  liveCount = 0,
+  onBack,
+  onStart,
+}: {
+  it: Itinerary
+  liveCount?: number
+  onBack: () => void
+  /** "Başla": follow the trip on the map (the user asked for it, so alerts may be asked for now). */
+  onStart?: () => void
+}) {
   const minutes = Math.round(it.duration / 60)
   return (
     <div className="detail">
@@ -23,6 +34,12 @@ export function RouteDetail({ it, liveCount = 0, onBack }: { it: Itinerary; live
             {hhmm(new Date(it.startTime))} – {hhmm(new Date(it.endTime))}
           </div>
         </div>
+        {onStart && (
+          <button className="directions detail-start" onClick={onStart}>
+            <Icon name="route" size={18} />
+            {t('start')}
+          </button>
+        )}
       </div>
       {liveCount > 0 && (
         <p className="live-note">
