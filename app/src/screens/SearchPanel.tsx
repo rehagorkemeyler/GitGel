@@ -4,13 +4,26 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Panel } from '../components/Panel'
 import { Icon } from '../components/Icon'
 import { LineChip } from '../components/LineChip'
-import { formatDistance, freePlaces, googlePlace, googleSuggest, newSession, type Suggestion } from '../lib/places'
+import { categoryOf, formatDistance, freePlaces, googlePlace, googleSuggest, newSession, type Category, type Suggestion } from '../lib/places'
 import { loadSearchIndex, lineColors, type Line } from '../lib/data'
 import { clearRecent, frequentPlaces, recentPlaces, rememberPlace } from '../lib/recent'
 import { fold, searchIndex, type IndexRow, type Place } from '../lib/search'
 import { API_BASE, LIVE_BASE } from '../lib/config'
 import { lang, t } from '../i18n'
 import './SearchPanel.css'
+
+// Round badge colour per Google place category (same colours as the native app).
+const CATEGORY_TINT: Record<Category, string> = {
+  food: '#ff453a',
+  cafe: '#ff9f0a',
+  park: '#30b556',
+  shop: '#e0a800',
+  school: '#5e5ce6',
+  health: '#ff375f',
+  culture: '#af52de',
+  transit: '#2f7cf6',
+  other: '#8e8e93',
+}
 
 type Props = {
   title: string
@@ -154,7 +167,7 @@ export function SearchPanel({ title, onPick, onBack, myLocation, near = null }: 
             {google.list.map((s) => (
               <li key={s.id}>
                 <button className="result" onClick={() => pickGoogle(s)}>
-                  <span className="result-icon">
+                  <span className="result-icon" style={{ background: CATEGORY_TINT[categoryOf(s.types)], color: '#ffffff' }}>
                     <Icon name="pin" />
                   </span>
                   <span className="result-text">

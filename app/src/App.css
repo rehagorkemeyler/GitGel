@@ -7,10 +7,13 @@
   display: grid;
   place-items: center;
   border-radius: var(--r-btn);
-  background: var(--surface);
+  background: var(--glass-bg);
+  background-image: var(--glass-shine);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
   color: var(--accent);
-  border: 1px solid var(--border);
-  box-shadow: var(--shadow);
+  border: 1px solid var(--glass-edge);
+  box-shadow: var(--glass-rim), var(--shadow);
   z-index: 5;
 }
 
@@ -23,9 +26,12 @@
   max-width: 528px;
   padding: var(--s-3) var(--s-4);
   border-radius: var(--r-btn);
-  background: var(--surface);
-  border: 1px solid var(--border);
-  box-shadow: var(--shadow);
+  background: var(--glass-bg);
+  background-image: var(--glass-shine);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-edge);
+  box-shadow: var(--glass-rim), var(--shadow);
   font-size: var(--fs-s);
   color: var(--text-2);
   z-index: 5;

@@ -60,7 +60,7 @@ Apple benzeri, sade ve profesyonel. Her telefonda akıcı çalışır.
 | Yazı | Sistem yazı tipi (iOS'ta SF, Android'de Roboto). En fazla 3 boyut ve 2 kalınlık |
 | Renk | Nötr gri tonlar, tek bir vurgu rengi. Hat renkleri resmi renkler (Metro İstanbul API'sinden) |
 | Tema | Açık ve koyu mod renk değişkenleri, sistem ayarını izler |
-| Efekt | Cam ve bulanıklık efekti yok. Hafif gölge ve ince kenarlıklar |
+| Efekt | Sıvı cam (liquid glass) yüzeyler: yarı saydam, bulanık arka plan, ince parlak kenar. Tarayıcı desteklemiyorsa veya "şeffaflığı azalt" açıksa düz yüzey. Hafif gölge ve ince kenarlıklar |
 | Animasyon | Sadece transform ve opacity (60 fps). 200 ila 300 ms, yaylanan (spring) geçişler. Alt panel parmakla sürüklenir. "Hareketi azalt" ayarına uyar |
 | Dokunma alanı | En az 44 x 44 px |
 | Erişilebilirlik | WCAG AA kontrast, ekran okuyucu etiketleri |
