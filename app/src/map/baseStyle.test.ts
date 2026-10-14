@@ -78,4 +78,14 @@ describe('recolour', () => {
     expect(JSON.stringify(other.filter)).toContain('"!"')
     expect(JSON.stringify(hood.filter)).toContain('neighbourhood')
   })
+
+  it('keeps suburbs and boroughs on the zoom-8 place layer, not the neighbourhood layer', () => {
+    const base = style([{ id: 'label_other', type: 'symbol', minzoom: 8, filter: ['match', ['get', 'class'], ['city'], false, true], layout: { 'text-field': 'a' } }])
+    const r = recolour(base, 'light')
+    const hoodClasses = JSON.stringify(find(r, 'label_neighbourhood').filter)
+    expect(hoodClasses).toContain('quarter')
+    expect(hoodClasses).not.toContain('suburb')
+    expect(hoodClasses).not.toContain('borough')
+    expect(find(r, 'label_other').minzoom).toBe(8)
+  })
 })

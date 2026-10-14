@@ -40,6 +40,11 @@ const FADED = 0.2
 const LINE_W = 4
 const FOCUS_W = 6
 const CASING_W = 7
+/**
+ * Native ferry dash is [8, 8] dp. MapLibre scales dash lengths by the line width, and a ferry is drawn
+ * only while its line is in focus (native does the same), so it is always FOCUS_W wide: 8 / 6 gives 8 px dashes.
+ */
+const FERRY_DASH = 8 / FOCUS_W
 const NOT_FERRY: ExpressionSpecification = ['!=', ['get', 'mode'], 'ferry']
 /** A filter that matches nothing. */
 // The literal wrapper makes this an expression filter; a bare ['==', 1, 0] is read as the legacy form, which wants a string key.
@@ -111,7 +116,8 @@ export class NetworkLayer {
     const round = { 'line-cap': 'round', 'line-join': 'round' } as const
     if (busShapes()) {
       m.addSource(BUSNET, { type: 'geojson', data: EMPTY })
-      m.addLayer({ id: BUSNET_CASING, type: 'line', source: BUSNET, layout: round, paint: { 'line-color': paper, 'line-width': CASING_W } })
+      // White casing as native FocusLayer (not the paper colour, which is dark in dark mode).
+      m.addLayer({ id: BUSNET_CASING, type: 'line', source: BUSNET, layout: round, paint: { 'line-color': '#ffffff', 'line-width': CASING_W } })
       m.addLayer({ id: BUSNET, type: 'line', source: BUSNET, layout: round, paint: { 'line-color': ACCENT, 'line-width': LINE_W } })
     }
     m.addLayer({ id: NET_CASING, type: 'line', source: NET, filter: NOT_FERRY, layout: round, paint: { 'line-color': paper, 'line-width': CASING_W } })
@@ -124,8 +130,8 @@ export class NetworkLayer {
       paint: {
         'line-color': ['get', 'color'],
         'line-width': LINE_W,
-        // Ferries are dashed (native [8, 8] at 4 dp).
-        'line-dasharray': ['case', ['==', ['get', 'mode'], 'ferry'], ['literal', [2, 2]], ['literal', [1, 0]]],
+        // Ferries are dashed (native [8, 8] dp, see FERRY_DASH).
+        'line-dasharray': ['case', ['==', ['get', 'mode'], 'ferry'], ['literal', [FERRY_DASH, FERRY_DASH]], ['literal', [1, 0]]],
       },
     })
     m.addLayer({ id: FOCUS_CASING, type: 'line', source: FOCUS, layout: round, paint: { 'line-color': '#ffffff', 'line-width': CASING_W } })
