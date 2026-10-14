@@ -94,7 +94,7 @@ export function StationSheet({
 
       {boardStop && <LiveArrivals stop={boardStop} stopId={station.id} lines={lines} onLine={onLine} />}
       {!CITY.routing && !boardStop && <p aria-live="polite" className="state-msg">{t('routingSoonAnkara')}</p>}
-      {timetable && <h3 className="station-sub">{t('nextArrivals')}</h3>}
+      {timetable && <h3 className="section-label station-sub">{t('nextArrivals')}</h3>}
       {timetable && !current && <Skeleton rows={3} height={56} />}
       {current?.error && <p aria-live="polite" className="state-msg">{t('routingUnavailable')}</p>}
       {current?.list && current.list.length === 0 && <p aria-live="polite" className="state-msg">{t('noDepartures')}</p>}

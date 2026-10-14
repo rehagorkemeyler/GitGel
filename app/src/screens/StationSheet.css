@@ -41,11 +41,10 @@
   font-weight: var(--fw-bold);
 }
 
-.station-sub {
+/* Station section heading: type, caps and colour come from the shared .section-label.
+   The more specific selector keeps native's 16 px above, 8 px below. */
+.section-label.station-sub {
   margin: var(--s-4) 0 var(--s-2);
-  font-size: var(--fs-s);
-  font-weight: var(--fw-bold);
-  color: var(--text-2);
 }
 
 .dep-groups {

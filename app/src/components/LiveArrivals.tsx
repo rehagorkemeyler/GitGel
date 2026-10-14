@@ -25,7 +25,7 @@ export function LiveArrivals({ stop, stopId, lines, onLine }: { stop: string; st
 
   return (
     <section aria-live="polite">
-      <h3 className="station-sub">
+      <h3 className="section-label station-sub">
         {t('liveArrivals')} <span className="live-icon" aria-hidden><Icon name="signal" size={12} /></span> <span className="live-tag">{t('live')}</span>
       </h3>
       {!state && <Skeleton rows={3} height={56} />}
@@ -60,7 +60,7 @@ export function LiveArrivals({ stop, stopId, lines, onLine }: { stop: string; st
       </ul>
       {state && state.lines.length > 0 && (
         <>
-          <h3 className="station-sub">{t('otherLines')}</h3>
+          <h3 className="section-label station-sub">{t('otherLines')}</h3>
           <ul className="live-arrivals">
             {state.lines.map((ls) => (
               <LineStatusRow

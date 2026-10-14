@@ -41,8 +41,6 @@ export function SearchPanel({ title, onPick, onBack, myLocation, near = null }: 
   const [indexError, setIndexError] = useState(false)
   const [remote, setRemote] = useState<{ q: string; places: Place[] }>({ q: '', places: [] })
   const [google, setGoogle] = useState<{ q: string; list: Suggestion[] }>({ q: '', list: [] })
-  // A place search request is in flight (native places.loading); shown only once the debounce has fired.
-  const [searching, setSearching] = useState(false)
   const [colors, setColors] = useState<Map<string, Line>>(new Map())
   const [recent, setRecent] = useState<Place[]>(recentPlaces)
   // Places opened most often on this phone, above the recent ones while nothing is typed.
@@ -60,21 +58,21 @@ export function SearchPanel({ title, onPick, onBack, myLocation, near = null }: 
   const local = useMemo(() => (index ? searchIndex(index, query, 8, near) : []), [index, query, near])
   // A typed name that is exactly a local stop or line needs no Google call (cheaper and faster).
   const exactLocal = local.some((r) => fold(r.name) === fold(query.trim()))
+  // Native places.loading, derived as native does: a place search is due for this text and no
+  // result for this query has arrived yet. On from the first keystroke, not when the debounce fires.
+  const placeSearchDue = query.trim().length >= 2 && !!(LIVE_BASE || (API_BASE && CITY.routing))
+  const searching = placeSearchDue && remote.q !== query && google.q !== query
 
   useEffect(() => {
     const text = query.trim()
     // Place search: Google through our capped server proxy; the free search (Photon, else MOTIS) when that is capped or down.
-    if (text.length < 2 || !(LIVE_BASE || (API_BASE && CITY.routing))) return
+    if (!placeSearchDue) return
     let alive = true
     const timer = setTimeout(async () => {
-      setSearching(true)
       if (LIVE_BASE && text.length >= 3 && !exactLocal) {
         try {
           const list = await googleSuggest(query, session.current, near)
-          if (alive) {
-            setGoogle({ q: query, list })
-            setSearching(false)
-          }
+          if (alive) setGoogle({ q: query, list })
           return
         } catch {
           // Capped or down: the free search below.
@@ -82,21 +80,20 @@ export function SearchPanel({ title, onPick, onBack, myLocation, near = null }: 
       }
       freePlaces(query, lang, near).then(
         (r) => {
-          if (alive) {
-            setRemote({ q: query, places: r })
-            setSearching(false)
-          }
+          if (alive) setRemote({ q: query, places: r })
         },
-        () => alive && setSearching(false),
+        () => {
+          // A failed search still ends the loading state: it answers with no places for this query.
+          if (alive) setRemote({ q: query, places: [] })
+        },
       )
     }, 300)
     return () => {
+      // The request for the previous query is ignored from now on.
       alive = false
       clearTimeout(timer)
-      // The request for the previous query is ignored from now on; its loading state goes with it.
-      setSearching(false)
     }
-  }, [query, near, exactLocal])
+  }, [query, near, exactLocal, placeSearchDue])
 
   const pick = (p: Place) => {
     rememberPlace(p)
@@ -202,7 +199,8 @@ export function SearchPanel({ title, onPick, onBack, myLocation, near = null }: 
         </>
       )}
 
-      {!showRecent && results.length === 0 && google.list.length === 0 && index && <p aria-live="polite" className="state-msg">{t('noResults')}</p>}
+      {/* Native "nothing": only once no place search is pending and no place result came back for this query. */}
+      {!showRecent && results.length === 0 && !placesFound && !searching && index && <p aria-live="polite" className="state-msg">{t('noResults')}</p>}
       {indexError && <p aria-live="polite" className="state-msg">{t('dataUnavailable')}</p>}
     </Panel>
   )

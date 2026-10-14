@@ -56,6 +56,11 @@ describe('shared tokens match native', () => {
     expect(token(light, '--glass-shine')).toBe('none')
   })
 
+  it('shadow is only the native raised pill, the same in both schemes (floating surfaces have none)', () => {
+    expect(token(light, '--shadow')).toBe('0 1px 4px rgba(0, 0, 0, 0.08)'.replace(/\s/g, ''))
+    expect(token(dark, '--shadow')).toBeUndefined()
+  })
+
   it('radii: sheet 38, card 20, pill 999', () => {
     expect(token(light, '--r-sheet')).toBe('38px')
     expect(token(light, '--r-card')).toBe('20px')
