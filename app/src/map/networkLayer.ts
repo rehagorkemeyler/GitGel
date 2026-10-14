@@ -3,6 +3,7 @@ import type * as GeoJSON from 'geojson'
 import { loadJson, loadStops, type StopRow } from '../lib/data'
 import { addTransitIcons, glyphFor } from './icons'
 import { busShapes } from '../lib/city'
+import { ACCENT } from '../lib/colors'
 
 // Base transit layer, like Google Maps: rail/tram/funicular/cable car/ferry lines
 // in their official colours, station markers, and bus stops when zoomed in.
@@ -39,7 +40,7 @@ export class NetworkLayer {
   private stations = new Map<string, Station>()
   private ink = '#3a3a3c'
   // Highlighted bus line (buses have no official colours): the app accent (--accent).
-  private accent = '#0a66c2'
+  private accent = ACCENT
 
   constructor(map: MlMap) {
     this.map = map
@@ -160,7 +161,7 @@ export class NetworkLayer {
       paint: { 'text-color': ink, 'text-halo-color': paper, 'text-halo-width': 1.5 },
     })
     this.ink = ink
-    this.accent = dark ? '#4d9fff' : '#0a66c2'
+    this.accent = ACCENT
     await this.load()
     this.applyFocus()
     this.busLoaded = false

@@ -15,7 +15,7 @@
   min-height: 56px;
   padding: var(--s-2) var(--s-4);
   border-radius: var(--r-btn);
-  background: var(--surface-2);
+  background: var(--fill);
   color: var(--text);
   text-decoration: none;
   font-weight: var(--fw-bold);
@@ -32,6 +32,7 @@
 }
 
 .about-h {
+  letter-spacing: -0.2px;
   font-size: var(--fs-s);
   font-weight: var(--fw-bold);
   color: var(--text-2);
@@ -47,7 +48,7 @@
   min-height: 56px;
   padding: var(--s-2) var(--s-4);
   border-radius: var(--r-btn);
-  background: var(--surface-2);
+  background: var(--fill);
   font-weight: var(--fw-bold);
   text-align: left;
 }

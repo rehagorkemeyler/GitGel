@@ -3,7 +3,7 @@
   flex-shrink: 0;
   margin-left: var(--s-2);
   padding: 0 6px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--hairline);
   border-radius: var(--r-sm);
   font-size: var(--fs-s);
   font-weight: normal;

@@ -1,8 +1,5 @@
 .line-group h2 {
   margin: var(--s-4) 0 0;
-  font-size: var(--fs-s);
-  font-weight: var(--fw-bold);
-  color: var(--text-2);
 }
 
 .line-head {
@@ -17,7 +14,7 @@
   gap: var(--s-1);
   padding: var(--s-1);
   border-radius: var(--r-btn);
-  background: var(--surface-2);
+  background: var(--fill);
   margin-bottom: var(--s-3);
 }
 
@@ -64,7 +61,7 @@
 
 .line-stops li {
   padding: var(--s-2) 0;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--hairline);
 }
 
 .line-sheet .line-head {
@@ -111,8 +108,8 @@
 
 .arrival-time {
   padding: var(--s-1) var(--s-2);
-  border-radius: 6px;
-  background: var(--surface-2);
+  border-radius: 7px;
+  background: var(--fill);
   font-size: var(--fs-s);
   font-variant-numeric: tabular-nums;
 }

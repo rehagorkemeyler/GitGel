@@ -10,14 +10,14 @@
   gap: var(--s-2);
   min-height: 36px;
   padding: var(--s-2) var(--s-3);
-  border-radius: 18px;
-  background: var(--glass-warning);
+  border-radius: var(--r-pill);
+  background: var(--glass-bg);
   background-image: var(--glass-shine);
   -webkit-backdrop-filter: var(--glass-blur);
   backdrop-filter: var(--glass-blur);
-  color: var(--warning-text);
+  color: var(--text);
   border: 1px solid var(--glass-edge);
-  box-shadow: var(--glass-rim), var(--shadow);
+  box-shadow: none;
   text-align: left;
   font-size: var(--fs-s);
   line-height: 20px;
@@ -46,7 +46,7 @@
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: currentColor;
+  background: var(--warning-text);
 }
 
 .status-text {

@@ -14,7 +14,7 @@
   -webkit-backdrop-filter: var(--glass-blur);
   backdrop-filter: var(--glass-blur);
   border: 1px solid var(--glass-edge);
-  box-shadow: var(--glass-rim), var(--shadow);
+  box-shadow: none;
 }
 
 .tracking.warn {
@@ -46,7 +46,7 @@
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: var(--surface-2);
+  background: var(--fill);
   color: var(--text-2);
   font-size: 18px;
 }

@@ -1,6 +1,8 @@
 import type { GeoJSONSource, Map as MlMap } from 'maplibre-gl'
 import type * as GeoJSON from 'geojson'
 import type { Vehicle } from '../lib/live'
+import { LIVE_COLOR } from '../lib/colors'
+import type { Scheme } from '../lib/useColorScheme'
 
 // Live vehicles: filled dots. Between two GPS fixes a dot glides to its new
 // position (only the map's own GPU drawing changes, no layout work).
@@ -14,7 +16,6 @@ export class LiveLayer {
   private map: MlMap
   private from = new Map<string, Pos>()
   private to = new Map<string, Pos>()
-  private color = '#1a7f37'
   private start = 0
   private frame = 0
   private reduce = matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -31,7 +32,8 @@ export class LiveLayer {
     map.on('mouseleave', 'live-dots', () => (map.getCanvas().style.cursor = ''))
   }
 
-  ensure() {
+  /** Adds the source and layer; called again on every style.load with the current scheme. */
+  ensure(scheme: Scheme) {
     if (this.map.getSource(SRC)) return
     this.map.addSource(SRC, { type: 'geojson', data: { type: 'FeatureCollection', features: [] } })
     this.map.addLayer({
@@ -40,7 +42,7 @@ export class LiveLayer {
       source: SRC,
       paint: {
         'circle-radius': 7,
-        'circle-color': this.color,
+        'circle-color': LIVE_COLOR[scheme],
         'circle-stroke-color': '#ffffff',
         'circle-stroke-width': 2,
       },

@@ -111,6 +111,6 @@ export function blankStyle(scheme: 'light' | 'dark'): StyleSpecification {
     version: 8,
     glyphs: 'https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf',
     sources: {},
-    layers: [{ id: 'bg', type: 'background', paint: { 'background-color': scheme === 'dark' ? '#15222c' : '#f5f3ef' } }],
+    layers: [{ id: 'bg', type: 'background', paint: { 'background-color': scheme === 'dark' ? '#0c0d10' : '#f2f3f5' } }],
   }
 }

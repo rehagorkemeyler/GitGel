@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Icon } from './Icon'
 import { LineChip } from './LineChip'
 import { loadJson, type Line } from '../lib/data'
 import { directionsAt } from '../lib/direction'
@@ -9,6 +10,7 @@ import type { LineDetail } from '../lib/lineDetail'
 import { useLiveArrivals, type LiveLineStatus } from '../lib/live'
 import { useNow } from '../lib/useNow'
 import { t } from '../i18n'
+import { Skeleton } from './Skeleton'
 import './LiveArrivals.css'
 
 /**
@@ -24,11 +26,11 @@ export function LiveArrivals({ stop, stopId, lines, onLine }: { stop: string; st
   return (
     <section aria-live="polite">
       <h3 className="station-sub">
-        {t('liveArrivals')} <i className="dot live" aria-hidden /> <span className="live-tag">{t('live')}</span>
+        {t('liveArrivals')} <span className="live-icon" aria-hidden><Icon name="signal" size={12} /></span> <span className="live-tag">{t('live')}</span>
       </h3>
-      {!state && <p className="muted">…</p>}
-      {state?.error && !state.arrivals && <p className="muted">{t('liveUnavailable')}</p>}
-      {state?.arrivals?.length === 0 && <p className="muted">{t('noLiveBuses')}</p>}
+      {!state && <Skeleton rows={3} height={56} />}
+      {state?.error && !state.arrivals && <p aria-live="polite" className="state-msg">{t('liveUnavailable')}</p>}
+      {state?.arrivals?.length === 0 && <p aria-live="polite" className="state-msg">{t('noLiveBuses')}</p>}
       <ul className="live-arrivals">
         {state?.arrivals?.map((a, i) => {
           const l = byName.get(a.line)

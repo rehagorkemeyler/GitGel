@@ -11,6 +11,7 @@ import { LiveArrivals } from '../components/LiveArrivals'
 import { StopCode } from '../components/StopCode'
 import { stopCode } from '../lib/city'
 import { t } from '../i18n'
+import { Skeleton } from '../components/Skeleton'
 import './StationSheet.css'
 
 const REFRESH_MS = 30_000
@@ -92,11 +93,11 @@ export function StationSheet({
       )}
 
       {boardStop && <LiveArrivals stop={boardStop} stopId={station.id} lines={lines} onLine={onLine} />}
-      {!CITY.routing && !boardStop && <p className="muted">{t('routingSoonAnkara')}</p>}
+      {!CITY.routing && !boardStop && <p aria-live="polite" className="state-msg">{t('routingSoonAnkara')}</p>}
       {timetable && <h3 className="station-sub">{t('nextArrivals')}</h3>}
-      {timetable && !current && <p className="muted">…</p>}
-      {current?.error && <p className="muted">{t('routingUnavailable')}</p>}
-      {current?.list && current.list.length === 0 && <p className="muted">{t('noDepartures')}</p>}
+      {timetable && !current && <Skeleton rows={3} height={56} />}
+      {current?.error && <p aria-live="polite" className="state-msg">{t('routingUnavailable')}</p>}
+      {current?.list && current.list.length === 0 && <p aria-live="polite" className="state-msg">{t('noDepartures')}</p>}
       <ul className="dep-groups">
         {current?.list?.map((g) => (
           <li key={g.line + g.headsign} className="dep-group">

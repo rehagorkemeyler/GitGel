@@ -10,7 +10,9 @@ import { CITY, liveStop } from '../lib/city'
 import { LiveArrivals } from '../components/LiveArrivals'
 import { StopCode } from '../components/StopCode'
 import { stopCode } from '../lib/city'
+import { Icon } from '../components/Icon'
 import { t } from '../i18n'
+import { Skeleton } from '../components/Skeleton'
 import './Nearby.css'
 
 type Props = {
@@ -42,17 +44,18 @@ export function Nearby({ position, onLocate, onBack }: Props) {
   }, [position])
 
   return (
-    <Panel title={t('nearby')} onBack={onBack}>
+    <Panel title={t('nearbyTitle')} onBack={onBack}>
       {!position && (
         <div className="empty">
-          <p className="muted">{t('nearbyNeedsLocation')}</p>
+          <p aria-live="polite" className="state-msg">{t('nearbyNeedsLocation')}</p>
           <button className="retry" onClick={onLocate}>
             {t('locateMe')}
           </button>
         </div>
       )}
-      {error && <p className="muted">{t('dataUnavailable')}</p>}
-      {position && stops && stops.length === 0 && <p className="muted">{t('nothingNearby')}</p>}
+      {position && !stops && !error && <Skeleton rows={4} height={64} />}
+      {error && <p aria-live="polite" className="state-msg">{t('dataUnavailable')}</p>}
+      {position && stops && stops.length === 0 && <p aria-live="polite" className="state-msg">{t('nothingNearby')}</p>}
       <ul className="results">
         {stops?.map((s) => (
           <li key={s.id}>
@@ -87,7 +90,7 @@ function StopDetail({ id, colors }: { id: string; colors: Map<string, Line> }) {
   const board = liveStop(id)
   if (board) return <LiveArrivals stop={board} stopId={id} lines={colors} />
   if (CITY.routing) return <Departures stopId={CITY.motisPrefix + id} colors={colors} />
-  return <p className="muted departures">{t('routingSoonAnkara')}</p>
+  return <p aria-live="polite" className="state-msg departures">{t('routingSoonAnkara')}</p>
 }
 
 function Departures({ stopId, colors }: { stopId: string; colors: Map<string, Line> }) {
@@ -108,9 +111,9 @@ function Departures({ stopId, colors }: { stopId: string; colors: Map<string, Li
       alive = false
     }
   }, [stopId])
-  if (error) return <p className="muted departures">{t('routingUnavailable')}</p>
-  if (!list) return <p className="muted departures">…</p>
-  if (list.length === 0) return <p className="muted departures">{t('noDepartures')}</p>
+  if (error) return <p aria-live="polite" className="state-msg departures">{t('routingUnavailable')}</p>
+  if (!list) return <Skeleton rows={3} height={56} />
+  if (list.length === 0) return <p aria-live="polite" className="state-msg departures">{t('noDepartures')}</p>
   const now = fetchedAt
   return (
     <ul className="departures">
@@ -123,7 +126,10 @@ function Departures({ stopId, colors }: { stopId: string; colors: Map<string, Li
             <span className="dep-head">{d.headsign}</span>
             <span className="dep-time">
               {mins <= 60 ? `${mins} ${t('min')}` : hhmm(at)}
-              <small className={d.realTime ? 'live-text' : ''}>{d.realTime ? t('live') : t('scheduled')}</small>
+              <small className={d.realTime ? 'live-text' : ''}>
+                {d.realTime && <span className="live-icon" aria-hidden><Icon name="signal" size={13} /></span>}
+                {d.realTime ? t('live') : t('scheduled')}
+              </small>
             </span>
           </li>
         )

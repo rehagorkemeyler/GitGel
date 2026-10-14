@@ -13,7 +13,7 @@
   backdrop-filter: var(--glass-blur);
   color: var(--accent);
   border: 1px solid var(--glass-edge);
-  box-shadow: var(--glass-rim), var(--shadow);
+  box-shadow: none;
   z-index: 5;
 }
 
@@ -31,7 +31,7 @@
   -webkit-backdrop-filter: var(--glass-blur);
   backdrop-filter: var(--glass-blur);
   border: 1px solid var(--glass-edge);
-  box-shadow: var(--glass-rim), var(--shadow);
+  box-shadow: none;
   font-size: var(--fs-s);
   color: var(--text-2);
   z-index: 5;
@@ -52,7 +52,7 @@
   padding: var(--s-1) var(--s-3);
   border-radius: var(--r-sm);
   background: var(--surface);
-  border: 1px solid var(--border);
+  border: 1px solid var(--hairline);
   box-shadow: var(--shadow);
   font-size: var(--fs-s);
   color: var(--text-2);
@@ -93,4 +93,33 @@
 }
 .notice .quiet {
   color: var(--text-2);
+}
+
+/* Native sectionLabel: 13px bold, uppercase, letter-spacing 0.6. Used by every section head. */
+.section-label {
+  margin-top: var(--s-3);
+  padding-left: var(--s-1);
+  color: var(--text-2);
+  font-size: var(--fs-s);
+  font-weight: var(--fw-bold);
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+}
+
+/* Native Message: body 16 px on 22 px lines, secondary colour, 12 px vertical padding.
+   Used for empty, error and hint states (give the element aria-live="polite"). */
+.state-msg {
+  margin: 0;
+  padding: var(--s-3) 0;
+  font-size: var(--fs-m);
+  line-height: 22px;
+  color: var(--text-2);
+}
+
+/* Live status label: the signal glyph in --live, in front of the text (native). */
+.live-icon {
+  display: inline-flex;
+  vertical-align: -2px;
+  margin-right: var(--s-1);
+  color: var(--live);
 }

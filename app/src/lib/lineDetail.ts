@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { loadJson, loadStops, type Line, type StopRow } from './data'
+import { ACCENT } from './colors'
 
 export type DayType = 'weekday' | 'saturday' | 'sunday'
 
@@ -40,7 +41,7 @@ export function lineView(line: LineDetail | null, stops: Map<string, StopRow>, d
   const d = line?.directions[dir]
   if (!line || !d) return null
   const coords = d.stops.map((s) => stops.get(s)).filter((s): s is StopRow => !!s).map((s) => [s.lon, s.lat] as [number, number])
-  return { id: line.id, color: line.color ? `#${line.color}` : '#0a66c2', coords }
+  return { id: line.id, color: line.color ? `#${line.color}` : ACCENT, coords }
 }
 
 /** Istanbul day type right now (service day starts at 04:00). */

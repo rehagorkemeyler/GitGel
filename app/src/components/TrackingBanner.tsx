@@ -33,7 +33,7 @@ export function TrackingBanner({ it, state, onStop }: { it: Itinerary; state: Tr
   return (
     <section className={warn ? 'tracking warn' : 'tracking'} aria-live="polite">
       {leg && leg.mode !== 'WALK' && !state.arrived ? (
-        <LineChip name={leg.routeShortName ?? leg.mode} color={leg.routeColor} textColor={leg.routeTextColor} />
+        <LineChip name={leg.routeShortName ?? leg.mode} color={leg.routeColor} textColor={leg.routeTextColor} big />
       ) : (
         <Icon name={state.arrived ? 'pin' : 'walk'} size={26} />
       )}

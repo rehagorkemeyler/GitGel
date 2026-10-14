@@ -43,7 +43,7 @@ export function RouteDetail({
       </div>
       {liveCount > 0 && (
         <p className="live-note">
-          <span className="live-dot" aria-hidden /> {liveCount} {t('liveVehicles')}
+          <span className="live-icon" aria-hidden><Icon name="signal" size={13} /></span> {liveCount} {t('liveVehicles')}
         </p>
       )}
       <ol className="steps">
@@ -88,7 +88,10 @@ function RideStep({ leg, first }: { leg: Leg; first: boolean }) {
       </div>
       <div className="muted">
         {stops} {t('stops')} · {Math.round(leg.duration / 60)} {t('min')} ·{' '}
-        <span className={leg.realTime ? 'live-text' : ''}>{leg.realTime ? t('live') : t('scheduled')}</span>
+        <span className={leg.realTime ? 'live-text' : ''}>
+          {leg.realTime && <span className="live-icon" aria-hidden><Icon name="signal" size={13} /></span>}
+          {leg.realTime ? t('live') : t('scheduled')}
+        </span>
       </div>
       <div className="ride-stop">
         <strong>{hhmm(new Date(leg.endTime))}</strong> {leg.to.name}
