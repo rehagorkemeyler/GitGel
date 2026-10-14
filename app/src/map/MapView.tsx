@@ -11,7 +11,7 @@ import { inCity } from '../lib/useGeolocation'
 import type { Itinerary } from '../lib/api'
 import type { Place } from '../lib/search'
 import { showRoute, fitRoute } from './routeLayer'
-import { LIVE_TAP_LAYER, LiveLayer, fromBubble } from './liveLayer'
+import { LIVE_TAP_LAYERS, LiveLayer, fromBubble } from './liveLayer'
 import { RAIL_TAP_LAYERS, RailLayer, type TrainInfo } from './railLayer'
 import { NET_TAP_LAYERS, NetworkLayer, type Station } from './networkLayer'
 import { VehicleBubble } from './VehicleBubble'
@@ -27,7 +27,7 @@ import './MapView.css'
 maplibregl.setWorkerUrl(workerUrl)
 
 /** Taps that belong to a bus, station or train layer (their own handlers): the rest of the map is "empty map". */
-const TAP_LAYERS = [LIVE_TAP_LAYER, ...NET_TAP_LAYERS, ...RAIL_TAP_LAYERS]
+const TAP_LAYERS = [...LIVE_TAP_LAYERS, ...NET_TAP_LAYERS, ...RAIL_TAP_LAYERS]
 /** Native long press: a still press of this length picks the point under the finger. */
 const LONG_PRESS_MS = 500
 /** A finger that moves this far (px) is panning, not pressing. */

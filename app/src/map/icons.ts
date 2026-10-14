@@ -66,3 +66,6 @@ export function addTransitIcons(map: MlMap, dark: boolean): void {
     map.addImage('gg-busstop-sel', draw('bus', ACCENT, '#ffffff', '#ffffff', 24, ratio), { pixelRatio: ratio })
   }
 }
+
+/** The bus glyph path (24 box), for the live bus markers. */
+export const busGlyph = (): string => GLYPHS.bus
