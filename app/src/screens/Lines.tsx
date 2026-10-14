@@ -1,30 +1,29 @@
 import { useEffect, useMemo, useState } from 'react'
 import { PanelHeader } from '../components/PanelHeader'
 import { LineChip } from '../components/LineChip'
-import { loadLines, type Line } from '../lib/data'
-import { frequentLines } from '../lib/recent'
-import { fold, type Mode } from '../lib/search'
-import { t, type StringKey } from '../i18n'
+import { Icon } from '../components/Icon'
 import { Skeleton } from '../components/Skeleton'
+import { loadLines, type Line } from '../lib/data'
+import { lineRows, MAX_ROWS_UNFILTERED, modesPresent, sortLines, type LineFilter } from '../lib/lineList'
+import { frequentLines } from '../lib/recent'
+import { t, type StringKey } from '../i18n'
 import './Lines.css'
 
-const MODE_LABEL: Record<Mode, StringKey> = {
-  metro: 'modeMetro',
-  rail: 'modeRail',
-  tram: 'modeTram',
-  funicular: 'modeFunicular',
-  cablecar: 'modeCablecar',
-  metrobus: 'modeMetrobus',
-  ferry: 'modeFerry',
-  bus: 'modeBus',
-}
-const MODES: Mode[] = ['metro', 'rail', 'tram', 'funicular', 'cablecar', 'metrobus', 'ferry', 'bus']
-const MAX_BUS_ROWS = 60
+// Filter chips in native order. A chip shows only when the city has that mode (native FILTERS).
+const FILTERS: { key: LineFilter; label: StringKey }[] = [
+  { key: 'all', label: 'allModes' },
+  { key: 'metro', label: 'modeMetro' },
+  { key: 'tram', label: 'modeTram' },
+  { key: 'bus', label: 'modeBus' },
+  { key: 'ferry', label: 'modeFerry' },
+  { key: 'rail', label: 'modeRailCity' },
+]
 
 export function Lines({ onBack, onOpen }: { onBack: () => void; onOpen: (id: string) => void }) {
   const [lines, setLines] = useState<Line[] | null>(null)
   const [error, setError] = useState(false)
   const [q, setQ] = useState('')
+  const [filter, setFilter] = useState<LineFilter>('all')
   // Lines opened most often on this phone, shown first while nothing is typed.
   const [frequentIds] = useState(() => frequentLines(3))
 
@@ -32,24 +31,24 @@ export function Lines({ onBack, onOpen }: { onBack: () => void; onOpen: (id: str
     loadLines().then(setLines, () => setError(true))
   }, [])
 
-  const frequent = useMemo(
-    () => frequentIds.map((id) => (lines ?? []).find((l) => l.id === id)).filter((l): l is Line => !!l),
-    [frequentIds, lines],
-  )
-
-  const groups = useMemo(() => {
-    const f = fold(q)
-    const match = (l: Line) => !f || fold(l.name).startsWith(f) || fold(l.long_name).includes(f)
-    return MODES.map((m) => {
-      const ls = (lines ?? []).filter((l) => l.mode === m && match(l))
-      return { mode: m, lines: m === 'bus' && !f ? ls.slice(0, MAX_BUS_ROWS) : ls, more: m === 'bus' && !f && ls.length > MAX_BUS_ROWS }
-    }).filter((g) => g.lines.length)
-  }, [lines, q])
+  const sorted = useMemo(() => (lines ? sortLines(lines) : []), [lines])
+  const frequent = useMemo(() => frequentIds.map((id) => sorted.find((l) => l.id === id)).filter((l): l is Line => !!l), [frequentIds, sorted])
+  // Only the modes this city has (Bursa has no ferry or suburban rail); all of them while lines load.
+  const filters = useMemo(() => {
+    if (!lines?.length) return FILTERS
+    const present = modesPresent(lines)
+    return FILTERS.filter((fi) => fi.key === 'all' || present.has(fi.key))
+  }, [lines])
+  const rows = useMemo(() => lineRows(sorted, q, filter), [sorted, q, filter])
+  const showFrequent = !q && filter === 'all' && frequent.length > 0
+  // The unfiltered list is capped; the rest is found by typing (native).
+  const capped = !q && filter === 'all' && rows.length >= MAX_ROWS_UNFILTERED
 
   return (
     <>
       <PanelHeader title={t('linesTitle')} onClose={onBack} />
-      <div className="search-box">
+      <div className="search-box lines-search">
+        <Icon name="search" size={20} />
         <input
           type="search"
           placeholder={t('linePlaceholder')}
@@ -57,41 +56,64 @@ export function Lines({ onBack, onOpen }: { onBack: () => void; onOpen: (id: str
           value={q}
           onChange={(e) => setQ(e.target.value)}
           autoComplete="off"
+          autoCorrect="off"
+          autoCapitalize="characters"
+          enterKeyHint="search"
         />
       </div>
+      <div className="filters" role="group" aria-label={t('linesTitle')}>
+        {filters.map((fi) => {
+          const on = fi.key === filter
+          return (
+            <button key={fi.key} className={on ? 'filter on' : 'filter'} aria-pressed={on} onClick={() => setFilter(fi.key)}>
+              {t(fi.label)}
+            </button>
+          )
+        })}
+      </div>
+      {error && (
+        <p aria-live="polite" className="state-msg">
+          {t('dataUnavailable')}
+        </p>
+      )}
       {!lines && !error && <Skeleton rows={6} height={44} />}
-      {error && <p aria-live="polite" className="state-msg">{t('dataUnavailable')}</p>}
-      {!q && frequent.length > 0 && (
+      {showFrequent && (
         <section className="line-group">
           <h2 className="section-label">{t('frequent')}</h2>
-          <ul className="results">
+          <ul className="results lines-list">
             {frequent.map((l) => (
-              <li key={l.id}>
-                <button className="result" onClick={() => onOpen(l.id)}>
-                  <LineChip name={l.name} line={l} />
-                  <span className="result-name">{l.long_name}</span>
-                </button>
-              </li>
+              <LineRow key={l.id} line={l} onOpen={onOpen} />
             ))}
           </ul>
+          <h2 className="section-label">{t('allLines')}</h2>
         </section>
       )}
-      {groups.map((g) => (
-        <section key={g.mode} className="line-group">
-          <h2 className="section-label">{t(MODE_LABEL[g.mode])}</h2>
-          <ul className="results">
-            {g.lines.map((l) => (
-              <li key={l.id}>
-                <button className="result" onClick={() => onOpen(l.id)}>
-                  <LineChip name={l.name} line={l} />
-                  <span className="result-name">{l.long_name}</span>
-                </button>
-              </li>
-            ))}
-          </ul>
-          {g.more && <p aria-live="polite" className="state-msg">{t('typeToFindBus')}</p>}
-        </section>
-      ))}
+      {lines && rows.length === 0 && (
+        <p aria-live="polite" className="state-msg">
+          {t('noResults')}
+        </p>
+      )}
+      <ul className="results lines-list">
+        {rows.map((l) => (
+          <LineRow key={l.id} line={l} onOpen={onOpen} />
+        ))}
+      </ul>
+      {capped && (
+        <p aria-live="polite" className="state-msg">
+          {t('typeToFindBus')}
+        </p>
+      )}
     </>
+  )
+}
+
+function LineRow({ line, onOpen }: { line: Line; onOpen: (id: string) => void }) {
+  return (
+    <li>
+      <button className="result" onClick={() => onOpen(line.id)} aria-label={`${line.name} ${line.long_name}`}>
+        <LineChip name={line.name} line={line} />
+        <span className="lines-name">{line.long_name}</span>
+      </button>
+    </li>
   )
 }

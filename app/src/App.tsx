@@ -285,27 +285,34 @@ export function App() {
   }
   /** A recent stop opens its card again; anything else is a destination. */
   const onRecent = (p: RecentPlace) => (p.station ? openStation(p.station, true) : chooseDestination(p))
-  const onSearchPick = (which: 'to' | 'from', p: Place) => {
-    // A recent stop that was opened as a card opens its card again (native pickRecent).
-    const station = (p as RecentPlace).station
-    if (which === 'to' && station) {
-      pop()
-      openStation(station, true)
-      return
-    }
-    // A stop picked by its number (Ankara, Bursa) opens its card: that is what people look up.
-    if (which === 'to' && p.code) {
-      pop()
-      loadStops().then((all) => {
-        const s = matchStop(all, p)
-        if (!s) return chooseDestination(p)
-        openStation({ ...s, ids: [s.id] }, true)
-      }, () => chooseDestination(p))
-      return
-    }
-    if (which === 'to') chooseDestination(p)
-    else chooseOrigin(p)
+  /** A place picked from search: the destination, or the origin (native onPick). */
+  const onSearchPick = (which: 'to' | 'from', p: Place) => (which === 'to' ? chooseDestination(p) : chooseOrigin(p))
+  /** A stop card opened from search (native onStop): the search is replaced by the card and the map flies there. */
+  const openStationFromSearch = (st: Station) => {
+    resetTo((x) => x.kind !== 'search', { kind: 'station', station: st })
+    map?.easeTo({ center: [st.lon, st.lat], zoom: STOP_ZOOM, duration: cameraMs() })
   }
+  /**
+   * A stop from search opens its card, in origin and destination search alike (native onStop). A recent
+   * station reopens its card; a stop with a number or position is matched in the stop list. No match: a place.
+   */
+  const onSearchStop = (which: 'to' | 'from', p: Place) => {
+    const station = (p as RecentPlace).station
+    if (station) {
+      openStationFromSearch(station)
+      return
+    }
+    loadStops().then(
+      (all) => {
+        const s = matchStop(all, p)
+        if (s) openStationFromSearch({ ...s, ids: [s.id] })
+        else onSearchPick(which, p)
+      },
+      () => onSearchPick(which, p),
+    )
+  }
+  /** A line picked in search: its page replaces the search (native onLine). */
+  const openLineFromSearch = (id: string) => resetTo((x) => x.kind !== 'search', { kind: 'line', id, dir: 0 })
   /** "Locate me" (native onLocate): asks for the position, and the map flies to it. */
   const locateMe = () => {
     geo.start()
@@ -319,11 +326,13 @@ export function App() {
     rememberPlace(here)
     chooseDestination(here)
   }
-  /** "Haritada seç" (native onPickOnMap): the search closes, the sheet drops to its minimum, a long press picks. */
+  /**
+   * "Haritada seç" (native onPickOnMap): the search closes and a long press picks. The sheet keeps the height
+   * of the panel below (native's request for the minimum is overwritten by resetTo, so it is not forced here).
+   */
   const pickOnMap = () => {
     setPicking(true)
     resetTo((x) => x.kind !== 'search', null)
-    sheet.current?.goTo(SNAP.min)
   }
   /** The sheet's height: live while it is dragged (the locate button follows, without re-rendering the app), settled after. */
   const onSheetVisible = useCallback((px: number, live: boolean) => {
@@ -380,6 +389,8 @@ export function App() {
             near={stablePos}
             onBack={pop}
             onPick={(p) => onSearchPick(panel.which, p)}
+            onStop={(p) => onSearchStop(panel.which, p)}
+            onLine={openLineFromSearch}
             onPickOnMap={pickOnMap}
           />
         )
@@ -421,7 +432,15 @@ export function App() {
       case 'lines':
         return <Lines onBack={pop} onOpen={openLine} />
       case 'nearby':
-        return <Nearby position={geo.position} onLocate={locateMe} onBack={pop} />
+        return (
+          <Nearby
+            position={geo.position}
+            status={status}
+            onLocate={locateMe}
+            onStation={(st) => openStation(st, true)}
+            onBack={pop}
+          />
+        )
       case 'contact':
         return <Contact onBack={pop} onAbout={() => push({ kind: 'about' })} />
       case 'support':

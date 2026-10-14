@@ -2,6 +2,68 @@
   margin: var(--s-4) 0 0;
 }
 
+.line-group h2.section-label {
+  margin: var(--s-3) 0 var(--s-1);
+}
+
+/* Native search field in the Lines panel: 52 px high, 16 px radius, 16.5 px text. */
+.lines-search {
+  height: 52px;
+  min-height: 52px;
+  border-radius: 16px;
+  margin-bottom: var(--s-3);
+}
+
+.lines-search input {
+  font-size: 16.5px;
+}
+
+/* Native filter chips: 34 px high, 17 px radius, 14 px side padding, scrolled sideways. */
+.filters {
+  display: flex;
+  gap: var(--s-2);
+  overflow-x: auto;
+  padding-bottom: var(--s-2);
+  scrollbar-width: none;
+}
+
+.filters::-webkit-scrollbar {
+  display: none;
+}
+
+.filter {
+  flex: none;
+  min-height: 34px;
+  height: 34px;
+  padding: 0 14px;
+  border-radius: 17px;
+  background: var(--fill);
+  color: var(--text);
+  font-size: var(--fs-s);
+  font-weight: var(--fw-bold);
+  white-space: nowrap;
+}
+
+.filter.on {
+  background: var(--text);
+  color: var(--bg);
+}
+
+/* Native line rows: 52 px high with a hairline below (the shared .result gives the rule). */
+.lines-list .result {
+  min-height: 52px;
+}
+
+.lines-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 16px;
+  font-weight: var(--fw-regular);
+}
+
 .line-head {
   display: flex;
   align-items: center;

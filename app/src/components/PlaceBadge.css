@@ -1,0 +1,10 @@
+/* Native PlaceRow badge: a 36 px circle, white glyph. The tint is set inline. */
+.place-badge {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  color: #ffffff;
+}

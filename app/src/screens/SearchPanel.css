@@ -1,3 +1,4 @@
+/* Shared list styles for the search, lines and nearby panels (native PlaceRow, SearchPanel). */
 .search-box {
   display: flex;
   align-items: center;
@@ -21,18 +22,25 @@
   outline: none;
 }
 
+/* One clear control only: the field's built-in one is hidden (the search has its own). */
+.search-box input::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
 .results {
   list-style: none;
   margin: 0;
   padding: 0;
 }
 
+/* Native PlaceRow: 64 px minimum, 8 px vertical padding, hairline below. */
 .result {
   display: flex;
   align-items: center;
   gap: var(--s-3);
   width: 100%;
-  min-height: 56px;
+  min-height: 64px;
   padding: var(--s-2) 0;
   text-align: left;
   border-bottom: 1px solid var(--hairline);
@@ -42,19 +50,24 @@
   opacity: 0.6;
 }
 
-.result-icon {
-  width: 36px;
-  height: 36px;
-  flex: none;
-  display: grid;
-  place-items: center;
-  border-radius: var(--r-sm);
-  background: var(--fill);
-  color: var(--text-2);
+/* Native line row: 56 px, the line chip in a 36 px column, the long name beside it. */
+.result.line-result {
+  min-height: 56px;
 }
 
-.result-icon.accent {
-  color: var(--accent);
+.line-chip-box {
+  display: flex;
+  flex: none;
+  justify-content: center;
+  width: 36px;
+}
+
+.line-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .result-text {
@@ -64,11 +77,13 @@
   min-width: 0;
 }
 
-/* Native PlaceRow uses the heading variant (semibold, -0.2 tracking). */
+/* Native PlaceRow title: the heading variant (semibold, 16.5 px, -0.2 tracking). */
 .result-name {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  font-size: 16.5px;
+  font-weight: var(--fw-bold);
   letter-spacing: -0.2px;
 }
 
@@ -85,11 +100,12 @@
   overflow: hidden;
 }
 
-/* Section heads: colour, size and caps come from the shared .section-label. */
-.result-head {
+/* Section heads: colour, size and caps come from the shared .section-label. Native: 24 px above, 4 px below. */
+.result-head.section-label {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  margin: var(--s-5) 0 var(--s-1);
 }
 
 .link {
@@ -107,7 +123,15 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* Search row in the sheet: the field and the native "cancel" text button. */
+/* Native attribution: secondary text, right aligned, 16 px above. */
+.attribution {
+  margin: var(--s-4) 0 0;
+  text-align: right;
+  color: var(--text-2);
+  font-size: var(--fs-s);
+}
+
+/* Search row in the sheet: the field (52 px, 16 px radius, 17 px text) and the native cancel text button. */
 .search-head {
   display: flex;
   align-items: center;
@@ -118,7 +142,26 @@
 .search-head .search-box {
   flex: 1;
   min-width: 0;
+  height: 52px;
+  min-height: 0;
   margin-bottom: 0;
+  border-radius: 16px;
+}
+
+.search-head .search-box input {
+  font-size: 17px;
+}
+
+/* Native clear: an 18 px close glyph at the right edge of the field, 44 px touch area. */
+.search-clear {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin-right: -12px;
+  padding: 0;
+  color: var(--text-2);
 }
 
 /* Native cancel: accent text, semibold 16.5 px, touch height 44. */
