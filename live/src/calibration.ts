@@ -110,7 +110,7 @@ export class Calibration {
 
 /**
  * Rotates through bus lines: a small batch is polled every minute for a while,
- * then the next batch. About one request every 5 seconds to İETT in total.
+ * then the next batch. The caller sets the pace (server.ts startCalibration).
  */
 export class Sampler {
   private lines: string[] = []
