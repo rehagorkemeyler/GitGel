@@ -210,11 +210,13 @@ export function MapView({
       center: CITY.center,
       // Native's first view: the city centre, at the zoom where its start span fills this width.
       zoom: startZoom(el.clientWidth),
-      attributionControl: { compact: true },
+      // Attribution moves to the bottom-left (native: Google logo there), clear of the locate button.
+      attributionControl: false,
       pitchWithRotate: false,
       dragRotate: false,
       fadeDuration: matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 300,
     })
+    m.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-left')
     m.touchZoomRotate.disableRotation()
     // Native pitchEnabled={false}: no two-finger tilt.
     m.touchPitch.disable()
