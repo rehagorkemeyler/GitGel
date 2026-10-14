@@ -19,7 +19,7 @@
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http'
 import { Cache } from './cache.ts'
 import { Calibration, Sampler } from './calibration.ts'
-import { fetchLineVehicles, type Vehicle } from './iett.ts'
+import { fetchLineVehicles, iettGuard, type Vehicle } from './iett.ts'
 import { getStopBoard, getVehiclesByLine, NotImplemented, type AnkaraStopBoard, type AnkaraVehicle } from './providers/ego.ts'
 import { getBursaStopBoard, getBursaVehicles, type BursaStopBoard, type BursaVehicle } from './providers/burulas.ts'
 import { CITIES, search, type SearchResult } from './search.ts'
@@ -194,20 +194,22 @@ async function loadLines(sampler: Sampler, url = LINES_URL) {
 }
 
 /** Poll one sampled line every 5 s, rotating batches through all bus lines of a city. */
-function sample(sampler: Sampler, poll: (line: string) => void) {
+function sample(sampler: Sampler, poll: (line: string) => void, everyMs: number, paused = () => false) {
   let i = 0
   setInterval(() => {
+    if (paused()) return
     const batch = sampler.current()
     if (batch.length) poll(batch[i++ % batch.length])
-  }, 5_000)
+  }, everyMs)
 }
 
 function startCalibration() {
   calibration.load(CAL_FILE)
   ankaraCalibration.load(ANKARA_CAL_FILE)
-  // Istanbul (İETT) and Ankara (EGO): one request every 5 s to each; with 12 lines per
-  // batch each line is polled about once a minute.
-  const sampler = new Sampler()
+  // Istanbul (İETT): one request every 30 s, 4 lines per batch (each line every 2 minutes), and none
+  // while the İBB gateway rate-limits us. One request every 5 s ran into its limit and cut live buses
+  // off for everyone. Ankara (EGO): one request every 5 s, 12 lines per batch (each about once a minute).
+  const sampler = new Sampler(4)
   const ankaraSampler = new Sampler()
   const refresh = () => {
     void loadLines(sampler)
@@ -215,8 +217,8 @@ function startCalibration() {
   }
   refresh()
   setInterval(refresh, 24 * 3600_000)
-  sample(sampler, (line) => void vehicles.get(line, loadVehicles(line)).catch(() => {}))
-  sample(ankaraSampler, (line) => void ankaraVehicles.get(line, loadAnkaraVehicles(line)).catch(() => {}))
+  sample(sampler, (line) => void vehicles.get(line, loadVehicles(line)).catch(() => {}), 30_000, () => iettGuard.blocked())
+  sample(ankaraSampler, (line) => void ankaraVehicles.get(line, loadAnkaraVehicles(line)).catch(() => {}), 5_000)
   const save = () => {
     try {
       calibration.save(CAL_FILE)

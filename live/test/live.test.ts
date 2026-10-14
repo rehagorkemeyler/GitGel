@@ -1,7 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { Cache } from '../src/cache.ts'
-import { extractResult, istanbulToIso, parseVehicles } from '../src/iett.ts'
+import { RateGuard, extractResult, isRateLimited, istanbulToIso, parseVehicles } from '../src/iett.ts'
 import { linesIn, parseStatuses, stripHtml } from '../src/metro.ts'
 
 test('istanbul time to ISO', () => {
@@ -65,4 +65,29 @@ test('routes with and without the /live prefix', async () => {
     await handle({ url: u, method: 'GET' } as never, res as never)
     assert.equal(code, 200)
   }
+})
+
+test('İBB gateway rate limit fault is recognised', () => {
+  const fault =
+    '<soapenv:Fault><faultcode>soapenv:Server</faultcode><faultstring>Policy Falsified</faultstring><detail><l7:policyResult status="Rate limit exceeded."/></detail></soapenv:Fault>'
+  assert.equal(isRateLimited(fault), true)
+  assert.equal(isRateLimited('<GetHatOtoKonum_jsonResult>[]</GetHatOtoKonum_jsonResult>'), false)
+})
+
+test('rate guard backs off 2, 4 ... 30 minutes and resets on a good answer', () => {
+  const g = new RateGuard()
+  const min = 60_000
+  assert.equal(g.blocked(0), false)
+  g.limited(0)
+  assert.equal(g.blocked(2 * min - 1), true)
+  assert.equal(g.blocked(2 * min), false)
+  g.limited(2 * min)
+  assert.equal(g.blocked(6 * min - 1), true)
+  for (let i = 0; i < 10; i++) g.limited(0)
+  assert.equal(g.blocked(30 * min - 1), true)
+  assert.equal(g.blocked(30 * min), false)
+  g.ok()
+  assert.equal(g.blocked(0), false)
+  g.limited(0)
+  assert.equal(g.blocked(2 * min), false)
 })
