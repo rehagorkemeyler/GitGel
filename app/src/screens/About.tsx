@@ -6,14 +6,13 @@ import { t, type StringKey } from '../i18n'
 import './Info.css'
 
 // Same order as native About.tsx, with each map and data attribution next to its data:
-// EGO Mac after BURULAŞ, OpenFreeMap after OpenStreetMap, Google before MOTIS and Photon.
+// OpenFreeMap after OpenStreetMap, Google before MOTIS and Photon.
 const SOURCES: { name: string; url: string; what: StringKey }[] = [
   { name: 'İBB Açık Veri Portalı', url: 'https://data.ibb.gov.tr', what: 'aboutTimetables' },
   { name: 'Metro İstanbul', url: 'https://www.metro.istanbul', what: 'aboutRail' },
   { name: 'İETT', url: 'https://www.iett.istanbul', what: 'aboutBus' },
   { name: 'EGO Genel Müdürlüğü', url: 'https://www.ego.gov.tr', what: 'aboutEgo' },
   { name: 'BURULAŞ / BursaKart', url: 'https://www.bursakart.com.tr', what: 'aboutBursa' },
-  { name: 'EGO Mac (byigitt/egomac)', url: 'https://github.com/byigitt/egomac', what: 'aboutEgoMac' },
   { name: '© OpenStreetMap katkıcıları', url: 'https://www.openstreetmap.org/copyright', what: 'aboutMap' },
   { name: 'OpenFreeMap, OpenMapTiles', url: 'https://openfreemap.org', what: 'aboutTiles' },
   { name: 'Google', url: 'https://policies.google.com/terms', what: 'aboutGoogle' },
@@ -23,7 +22,7 @@ const SOURCES: { name: string; url: string; what: StringKey }[] = [
 
 // The bus-source sentence follows the city's live bus source: İETT in Istanbul, EGO in Ankara.
 // Bursa (BURULAŞ) has no sentence yet: its wording needs Görkem's approval.
-const BUS_HONESTY: Partial<Record<City['live'], StringKey>> = { iett: 'aboutHonesty', ego: 'aboutHonestyAnkara' }
+const BUS_HONESTY: Partial<Record<City['live'], StringKey>> = { iett: 'aboutHonesty' }
 
 /** Data sources and licences, honesty notes, privacy, version. The footer opens Contact and Support on top of this panel. */
 export function About({ onBack, onContact, onSupport }: { onBack: () => void; onContact: () => void; onSupport: () => void }) {

@@ -35,6 +35,9 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png}'],
+        // A new build takes over at once, so an installed app does not keep an old bundle (and its old live settings).
+        skipWaiting: true,
+        clientsClaim: true,
         // Static data (lines, stops) changes nightly: serve cached, refresh in background.
         runtimeCaching: [
           {
