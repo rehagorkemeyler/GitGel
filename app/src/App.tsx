@@ -479,7 +479,8 @@ export function App() {
       case 'support':
         return <Support onBack={pop} />
       case 'about':
-        return <About onBack={pop} />
+        // Contact and Support open on top of About, so their back returns here (native About footer).
+        return <About onBack={pop} onContact={() => go('contact')} onSupport={() => go('support')} />
     }
   })()
 

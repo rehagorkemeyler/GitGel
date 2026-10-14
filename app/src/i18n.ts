@@ -413,23 +413,37 @@ function savedLang(): 'tr' | 'en' | null {
 }
 
 /** Turkish unless the device language is not Turkish; the user's choice wins. */
-export const lang: 'tr' | 'en' =
+// Live binding: setLang changes it in place, and the app re-mounts (see main.tsx).
+export let lang: 'tr' | 'en' =
   savedLang() ??
   (typeof navigator !== 'undefined' && !navigator.language.toLowerCase().startsWith('tr') ? 'en' : 'tr')
 
-/** Saves the choice and reloads, so every screen and cache starts in the new language. */
+let dict: Record<StringKey, string> = lang === 'tr' ? tr : en
+
+if (typeof document !== 'undefined') document.documentElement.lang = lang
+
+const langListeners = new Set<() => void>()
+
+/** Runs `fn` after the language changes (for useSyncExternalStore). Returns the unsubscribe. */
+export function subscribeLang(fn: () => void): () => void {
+  langListeners.add(fn)
+  return () => {
+    langListeners.delete(fn)
+  }
+}
+
+/** Saves the choice and applies it at once, with no reload (native setLang + version bump): the app re-mounts in the new language. */
 export function setLang(l: 'tr' | 'en'): void {
   try {
     localStorage.setItem(LANG_KEY, l)
   } catch {
     // ignore: the choice then lasts only for this page load
   }
-  location.reload()
+  lang = l
+  dict = l === 'tr' ? tr : en
+  if (typeof document !== 'undefined') document.documentElement.lang = l
+  langListeners.forEach((fn) => fn())
 }
-
-const dict: Record<StringKey, string> = lang === 'tr' ? tr : en
-
-if (typeof document !== 'undefined') document.documentElement.lang = lang
 
 // Words that depend on the city: the suburban rail is Marmaray in Istanbul and Başkentray in
 // Ankara; Bursa's metro is BursaRay.
