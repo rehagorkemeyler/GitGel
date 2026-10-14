@@ -1,0 +1,27 @@
+/* Native RouteChain: wraps with a 6 px row gap; the separator has 5 px margins; walk minutes are secondary. */
+.route-chain {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  row-gap: 6px;
+}
+
+.chain-item {
+  display: inline-flex;
+  align-items: center;
+}
+
+.chain-sep {
+  margin: 0 5px;
+  color: var(--text-2);
+  font-size: var(--fs-s);
+}
+
+.chain-walk {
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+  color: var(--text-2);
+  font-size: var(--fs-s);
+  font-variant-numeric: tabular-nums;
+}

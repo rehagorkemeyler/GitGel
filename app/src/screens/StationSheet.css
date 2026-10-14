@@ -1,3 +1,220 @@
+/* Station card (native StationSheet). Shared with TrainSheet, which uses the .station frame, the
+   .ride-line row, the .dep-* list and .small-note; those rules stay below, unchanged. */
+.station {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+}
+
+.station-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: calc(var(--s-2) * -1);
+}
+
+.chip-btn {
+  min-height: 0;
+  padding: 0;
+}
+
+/* Native buttons row: two equal 52 px buttons, 12 px apart. */
+.station-buttons {
+  display: flex;
+  gap: var(--s-3);
+}
+
+.station-buttons .btn {
+  flex: 1 1 0;
+  width: auto;
+  min-width: 0;
+}
+
+/* Native Segmented on the card: 38 px items, 3 px padding, 12 px radius. */
+.segmented.station-tabs {
+  margin: 0;
+  gap: 0;
+  padding: 3px;
+  border-radius: 12px;
+}
+
+.station-tabs button {
+  height: 38px;
+  min-height: 38px;
+  padding: 0 var(--s-1);
+  font-size: var(--fs-s);
+}
+
+/* Station section heading: type, caps and colour come from the shared .section-label.
+   The more specific selector keeps native's 16 px above, 8 px below (LiveArrivals uses it too). */
+.section-label.station-sub {
+  margin: var(--s-4) 0 var(--s-2);
+}
+
+/* Native departure row: 64 px min height, 12 px padding, hairline below. */
+.station-dep {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  min-height: 64px;
+  padding: var(--s-3) 0;
+  border-bottom: 1px solid var(--hairline);
+}
+
+.station-dep-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.station-dep-head {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 16.5px;
+  font-weight: var(--fw-bold);
+  letter-spacing: -0.2px;
+}
+
+.station-dep-label {
+  display: inline-flex;
+  align-items: center;
+  font-size: 13.5px;
+  line-height: 18px;
+  color: var(--text-2);
+}
+
+.station-dep-label.live {
+  color: var(--live);
+}
+
+.station-dep-problem {
+  flex: 1;
+  min-width: 0;
+  font-size: 13.5px;
+  line-height: 18px;
+  color: var(--warning-text);
+}
+
+.station-dep-when {
+  min-width: 56px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Native: the number is 22 px bold, the unit 13.5 px secondary; "şimdi" and HH:MM are 16.5 px semibold. */
+.station-dep-min {
+  font-size: 22px;
+  font-weight: var(--fw-bold);
+  letter-spacing: -0.4px;
+  line-height: 28px;
+}
+
+.station-dep-min small {
+  font-size: 13.5px;
+  font-weight: var(--fw-regular);
+  letter-spacing: 0;
+  color: var(--text-2);
+}
+
+.station-dep-min.live,
+.station-dep-now.live {
+  color: var(--live);
+}
+
+.station-dep-now,
+.station-dep-clock {
+  font-size: 16.5px;
+  font-weight: var(--fw-bold);
+  letter-spacing: -0.2px;
+}
+
+.station-dep-rest {
+  font-size: 13.5px;
+  color: var(--text-2);
+}
+
+/* Native lines tab: 52 px rows, hairline below, the long name, a chevron turned to point right. */
+.station-lines {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.station-line {
+  width: 100%;
+  min-height: 52px;
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  padding: var(--s-2) 0;
+  border-bottom: 1px solid var(--hairline);
+  text-align: left;
+}
+
+.station-line-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--fs-m);
+}
+
+.station-line-chev {
+  display: inline-flex;
+  color: var(--text-2);
+  transform: rotate(180deg);
+}
+
+/* Native disruption cards: fill, 20 px radius, 16 px padding, a warning dot before the line. */
+.station-disruptions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+}
+
+.station-disruption {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  padding: var(--s-4);
+  border-radius: var(--r-card);
+  background: var(--fill);
+}
+
+.station-disruption-head {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+}
+
+.warn-dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--warning-text);
+}
+
+.station-disruption-line {
+  font-size: 16.5px;
+  font-weight: var(--fw-bold);
+  letter-spacing: -0.2px;
+}
+
+.station-disruption-text {
+  margin: 0;
+  font-size: var(--fs-m);
+  line-height: 22px;
+}
+
+/* ---- Shared with TrainSheet (kept as it was) ---- */
+
 .station-head {
   display: flex;
   align-items: flex-start;
@@ -19,32 +236,10 @@
   letter-spacing: -0.4px;
 }
 
-.chips.wrap {
-  flex-wrap: wrap;
-  overflow: visible;
-}
-
-.chip-btn {
-  min-height: 0;
-  padding: 0;
-}
-
-.directions {
-  display: inline-flex;
+.ride-line {
+  display: flex;
   align-items: center;
   gap: var(--s-2);
-  margin-top: var(--s-3);
-  padding: 0 var(--s-4);
-  border-radius: 22px;
-  background: var(--accent);
-  color: var(--accent-text);
-  font-weight: var(--fw-bold);
-}
-
-/* Station section heading: type, caps and colour come from the shared .section-label.
-   The more specific selector keeps native's 16 px above, 8 px below. */
-.section-label.station-sub {
-  margin: var(--s-4) 0 var(--s-2);
 }
 
 .dep-groups {

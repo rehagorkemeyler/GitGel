@@ -1,58 +1,48 @@
-/* Collapsed: a compact pill sized to its text. Expanded: a card. */
-.status-band {
-  position: fixed;
-  top: calc(var(--s-3) + env(safe-area-inset-top));
-  left: 50%;
-  transform: translateX(-50%);
-  max-width: min(528px, calc(100vw - 2 * var(--s-4)));
-  display: flex;
-  flex-direction: column;
-  gap: var(--s-2);
+/* Native StatusPill: glass, fully rounded (22 px), min 36 px high, 14 px by 8 px padding, 13 px semibold text
+   in the default text colour. The dot is 8 px: warning for service notices, secondary for the neutral notice. */
+.status-pill {
   min-height: 36px;
-  padding: var(--s-2) var(--s-3);
-  border-radius: var(--r-pill);
+  max-width: min(528px, 100%);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  padding: var(--s-2) 14px;
+  border-radius: 22px;
   background: var(--glass-bg);
   background-image: var(--glass-shine);
   -webkit-backdrop-filter: var(--glass-blur);
   backdrop-filter: var(--glass-blur);
-  color: var(--text);
   border: 1px solid var(--glass-edge);
   box-shadow: none;
-  text-align: left;
+  color: var(--text);
   font-size: var(--fs-s);
-  line-height: 20px;
-  z-index: 6;
-}
-
-.status-band.open {
-  width: calc(100vw - 2 * var(--s-4));
-  border-radius: var(--r-card);
-  padding: var(--s-3) var(--s-4);
-}
-
-.status-title {
-  display: flex;
-  align-items: center;
-  gap: var(--s-2);
   font-weight: var(--fw-bold);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  line-height: 16px;
+  text-align: left;
 }
 
-.status-title::before {
-  content: '';
+.status-pill:active {
+  opacity: 0.7;
+}
+
+.status-dot {
   flex: none;
   width: 8px;
   height: 8px;
   border-radius: 50%;
+}
+
+.status-dot.warning {
   background: var(--warning-text);
 }
 
-.status-text {
-  line-height: 1.4;
+.status-dot.neutral {
+  background: var(--text-2);
 }
 
-.muted-small {
-  opacity: 0.8;
+.status-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }

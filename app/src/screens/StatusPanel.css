@@ -1,0 +1,56 @@
+/* Native StatusPanel: cards with a 20 px radius on the fill colour, 16 px padding, 8 px gaps. */
+.status-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+}
+
+.status-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  padding: var(--s-4);
+  border-radius: var(--r-card);
+  background: var(--fill);
+}
+
+.status-card-head {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+}
+
+.status-card-dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--warning-text);
+}
+
+.status-card-title {
+  font-size: 16.5px;
+  font-weight: var(--fw-bold);
+  letter-spacing: -0.2px;
+}
+
+.status-card-body {
+  margin: 0;
+  font-size: var(--fs-m);
+  line-height: 22px;
+}
+
+.status-card-sub {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 18px;
+  color: var(--text-2);
+}
+
+.status-note {
+  margin: 0;
+  padding: 0 var(--s-2);
+  font-size: 13.5px;
+  line-height: 18px;
+  color: var(--text-2);
+}

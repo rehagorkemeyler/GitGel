@@ -11,20 +11,23 @@ import { Contact, Support } from './screens/Info'
 import { About } from './screens/About'
 import { StationSheet } from './screens/StationSheet'
 import { TrainSheet } from './screens/TrainSheet'
+import { StatusPanel } from './screens/StatusPanel'
+import { CityPanel } from './screens/CityPanel'
 import { LineHeader, LineStops } from './screens/LineSheet'
 import { lineView, useLineDetail } from './lib/lineDetail'
 import type { Station } from './map/networkLayer'
 import { useGeolocation, useStablePosition } from './lib/useGeolocation'
-import { CITY, CITY_CHOSEN, busShapes, cityAt, liveStop, rememberCity, switchCity, type CityId } from './lib/city'
+import { CITY, CITY_CHOSEN, busShapes, cityAt, liveStop, rememberCity, switchCity } from './lib/city'
 import type { Place } from './lib/search'
 import type { Itinerary } from './lib/api'
-import { cityName, t } from './i18n'
+import { t } from './i18n'
 import { rememberLine, rememberPlace, rememberStation, type RecentPlace } from './lib/recent'
 import { prepareAlerts, useTracking } from './lib/tracking'
 import { TrackingBanner } from './components/TrackingBanner'
-import { loadJson, loadSearchIndex, loadStops, type StopRow } from './lib/data'
+import { loadJson, loadSearchIndex, loadStops, networkUp, type StopRow } from './lib/data'
 import { plateKey, useLineStatus, useLiveArrivals, useLiveVehicles, type Vehicle } from './lib/live'
 import { StatusBand } from './components/StatusBand'
+import { StatusPill } from './components/StatusPill'
 import type { Map as MlMap } from 'maplibre-gl'
 import { SNAP } from './lib/sheet'
 import { STOP_ZOOM, cameraMs, locateFade, mapBottomInset, safeInsets, sheetTopOf } from './lib/camera'
@@ -39,8 +42,6 @@ export type Screen = 'home' | 'search' | 'nearby' | 'lines' | 'contact' | 'suppo
 
 // Set once per page load: after a reload the panels start at home again (see the history effect).
 let historyResumed = false
-
-const CITY_IDS: CityId[] = ['istanbul', 'ankara', 'bursa']
 
 /**
  * The stop a search result names (native SearchPanel): an Ankara stop by its id, a Bursa stop by its
@@ -119,7 +120,6 @@ export function App() {
   const [railCount, setRailCount] = useState(0)
   const [map, setMap] = useState<MlMap | null>(null)
   const [picking, setPicking] = useState(false)
-  const [choosingCity, setChoosingCity] = useState(false)
   // "Başla": the trip is followed while the page is open; alerts are asked only when the user starts it.
   const track = useTracking(tracking, geo.position)
   // A stop card and a line page count as uses (frequent places and lines); the search counts places itself.
@@ -129,8 +129,6 @@ export function App() {
   useEffect(() => {
     if (lineId) rememberLine(lineId)
   }, [lineId])
-  // The city chooser opens only from home (native: the city panel). No prompt for an outside position.
-  const cityPrompt = choosingCity
   // Locate (native onLocate): a press bumps `recenter`, so the map flies to the user. The sheet reports
   // its height: the locate button rides on it, and the map's bottom padding follows it once it settles.
   const [recenter, setRecenter] = useState(0)
@@ -149,9 +147,19 @@ export function App() {
   }, [geo.position])
 
   // Nightly data missing (first night of a new city, or Pages down): say so instead of an empty map.
+  // Cached data with no network is offline (native latestBuild): the neutral pill says the saved data is shown.
   const [dataMissing, setDataMissing] = useState(false)
+  const [offline, setOffline] = useState(false)
   useEffect(() => {
-    loadJson('meta.json').catch(() => setDataMissing(true))
+    let alive = true
+    Promise.all([loadJson('meta.json').then(() => true, () => false), networkUp()]).then(([hasData, online]) => {
+      if (!alive) return
+      setDataMissing(!hasData)
+      setOffline(hasData && !online)
+    })
+    return () => {
+      alive = false
+    }
   }, [])
 
   // Warm the search index while the user looks at the map.
@@ -251,6 +259,18 @@ export function App() {
     } else setFromChoice(p)
     if (to) showResults()
     else pop()
+  }
+  /** Swaps the ends (native onSwap): the destination becomes the origin and the origin the destination. */
+  const swapEnds = () => {
+    if (!to || !from) return
+    setFromChoice(to.kind === 'me' ? null : to)
+    setTo(from)
+  }
+  /** "Buradan git" on a stop (native onGoFrom): the stop is the origin; the trip shows if there is a destination. */
+  const goFromStation = (st: Station) => {
+    setFromChoice({ name: st.name, kind: 'stop', lat: st.lat, lon: st.lon })
+    if (to) showResults()
+    else push({ kind: 'search', which: 'to' })
   }
   /** Closing a trip removes its panels and forgets the destination, origin, options and tracking (native closeTrip). */
   const closeTrip = () => {
@@ -380,7 +400,7 @@ export function App() {
   const content = (() => {
     switch (panel.kind) {
       case 'home':
-        return <HomePeek go={go} onCity={() => setChoosingCity(true)} onRecent={onRecent} />
+        return <HomePeek go={go} onCity={() => push({ kind: 'city' })} onRecent={onRecent} />
       case 'search':
         return (
           <SearchPanel
@@ -401,32 +421,45 @@ export function App() {
             to={to}
             onEditFrom={() => push({ kind: 'search', which: 'from' })}
             onEditTo={() => push({ kind: 'search', which: 'to' })}
+            onSwap={swapEnds}
             onClose={closeTrip}
             onOpen={(it) => push({ kind: 'route', it })}
             onOptions={setOptions}
+            problemLines={hiddenLines}
           />
         ) : null
       case 'route':
         return (
           <RouteDetail
             it={panel.it}
+            fromName={from?.name ?? t('myLocation')}
+            toName={to?.name ?? t('destination')}
             liveCount={vehicles.length}
             tracking={tracking === panel.it}
+            problemLines={hiddenLines}
             onBack={pop}
             onStart={() => toggleTracking(panel.it)}
+            onClose={closeTrip}
           />
         )
       case 'station':
         return (
           <StationSheet
             station={panel.station}
+            status={status}
+            position={geo.position}
             onClose={pop}
             onDirections={() => chooseDestination({ name: panel.station.name, lat: panel.station.lat, lon: panel.station.lon, kind: 'stop' })}
+            onGoFrom={() => goFromStation(panel.station)}
             onLine={openLine}
           />
         )
       case 'line':
-        return <LineHeader {...lineData} dir={lineDir} onDir={setLineDirection} onClose={pop} />
+        return <LineHeader {...lineData} dir={lineDir} status={status} onDir={setLineDirection} onClose={pop} />
+      case 'status':
+        return status ? <StatusPanel status={status} onClose={pop} /> : null
+      case 'city':
+        return <CityPanel onPick={switchCity} onClose={pop} />
       case 'train':
         return <TrainSheet train={panel.train} onClose={pop} />
       case 'lines':
@@ -486,23 +519,26 @@ export function App() {
           pathInNetwork={!!lineData.line && (railModes.includes(lineData.line.mode) || (busShapes() && lineData.line.mode === 'bus'))}
         />
       </Suspense>
-      {status && <StatusBand lines={status.lines} />}
-      {/* The legend shares the top slot with the tracking banner, notices and the pick hint: it waits for them. */}
-      {(railCount > 0 || vehicles.length > 0) && !(tracking && track) && !picking && !cityPrompt && !dataMissing && (
-        <div className="legend" aria-label={t('legend')}>
-          {vehicles.length > 0 && (
-            <span className="legend-live">
-              <i className="dot live" /> {t('live')}
-            </span>
-          )}
-          {/* Native: the scheduled item is hidden while a route or the results list is open. */}
-          {railCount > 0 && !shownRoute?.length && (
-            <span>
-              <i className="dot scheduled" /> {t('scheduled')}
-            </span>
-          )}
-        </div>
-      )}
+      {/* The top column (native): the offline and service pills, then the legend. Both pills wait for a trip to end. */}
+      <div className="top-stack">
+        {offline && !tracking && <StatusPill tone="neutral" text={t('offline')} onPress={() => setOffline(false)} />}
+        {status && !tracking && <StatusBand status={status} onOpen={() => push({ kind: 'status' })} />}
+        {/* The legend waits for the tracking banner, the pick hint and the data notice (native: the scheduled item is hidden while a route or the results list is open). */}
+        {(railCount > 0 || vehicles.length > 0) && !(tracking && track) && !picking && !dataMissing && (
+          <div className="legend" aria-label={t('legend')}>
+            {vehicles.length > 0 && (
+              <span className="legend-live">
+                <i className="dot live" /> {t('live')}
+              </span>
+            )}
+            {railCount > 0 && !shownRoute?.length && (
+              <span>
+                <i className="dot scheduled" /> {t('scheduled')}
+              </span>
+            )}
+          </div>
+        )}
+      </div>
       <button
         ref={locateRef}
         className="locate"
@@ -515,24 +551,7 @@ export function App() {
         <Icon name="navigate" size={22} />
       </button>
       {tracking && track && <TrackingBanner it={tracking} state={track} onStop={() => setTracking(null)} />}
-      {!picking && cityPrompt && (
-        <div className="notice" role="status">
-          <span>{t('pickCity')}</span>
-          <div className="notice-actions">
-            {CITY_IDS.map((id) => (
-              <button key={id} className="link" onClick={() => switchCity(id)}>
-                {cityName(id)}
-              </button>
-            ))}
-            {choosingCity && (
-              <button className="link quiet" onClick={() => setChoosingCity(false)}>
-                {t('close')}
-              </button>
-            )}
-          </div>
-        </div>
-      )}
-      {!picking && !cityPrompt && dataMissing && (
+      {!picking && dataMissing && (
         <div className="notice" role="status">
           <span>{t('cityDataMissing')}</span>
         </div>
@@ -544,7 +563,9 @@ export function App() {
         </button>
       )}
       <BottomSheet ref={sheet} label={t('whereTo')} contentKey={panelKey} defaultSnap={defaultSnapOf(panel)} peek={content} onVisible={onSheetVisible}>
-        {lineId && <LineStops {...lineData} dir={lineDir} onDir={setLineDirection} onClose={pop} />}
+        {lineId && (
+          <LineStops key={`${lineId}:${lineDir}`} {...lineData} dir={lineDir} status={status} onDir={setLineDirection} onClose={pop} />
+        )}
       </BottomSheet>
     </>
   )

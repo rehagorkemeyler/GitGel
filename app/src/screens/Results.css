@@ -1,60 +1,115 @@
+/* Trip ends (native Results): a fill card of two rows, 16 px radius, with the close and swap buttons beside it. */
 .trip-ends {
   display: flex;
-  align-items: flex-start;
+  align-items: stretch;
   gap: var(--s-2);
 }
 
 .ends {
   flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
-  border-radius: var(--r-btn);
+  border-radius: 16px;
   background: var(--fill);
   overflow: hidden;
 }
 
 .end {
+  min-height: 48px;
   display: flex;
   align-items: center;
   gap: var(--s-3);
   padding: 0 var(--s-4);
   text-align: left;
+  min-width: 0;
+}
+
+/* Native separator: a hairline from 22 px in, between the two ends (the dots keep their 16 px inset). */
+.end {
+  position: relative;
+}
+
+.end + .end::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 22px;
+  right: 0;
+  height: 1px;
+  background: var(--hairline);
+}
+
+.end-name {
+  flex: 1;
+  min-width: 0;
   overflow: hidden;
-  white-space: nowrap;
   text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 16.5px;
+  font-weight: var(--fw-bold);
+  letter-spacing: -0.2px;
 }
 
-.end + .end {
-  border-top: 1px solid var(--hairline);
-}
-
-.end .placeholder {
+.end-name.placeholder {
   color: var(--text-2);
 }
 
+/* Native end dots: 10 px, solid. Origin is the accent, destination red (native #ff3b30). */
 .end-dot {
   width: 10px;
   height: 10px;
   flex: none;
   border-radius: 50%;
-  border: 2px solid var(--accent);
+}
+
+.end-dot.from {
+  background: var(--accent);
 }
 
 .end-dot.to {
-  background: var(--accent);
+  background: #ff3b30;
+}
+
+.trip-side {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 6px 0;
+}
+
+/* Native round buttons: 36 px, fill background, with an 8 px larger touch area. */
+.round-btn {
+  position: relative;
+  flex: none;
+  width: 36px;
+  height: 36px;
+  min-height: 36px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--fill);
+  color: var(--text-2);
+}
+
+.round-btn:last-child {
+  color: var(--text);
+}
+
+.round-btn::before {
+  content: '';
+  position: absolute;
+  inset: -8px;
+}
+
+.swap-icon {
+  display: inline-flex;
+  transform: rotate(90deg);
 }
 
 .pad {
   padding: var(--s-4) 0;
   margin: 0;
-}
-
-.retry {
-  padding: 0 var(--s-4);
-  border-radius: var(--r-btn);
-  background: var(--accent);
-  color: var(--accent-text);
-  font-weight: var(--fw-bold);
 }
 
 .options {
@@ -66,93 +121,64 @@
   gap: var(--s-2);
 }
 
+/* Native option card: fill background, no border, 20 px radius, 16 px padding, 8 px gaps. Pressed: scale 0.97. */
 .option {
   width: 100%;
   display: flex;
   flex-direction: column;
   gap: var(--s-2);
-  padding: var(--s-3) var(--s-4);
+  padding: var(--s-4);
   border-radius: var(--r-card);
-  border: 1px solid var(--hairline);
-  background: var(--fill); /* native option card: translucent fill over the glass */
+  background: var(--fill);
   text-align: left;
 }
 
-.option:active {
-  opacity: 0.6;
+@media (prefers-reduced-motion: no-preference) {
+  .option {
+    transition: transform 150ms ease-out;
+  }
+  .option:active {
+    transform: scale(0.97);
+  }
 }
 
 .option-top {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
+  gap: var(--s-2);
 }
 
+/* Native big number: 34 px bold, tight tracking, tabular; the unit is heading weight, secondary. */
 .option-min {
-  font-size: var(--fs-l);
+  font-size: 34px;
+  line-height: 40px;
   font-weight: var(--fw-bold);
+  letter-spacing: -1px;
+  font-variant-numeric: tabular-nums;
 }
 
-.option-min small,
-.option-time,
-.option-meta,
-.option-next {
-  font-size: var(--fs-s);
-  font-weight: var(--fw-regular);
+.option-min small {
+  font-size: 16.5px;
+  font-weight: var(--fw-bold);
+  letter-spacing: -0.2px;
   color: var(--text-2);
 }
 
-.option-rides {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--s-1);
-}
-
-.ride {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--s-1);
-}
-
-.ride-sep {
+.option-time {
+  font-size: 13.5px;
   color: var(--text-2);
+  font-variant-numeric: tabular-nums;
 }
 
 .option-meta {
-  display: flex;
-  gap: var(--s-3);
-  align-items: center;
-}
-
-.option-meta svg {
-  vertical-align: -2px;
-}
-
-.tag {
-  margin-left: auto;
-  padding: 0 var(--s-2);
-  border-radius: 7px;
-  border: 1px solid var(--hairline);
-}
-
-.tag.live {
-  color: var(--live);
-  border-color: var(--live);
+  font-size: 13.5px;
+  line-height: 18px;
+  color: var(--text-2);
 }
 
 .when-row {
   display: flex;
   flex-direction: column;
   margin-top: var(--s-3);
-}
-
-.option-slower {
-  font-size: var(--fs-s);
-  color: var(--text-2);
-}
-
-.option-top .option-slower {
-  margin-left: var(--s-2);
-  margin-right: auto;
 }

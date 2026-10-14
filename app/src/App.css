@@ -100,14 +100,28 @@
   user-select: none;
 }
 
-/* Native Legend: a glass chip centred at the top of the map, under the status pill. It tells live
-   dots (filled, green) from scheduled ones (hollow). */
-.legend {
+/* Native top column: the offline and service pills, then the legend, centred, 8 px under the safe area.
+   The column itself takes no taps; its children do. */
+.top-stack {
   position: fixed;
-  top: calc(var(--s-3) + 36px + var(--s-2) + env(safe-area-inset-top));
-  left: 0;
-  right: 0;
-  margin: 0 auto;
+  top: calc(var(--s-2) + env(safe-area-inset-top));
+  left: var(--s-4);
+  right: var(--s-4);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s-2);
+  pointer-events: none;
+  z-index: 6;
+}
+
+.top-stack > * {
+  pointer-events: auto;
+}
+
+/* Native Legend: a glass chip centred at the top of the map, under the status pill. It tells live
+   dots (filled, green) from scheduled ones (hollow). It sits in the top column. */
+.legend {
   width: max-content;
   display: flex;
   gap: var(--s-3);
@@ -159,14 +173,6 @@
   flex-direction: column;
   align-items: flex-start;
   gap: var(--s-1);
-}
-.notice-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--s-4);
-}
-.notice .quiet {
-  color: var(--text-2);
 }
 
 /* Native sectionLabel: 13px bold, uppercase, letter-spacing 0.6. Used by every section head. */

@@ -30,6 +30,23 @@ export function loadJson<T>(name: string): Promise<T> {
   return p
 }
 
+/**
+ * Is the network reachable? Native latestBuild: meta.json with an 8 s timeout. A unique URL has no
+ * cache entry, so the service worker has to go to the network for it; a cached copy cannot answer.
+ */
+export async function networkUp(timeoutMs = 8000): Promise<boolean> {
+  const ctrl = new AbortController()
+  const timer = setTimeout(() => ctrl.abort(), timeoutMs)
+  try {
+    const r = await fetch(`${DATA_BASE}${CITY.dataDir}meta.json?probe=${Date.now()}`, { cache: 'no-store', signal: ctrl.signal })
+    return r.ok
+  } catch {
+    return false
+  } finally {
+    clearTimeout(timer)
+  }
+}
+
 export const loadSearchIndex = () => loadJson<IndexRow[]>('search.json')
 export const loadLines = () => loadJson<Line[]>('lines.json')
 export const loadStops = () => loadJson<StopRow[]>('stops.json')

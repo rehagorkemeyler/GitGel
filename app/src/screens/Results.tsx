@@ -1,15 +1,18 @@
 import { CITY } from '../lib/city'
 import { useEffect, useState } from 'react'
+import { Button } from '../components/Button'
+import { DepartureLine, ProblemLine } from '../components/DepartureLine'
 import { Icon } from '../components/Icon'
-import { CloseButton } from '../components/PanelHeader'
-import { LineChip } from '../components/LineChip'
+import { RouteChain } from '../components/RouteChain'
+import { Skeleton } from '../components/Skeleton'
+import { WhenPicker } from '../components/WhenPicker'
 import { plan, type Itinerary } from '../lib/api'
 import { hhmm, pickOptions, summarize } from '../lib/itinerary'
+import { chain } from '../lib/route'
 import type { Place } from '../lib/search'
-import { t } from '../i18n'
-import { WhenPicker } from '../components/WhenPicker'
+import { problemsOf } from '../lib/status'
 import type { When } from '../lib/when'
-import { Skeleton } from '../components/Skeleton'
+import { t } from '../i18n'
 import './Results.css'
 
 type Props = {
@@ -17,15 +20,19 @@ type Props = {
   to: Place
   onEditFrom: () => void
   onEditTo: () => void
+  /** Swaps origin and destination (native onSwap). */
+  onSwap: () => void
   onClose: () => void
   onOpen: (it: Itinerary) => void
   /** The options on screen, fastest first (drawn on the map). */
   onOptions?: (its: Itinerary[] | null) => void
+  /** Short names of lines with a reported service problem. */
+  problemLines: string[]
 }
 
 type State = { key: string } & ({ status: 'loading' } | { status: 'error' } | { status: 'ok'; options: Itinerary[] })
 
-export function Results({ from, to, onEditFrom, onEditTo, onClose, onOpen, onOptions }: Props) {
+export function Results({ from, to, onEditFrom, onEditTo, onSwap, onClose, onOpen, onOptions, problemLines }: Props) {
   const [attempt, setAttempt] = useState(0)
   const [when, setWhen] = useState<When>({ kind: 'now' })
   const whenKey = when.kind === 'now' ? 'now' : `${when.kind}@${when.at.getTime()}`
@@ -58,14 +65,23 @@ export function Results({ from, to, onEditFrom, onEditTo, onClose, onOpen, onOpt
         <div className="ends">
           <button className="end" onClick={onEditFrom}>
             <span className="end-dot from" aria-hidden />
-            <span className={from ? '' : 'placeholder'}>{from ? from.name : t('from')}</span>
+            <span className={from ? 'end-name' : 'end-name placeholder'}>{from ? from.name : t('from')}</span>
           </button>
           <button className="end" onClick={onEditTo}>
             <span className="end-dot to" aria-hidden />
-            <span>{to.name}</span>
+            <span className="end-name">{to.name}</span>
           </button>
         </div>
-        <CloseButton onClose={onClose} />
+        <div className="trip-side">
+          <button className="round-btn" onClick={onClose} aria-label={t('close')}>
+            <Icon name="close" size={18} />
+          </button>
+          <button className="round-btn" onClick={onSwap} aria-label={t('swap')}>
+            <span className="swap-icon">
+              <Icon name="route" size={18} />
+            </span>
+          </button>
+        </div>
       </div>
 
       <div className="when-row">
@@ -81,9 +97,7 @@ export function Results({ from, to, onEditFrom, onEditTo, onClose, onOpen, onOpt
       {from && state.status === 'error' && (
         <div className="pad">
           <p aria-live="polite" className="state-msg">{t('routingUnavailable')}</p>
-          <button className="retry" onClick={() => setAttempt((a) => a + 1)}>
-            {t('retry')}
-          </button>
+          <Button label={t('retry')} onClick={() => setAttempt((a) => a + 1)} />
         </div>
       )}
       {from && state.status === 'ok' && state.options.length === 0 && <p aria-live="polite" className="state-msg">{t('noRoute')}</p>}
@@ -91,7 +105,12 @@ export function Results({ from, to, onEditFrom, onEditTo, onClose, onOpen, onOpt
         <ul className="options">
           {state.options.map((it, i) => (
             <li key={it.startTime + it.endTime + it.legs.length}>
-              <OptionCard it={it} slower={i > 0 ? Math.round((it.duration - state.options[0].duration) / 60) : 0} onOpen={() => onOpen(it)} />
+              <OptionCard
+                it={it}
+                slower={i > 0 ? Math.round((it.duration - state.options[0].duration) / 60) : 0}
+                problems={problemsOf(it, problemLines)}
+                onOpen={() => onOpen(it)}
+              />
             </li>
           ))}
         </ul>
@@ -100,43 +119,25 @@ export function Results({ from, to, onEditFrom, onEditTo, onClose, onOpen, onOpt
   )
 }
 
-function OptionCard({ it, slower, onOpen }: { it: Itinerary; slower: number; onOpen: () => void }) {
+/** One option (native Results OptionCard): minutes and arrival, the chain, transfers, then the next ride or the notice. */
+function OptionCard({ it, slower, problems, onOpen }: { it: Itinerary; slower: number; problems: string[]; onOpen: () => void }) {
   const s = summarize(it)
-  const live = it.legs.some((l) => l.realTime)
   return (
     <button className="option" onClick={onOpen}>
       <div className="option-top">
         <span className="option-min">
           {s.minutes} <small>{t('min')}</small>
         </span>
-        {slower > 0 && <span className="option-slower">{`${slower} ${t('min')} ${t('slower')}`}</span>}
         <span className="option-time">
-          {hhmm(s.start)} – {hhmm(s.end)}
+          {t('arrival')} {hhmm(s.end)}
         </span>
       </div>
-      <div className="option-rides">
-        {s.rides.map((r, i) => (
-          <span key={i} className="ride">
-            {i > 0 && <span className="ride-sep" aria-hidden>›</span>}
-            <LineChip name={r.name} color={r.color} textColor={r.textColor} />
-          </span>
-        ))}
-      </div>
+      <RouteChain items={chain(it)} />
       <div className="option-meta">
-        <span>{s.transfers === 0 ? t('noTransfer') : `${s.transfers} ${t('transfers')}`}</span>
-        <span>
-          <Icon name="walk" size={14} /> {s.walkMinutes} {t('min')}
-        </span>
-        <span className={live ? 'tag live' : 'tag'}>
-          {live && <span className="live-icon" aria-hidden><Icon name="signal" size={12} /></span>}
-          {live ? t('live') : t('scheduled')}
-        </span>
+        {s.transfers === 0 ? t('noTransfer') : `${s.transfers} ${t(s.transfers === 1 ? 'transfer' : 'transfers')}`}
+        {slower > 0 && ` · ${slower} ${t('min')} ${t('slower')}`}
       </div>
-      {s.firstDeparture && (
-        <div className="option-next">
-          {hhmm(s.firstDeparture.time)} · {s.firstDeparture.stop}
-        </div>
-      )}
+      {problems.length ? <ProblemLine lines={problems} /> : <DepartureLine it={it} />}
     </button>
   )
 }

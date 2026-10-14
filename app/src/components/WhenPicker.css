@@ -1,46 +1,46 @@
+/* Native WhenPicker: three 34 px pills in a row. The selected pill inverts (fill = text colour). */
+.when-row-chips {
+  display: flex;
+  gap: var(--s-2);
+}
+
 .when-chip {
-  align-self: flex-start;
-  min-height: 36px;
-  padding: 0 var(--s-3);
-  border-radius: 18px;
+  flex: 0 1 auto;
+  min-width: 0;
+  min-height: 34px;
+  height: 34px;
+  padding: 0 14px;
+  border-radius: 17px;
   background: var(--fill);
+  color: var(--text);
   font-size: var(--fs-s);
   font-weight: var(--fw-bold);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.when-panel {
-  display: flex;
-  flex-direction: column;
-  gap: var(--s-2);
-  padding: var(--s-3);
-  border-radius: var(--r-card);
-  border: 1px solid var(--hairline);
+.when-chip.on {
+  background: var(--text);
+  color: var(--bg);
 }
 
-.when-panel .segmented {
-  margin: 0;
-}
-
+/* Shown under the chips when Kalkış or Varış is picked: a date and a time, applied on change. */
 .when-fields {
   display: grid;
   grid-template-columns: 3fr 2fr;
   gap: var(--s-2);
+  margin-top: var(--s-2);
 }
 
 .when-fields select,
 .when-fields input {
-  min-height: var(--touch);
+  min-height: 40px;
   padding: 0 var(--s-3);
   border-radius: var(--r-btn);
   border: 1px solid var(--hairline);
   background: var(--fill);
   color: var(--text);
   font: inherit;
-}
-
-.when-done {
-  border-radius: var(--r-btn);
-  background: var(--accent);
-  color: var(--accent-text);
-  font-weight: var(--fw-bold);
 }
