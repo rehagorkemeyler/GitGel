@@ -6,6 +6,8 @@ import { SNAP } from './sheet'
 
 export type Panel = (
   | { kind: 'home' }
+  | { kind: 'status' }
+  | { kind: 'city' }
   | { kind: 'search'; which: 'to' | 'from' }
   | { kind: 'results' }
   | { kind: 'route'; it: Itinerary }

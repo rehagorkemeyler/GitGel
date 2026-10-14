@@ -1,14 +1,19 @@
+/* Native StopCode: a 26 px box, 8 px side padding, 8 px radius, fill background, hairline border,
+   chip type (13 px semibold) in the secondary colour. */
 .stop-code {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
   flex-shrink: 0;
+  height: 26px;
   margin-left: var(--s-2);
-  padding: 0 6px;
+  padding: 0 var(--s-2);
   border: 1px solid var(--hairline);
   border-radius: var(--r-sm);
+  background: var(--fill);
   font-size: var(--fs-s);
-  font-weight: normal;
+  font-weight: var(--fw-bold);
   font-variant-numeric: tabular-nums;
   color: var(--text-2);
   vertical-align: middle;
-  line-height: 1.5;
+  line-height: 1;
 }

@@ -64,13 +64,6 @@
   font-weight: var(--fw-regular);
 }
 
-.line-head {
-  display: flex;
-  align-items: center;
-  gap: var(--s-2);
-  margin-bottom: var(--s-3);
-}
-
 .segmented {
   display: flex;
   gap: var(--s-1);
@@ -97,81 +90,188 @@
   box-shadow: var(--shadow);
 }
 
+/* Line page (native LineSheet): one column, 16 px apart. */
+.line-sheet {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+}
+
+.line-sheet .segmented {
+  margin: 0;
+}
+
+/* Native notice on the warning background: 14 px radius, 12 px padding, 13.5 px. */
+.line-notice {
+  padding: var(--s-3);
+  border-radius: 14px;
+  background: var(--warning-bg);
+  color: var(--warning-text);
+  font-size: 13.5px;
+  line-height: 18px;
+}
+
+/* Native first and last trips: a fill card (20 px radius, 8 px padding). Today is a filled row with heading weight. */
+.first-last-card {
+  padding: var(--s-2);
+  border-radius: var(--r-card);
+  background: var(--fill);
+}
+
 .first-last {
   width: 100%;
-  border-collapse: collapse;
-  font-size: var(--fs-s);
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: var(--fs-m);
 }
 
 .first-last th,
 .first-last td {
+  height: 36px;
+  padding: 0 var(--s-2);
   text-align: left;
-  padding: var(--s-1) 0;
+  font-weight: var(--fw-regular);
+  white-space: nowrap;
+}
+
+.first-last thead th {
+  font-size: 13.5px;
+  color: var(--text-2);
 }
 
 .first-last td {
-  font-weight: var(--fw-bold);
-  font-size: var(--fs-m);
-}
-
-.line-stops {
-  margin: var(--s-3) 0 0;
-  padding: 0 0 0 var(--s-4);
-  border-left: 4px solid;
-  list-style: none;
-}
-
-.line-stops li {
-  padding: var(--s-2) 0;
-  border-bottom: 1px solid var(--hairline);
-}
-
-.line-sheet .line-head {
-  margin-bottom: var(--s-3);
-}
-
-.line-long {
-  flex: 1;
-  min-width: 0;
-  font-weight: var(--fw-bold);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
 }
 
 .first-last tr.today th,
 .first-last tr.today td {
-  color: var(--accent);
+  background: var(--fill);
+  font-size: 16.5px;
+  font-weight: var(--fw-bold);
+  letter-spacing: -0.2px;
+}
+
+.first-last tr.today th:first-child {
+  border-radius: 12px 0 0 12px;
+}
+
+.first-last tr.today td:last-child {
+  border-radius: 0 12px 12px 0;
+}
+
+.schedule-note,
+.pull-hint {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 18px;
+  color: var(--text-2);
 }
 
 .pull-hint {
-  margin: var(--s-2) 0 0;
-  font-size: var(--fs-s);
   text-align: center;
 }
 
-.stop-row {
-  width: 100%;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: var(--s-2);
-  text-align: left;
+/* Native stop rows: a rail (4 px bar in the line colour, first from the middle, last to the middle) with a
+   12 px ring node (3 px line-coloured border, white inside). No separators. */
+.line-stops {
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
 .line-stops li {
   padding: 0;
 }
 
+.stop-row {
+  width: 100%;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  padding: 0;
+  text-align: left;
+}
+
+.stop-rail {
+  position: relative;
+  flex: none;
+  align-self: stretch;
+  width: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.stop-bar {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 4px;
+  transform: translateX(-50%);
+  background: var(--line);
+}
+
+.stop-bar.first {
+  top: 50%;
+}
+
+.stop-bar.last {
+  bottom: 50%;
+}
+
+.stop-node {
+  position: relative;
+  width: 12px;
+  height: 12px;
+  box-sizing: border-box;
+  border-radius: 50%;
+  border: 3px solid var(--line);
+  background: #ffffff;
+}
+
+.stop-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--fs-m);
+  font-weight: var(--fw-regular);
+}
+
+.stop-name.end {
+  font-size: 16.5px;
+  font-weight: var(--fw-bold);
+  letter-spacing: -0.2px;
+}
+
+.stop-offset {
+  flex: none;
+  font-size: 13.5px;
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Native arrivals: indented to the stop name (28 px), chips 26 px high with 7 px radius. */
 .arrivals {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--s-1);
-  padding: 0 0 var(--s-3);
+  gap: 6px;
   margin: 0;
+  padding: 0 0 var(--s-3) 28px;
 }
 
 .arrival-time {
-  padding: var(--s-1) var(--s-2);
+  display: inline-flex;
+  align-items: center;
+  height: 26px;
+  padding: 0 var(--s-2);
   border-radius: 7px;
   background: var(--fill);
   font-size: var(--fs-s);
+  font-weight: var(--fw-bold);
   font-variant-numeric: tabular-nums;
 }

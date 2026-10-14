@@ -1,0 +1,38 @@
+/* Native CityPanel: one grouped card of radio rows, 56 px high, hairline between rows, check on the current city. */
+.city-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+}
+
+.city-group {
+  padding: 0 var(--s-4);
+  border-radius: var(--r-card);
+  background: var(--fill);
+}
+
+.city-row {
+  width: 100%;
+  min-height: 56px;
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  text-align: left;
+}
+
+.city-row.sep {
+  border-top: 1px solid var(--hairline);
+}
+
+.city-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 16.5px;
+  font-weight: var(--fw-bold);
+  letter-spacing: -0.2px;
+}
+
+.city-check {
+  display: inline-flex;
+  color: var(--accent);
+}

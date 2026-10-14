@@ -1,0 +1,39 @@
+/* Native DepartureLine: 13.5 px, one line; live is bold green, scheduled is secondary with a tag on the right. */
+.dep-line {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  font-size: 13.5px;
+  line-height: 18px;
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.dep-line.live {
+  color: var(--live);
+  font-weight: var(--fw-bold);
+}
+
+.dep-line-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dep-line-tag {
+  flex: none;
+  color: var(--text-2);
+}
+
+/* Native ProblemLine: warning background, 10 px radius, 12 px by 6 px padding, warning text. */
+.problem-line {
+  padding: 6px 12px;
+  border-radius: 10px;
+  background: var(--warning-bg);
+  color: var(--warning-text);
+  font-size: 13.5px;
+  line-height: 18px;
+}
