@@ -23,6 +23,8 @@
   --fw-bold: 600;
 
   --touch: 44px;
+  /* Native roundButton: the locate button, a circle. */
+  --round-button: 48px;
 
   --ease-spring: cubic-bezier(0.32, 0.72, 0, 1);
   /* Sheet move: a spring-like curve with about 2.5% overshoot, close to native's damping 20 / stiffness 180 spring. */

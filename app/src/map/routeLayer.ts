@@ -1,8 +1,9 @@
 import type * as GeoJSON from 'geojson'
-import type { GeoJSONSource, LngLatBoundsLike, Map as MlMap } from 'maplibre-gl'
+import type { GeoJSONSource, Map as MlMap } from 'maplibre-gl'
 import type { Itinerary } from '../lib/api'
 import { decodePolyline } from '../lib/polyline'
 import { ACCENT } from '../lib/colors'
+import { fitCoords } from '../lib/camera'
 
 const SRC = 'route'
 
@@ -47,8 +48,9 @@ function legFeatures(it: Itinerary, rank: number): GeoJSON.Feature[] {
 /**
  * Draw (or clear) itineraries: the first in its line colours, the others grey and
  * see-through (route results), or just the opened one. Safe to call again after a style change.
+ * The camera is not moved here: see fitRoute.
  */
-export function showRoute(map: MlMap, its: Itinerary[], bottomPadding: number): void {
+export function showRoute(map: MlMap, its: Itinerary[]): void {
   const data = toGeoJSON(its)
   const src = map.getSource(SRC) as GeoJSONSource | undefined
   if (src) {
@@ -89,15 +91,17 @@ export function showRoute(map: MlMap, its: Itinerary[], bottomPadding: number): 
       },
     })
   }
-  if (!its.length) return
-  let minX = 180, minY = 90, maxX = -180, maxY = -90
-  for (const f of data.features) {
-    const cs = f.geometry.type === 'LineString' ? f.geometry.coordinates : [(f.geometry as GeoJSON.Point).coordinates]
-    for (const [x, y] of cs) {
-      minX = Math.min(minX, x); minY = Math.min(minY, y); maxX = Math.max(maxX, x); maxY = Math.max(maxY, y)
-    }
+}
+
+/**
+ * Frames the options (or the opened route) above the sheet. Native fits 450 ms after the change,
+ * once the sheet has settled: the caller schedules it. `bottomInset` is the map's bottom padding.
+ */
+export function fitRoute(map: MlMap, its: Itinerary[], bottomInset: number): void {
+  const coords: [number, number][] = []
+  for (const f of toGeoJSON(its).features) {
+    if (f.geometry.type === 'LineString') coords.push(...(f.geometry.coordinates as [number, number][]))
+    else coords.push((f.geometry as GeoJSON.Point).coordinates as [number, number])
   }
-  const bounds: LngLatBoundsLike = [[minX, minY], [maxX, maxY]]
-  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches
-  map.fitBounds(bounds, { padding: { top: 48, left: 32, right: 32, bottom: bottomPadding + 32 }, duration: reduce ? 0 : 400, maxZoom: 16 })
+  fitCoords(map, coords, bottomInset)
 }

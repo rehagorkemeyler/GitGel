@@ -6,6 +6,26 @@ export type GeoState = {
   status: 'idle' | 'asking' | 'ok' | 'denied' | 'unavailable'
 }
 
+/** A position fix: [lon, lat] and its time in ms. */
+export type Fix = { lon: number; lat: number; t: number }
+
+/** Native watchPositionAsync: a new fix counts after the phone moved this far... */
+export const FIX_METRES = 15
+/** ...or after this long, whichever comes first (native timeInterval 5000). */
+export const FIX_MS = 5000
+
+/**
+ * True when `next` should replace `last`: the first fix, a fix 15 m from the last accepted one, or
+ * one 5 s after it. Fewer updates keep the dot and the route origin steadier (native useLocation).
+ */
+export function isNewFix(last: Fix | null, next: Fix, metres = FIX_METRES, ms = FIX_MS): boolean {
+  if (!last) return true
+  if (next.t - last.t >= ms) return true
+  const dLat = (next.lat - last.lat) * 111_320
+  const dLon = (next.lon - last.lon) * 111_320 * Math.cos((next.lat * Math.PI) / 180)
+  return Math.hypot(dLat, dLon) >= metres
+}
+
 /**
  * Location stays on the phone. We never ask on page load (no popups the user
  * did not open): if permission was already granted we start watching,
@@ -14,6 +34,7 @@ export type GeoState = {
 export function useGeolocation() {
   const [state, setState] = useState<GeoState>({ position: null, status: 'idle' })
   const watch = useRef<number | null>(null)
+  const lastFix = useRef<Fix | null>(null)
 
   const start = useCallback(() => {
     if (!('geolocation' in navigator)) {
@@ -23,7 +44,12 @@ export function useGeolocation() {
     if (watch.current !== null) return
     setState((s) => ({ ...s, status: s.position ? 'ok' : 'asking' }))
     watch.current = navigator.geolocation.watchPosition(
-      (p) => setState({ position: [p.coords.longitude, p.coords.latitude], status: 'ok' }),
+      (p) => {
+        const fix: Fix = { lon: p.coords.longitude, lat: p.coords.latitude, t: p.timestamp }
+        if (!isNewFix(lastFix.current, fix)) return
+        lastFix.current = fix
+        setState({ position: [fix.lon, fix.lat], status: 'ok' })
+      },
       (e) => {
         if (watch.current !== null) navigator.geolocation.clearWatch(watch.current)
         watch.current = null
@@ -45,10 +71,7 @@ export function useGeolocation() {
     }
   }, [start])
 
-  // Test location (for testers outside Istanbul). Lives until the page reloads.
-  const [override, setOverride] = useState<[number, number] | null>(null)
-  if (override) return { position: override, status: 'ok' as const, start, setOverride, isOverride: true }
-  return { ...state, start, setOverride, isOverride: false }
+  return { ...state, start }
 }
 
 /** Same position until it moves more than `metres`: stops GPS jitter from re-running searches. */

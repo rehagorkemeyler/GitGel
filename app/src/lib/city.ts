@@ -89,6 +89,18 @@ export const CITY: City = CITIES[saved() ?? 'istanbul']
 /** False until the user has picked a city on this device. */
 export const CITY_CHOSEN: boolean = saved() !== null
 
+/**
+ * Remember the city without reloading: on first launch, when the phone is in a city already shown
+ * (native setCity). The next load starts there.
+ */
+export function rememberCity(id: CityId): void {
+  try {
+    localStorage.setItem(KEY, id)
+  } catch {
+    // Private mode: the choice is asked again on the next launch.
+  }
+}
+
 /** Remember the choice and reload into it. */
 export function switchCity(id: CityId) {
   try {

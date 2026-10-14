@@ -8,18 +8,28 @@ import { baseStyle, blankStyle } from './baseStyle'
 import { useColorScheme } from '../lib/useColorScheme'
 import { inCity } from '../lib/useGeolocation'
 import type { Itinerary } from '../lib/api'
-import { showRoute } from './routeLayer'
+import type { Place } from '../lib/search'
+import { showRoute, fitRoute } from './routeLayer'
 import { LiveLayer } from './liveLayer'
 import { RailLayer, type TrainInfo } from './railLayer'
 import { NetworkLayer, type Station } from './networkLayer'
-import { showLineView } from './lineViewLayer'
+import { showLineView, fitLineView } from './lineViewLayer'
 import type { LineView } from '../lib/lineDetail'
 import type { Vehicle } from '../lib/live'
 import { t } from '../i18n'
+import { FIRST_FIX_ZOOM, FIT_DELAY_MS, LOCATE_ZOOM, cameraMs, startZoom } from '../lib/camera'
 import './MapView.css'
 
 // Vite bundles MapLibre's module worker separately; tell MapLibre where it is.
 maplibregl.setWorkerUrl(workerUrl)
+
+/** Native long press: a still press of this length picks the point under the finger. */
+const LONG_PRESS_MS = 500
+/** A finger that moves this far (px) is panning, not pressing. */
+const LONG_PRESS_SLOP = 10
+/** Native destination pin: red (#ff3b30), tip at the point. */
+const DEST_PIN =
+  '<svg width="28" height="36" viewBox="0 0 28 36" aria-hidden="true" focusable="false"><path d="M14 0C6.3 0 0 6.3 0 14c0 9.6 14 22 14 22s14-12.4 14-22C28 6.3 21.7 0 14 0Z" fill="#ff3b30"/><circle cx="14" cy="14" r="5" fill="#ffffff"/></svg>'
 
 type Props = {
   /** User position [lon, lat], when known. */
@@ -49,6 +59,12 @@ type Props = {
   /** Opened line page: path and stops. `pathInNetwork` = the base layer already draws its track. */
   lineView?: LineView | null
   pathInNetwork?: boolean
+  /** The destination: a red pin while no route is drawn yet. */
+  destination?: Place | null
+  /** Bumped by "locate me": the camera flies to the position (or to the first fix that arrives). */
+  recenter?: number
+  /** Long press on the map (native onLongPress): the point under the finger. */
+  onLongPress?: (p: { lat: number; lon: number }) => void
   onReady?: (map: MlMap) => void
 }
 
@@ -57,10 +73,77 @@ function routesOf(route: Itinerary | null, alternatives: Itinerary[] | null): It
   return route ? [route] : (alternatives ?? [])
 }
 
-export function MapView({ position, route = null, alternatives = null, bottomInset = 0, vehicles, hiddenLines, onRailCount, onStation, onTrain, onVehicle, focusLine = null, focusLines = null, lineView = null, pathInNetwork = false, onReady }: Props) {
+/**
+ * Long press on the map: a still press of LONG_PRESS_MS calls `fire` with the point under the
+ * finger. Moving, a second finger, a camera move or a control press cancels it. Returns the cleanup.
+ */
+function watchLongPress(m: MlMap, el: HTMLElement, fire: (lat: number, lon: number) => void): () => void {
+  let timer: ReturnType<typeof setTimeout> | null = null
+  let start = { x: 0, y: 0 }
+  let pointers = 0
+  const cancel = () => {
+    if (timer !== null) clearTimeout(timer)
+    timer = null
+  }
+  const down = (e: PointerEvent) => {
+    pointers++
+    cancel()
+    if (pointers > 1 || e.button !== 0) return
+    if ((e.target as Element | null)?.closest?.('.maplibregl-ctrl')) return
+    start = { x: e.clientX, y: e.clientY }
+    const box = el.getBoundingClientRect()
+    timer = setTimeout(() => {
+      timer = null
+      const ll = m.unproject([start.x - box.left, start.y - box.top])
+      fire(ll.lat, ll.lng)
+    }, LONG_PRESS_MS)
+  }
+  const move = (e: PointerEvent) => {
+    if (timer !== null && Math.hypot(e.clientX - start.x, e.clientY - start.y) > LONG_PRESS_SLOP) cancel()
+  }
+  const up = () => {
+    pointers = Math.max(0, pointers - 1)
+    cancel()
+  }
+  el.addEventListener('pointerdown', down)
+  el.addEventListener('pointermove', move)
+  el.addEventListener('pointerup', up)
+  el.addEventListener('pointercancel', up)
+  m.on('movestart', cancel)
+  return () => {
+    cancel()
+    el.removeEventListener('pointerdown', down)
+    el.removeEventListener('pointermove', move)
+    el.removeEventListener('pointerup', up)
+    el.removeEventListener('pointercancel', up)
+    m.off('movestart', cancel)
+  }
+}
+
+export function MapView({
+  position,
+  route = null,
+  alternatives = null,
+  bottomInset = 0,
+  vehicles,
+  hiddenLines,
+  onRailCount,
+  onStation,
+  onTrain,
+  onVehicle,
+  focusLine = null,
+  focusLines = null,
+  lineView = null,
+  pathInNetwork = false,
+  destination = null,
+  recenter = 0,
+  onLongPress,
+  onReady,
+}: Props) {
   const container = useRef<HTMLDivElement>(null)
   const map = useRef<MlMap | null>(null)
   const marker = useRef<maplibregl.Marker | null>(null)
+  const destMarker = useRef<maplibregl.Marker | null>(null)
   const scheme = useColorScheme()
   const routeRef = useRef<Itinerary | null>(null)
   const altRef = useRef<Itinerary[] | null>(null)
@@ -78,22 +161,27 @@ export function MapView({ position, route = null, alternatives = null, bottomIns
   schemeRef.current = scheme
   const onVehicleRef = useRef(onVehicle)
   onVehicleRef.current = onVehicle
+  const onLongPressRef = useRef(onLongPress)
+  onLongPressRef.current = onLongPress
+  const positionRef = useRef<[number, number] | null>(position ?? null)
+  positionRef.current = position ?? null
+  // A locate press waiting for the first fix, and the first fix of the session (native flewToUser).
+  const locatePending = useRef(false)
+  const flewToUser = useRef(false)
   const insetRef = useRef(0)
   routeRef.current = route
   altRef.current = alternatives
   insetRef.current = bottomInset
 
   useEffect(() => {
-    if (!container.current) return
+    const el = container.current
+    if (!el) return
     const m = new maplibregl.Map({
-      container: container.current,
+      container: el,
       style: blankStyle(scheme),
       center: CITY.center,
-      zoom: 11,
-      maxBounds: [
-        [CITY.bounds[0][0] - 1, CITY.bounds[0][1] - 1],
-        [CITY.bounds[1][0] + 1, CITY.bounds[1][1] + 1],
-      ],
+      // Native's first view: the city centre, at the zoom where its start span fills this width.
+      zoom: startZoom(el.clientWidth),
       attributionControl: { compact: true },
       pitchWithRotate: false,
       dragRotate: false,
@@ -116,11 +204,13 @@ export function MapView({ position, route = null, alternatives = null, bottomIns
       styleReady.current = true
       net.current?.ensure()
       rail.current?.ensure()
-      showRoute(m, routesOf(routeRef.current, altRef.current), insetRef.current)
-      showLineView(m, lineViewRef.current.v, insetRef.current, !lineViewRef.current.inNet)
+      showRoute(m, routesOf(routeRef.current, altRef.current))
+      showLineView(m, lineViewRef.current.v, !lineViewRef.current.inNet)
       live.current?.ensure(schemeRef.current)
     })
+    const stopLongPress = watchLongPress(m, el, (lat, lon) => onLongPressRef.current?.({ lat, lon }))
     return () => {
+      stopLongPress()
       rail.current?.destroy()
       m.remove()
       map.current = null
@@ -145,9 +235,17 @@ export function MapView({ position, route = null, alternatives = null, bottomIns
     }
   }, [scheme])
 
+  // Route options or the opened route: drawn at once, framed 450 ms later (native), once the sheet has settled.
+  // A style still loading draws the routes on 'style.load'; the fit checks the style when it fires.
   useEffect(() => {
     const m = map.current
-    if (m && styleReady.current) showRoute(m, routesOf(route, alternatives), insetRef.current)
+    const its = routesOf(route, alternatives)
+    if (m && styleReady.current) showRoute(m, its)
+    const id = setTimeout(() => {
+      const cur = map.current
+      if (cur && styleReady.current) fitRoute(cur, its, insetRef.current)
+    }, FIT_DELAY_MS)
+    return () => clearTimeout(id)
   }, [route, alternatives])
 
   useEffect(() => {
@@ -160,23 +258,16 @@ export function MapView({ position, route = null, alternatives = null, bottomIns
   }, [focusKey])
 
   const lineViewRef = useRef<{ v: LineView | null; inNet: boolean }>({ v: null, inNet: false })
-  // Camera before a line page opened; restored when it closes.
-  const savedCamera = useRef<{ center: [number, number]; zoom: number } | null>(null)
+  // The open line: drawn at once, framed 450 ms later (native). Closing it leaves the camera where it is.
   useEffect(() => {
-    const prev = lineViewRef.current.v
-    const m0 = map.current
-    if (m0 && lineView && !prev) {
-      const c = m0.getCenter()
-      savedCamera.current = { center: [c.lng, c.lat], zoom: m0.getZoom() }
-    }
-    if (m0 && !lineView && prev && savedCamera.current) {
-      const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches
-      m0.easeTo({ ...savedCamera.current, duration: reduce ? 0 : 500 })
-      savedCamera.current = null
-    }
     lineViewRef.current = { v: lineView, inNet: pathInNetwork }
     const m = map.current
-    if (m && styleReady.current) showLineView(m, lineView, insetRef.current, !pathInNetwork)
+    if (m && styleReady.current) showLineView(m, lineView, !pathInNetwork)
+    const id = setTimeout(() => {
+      const cur = map.current
+      if (cur && styleReady.current) fitLineView(cur, lineView, insetRef.current)
+    }, FIT_DELAY_MS)
+    return () => clearTimeout(id)
   }, [lineView, pathInNetwork])
 
   useEffect(() => {
@@ -189,6 +280,8 @@ export function MapView({ position, route = null, alternatives = null, bottomIns
     live.current?.update(vehicles ?? [])
   }, [vehicles])
 
+  // The user's dot. The first fix of the session flies to the user inside the city (native, zoom 15);
+  // a locate press flies to the fix it asked for (zoom 16), or waits for the first fix.
   useEffect(() => {
     const m = map.current
     if (!m || !position) return
@@ -197,12 +290,48 @@ export function MapView({ position, route = null, alternatives = null, bottomIns
       el.className = 'me-dot'
       el.setAttribute('aria-label', t('myLocation'))
       marker.current = new maplibregl.Marker({ element: el }).setLngLat(position).addTo(m)
-      // Outside Istanbul the map stays on the city (tiles and data end at its edge).
-      if (!routeRef.current && inCity(position)) m.jumpTo({ center: position, zoom: 15 })
     } else {
       marker.current.setLngLat(position)
     }
+    if (locatePending.current) {
+      locatePending.current = false
+      flewToUser.current = true
+      m.easeTo({ center: position, zoom: LOCATE_ZOOM, duration: cameraMs() })
+    } else if (!flewToUser.current && inCity(position)) {
+      flewToUser.current = true
+      m.flyTo({ center: position, zoom: FIRST_FIX_ZOOM, duration: cameraMs() })
+    }
   }, [position])
+
+  // "Locate me" (native onLocate): fly to the position now, or to the first fix that arrives.
+  useEffect(() => {
+    if (!recenter) return
+    const m = map.current
+    if (!m) return
+    const here = positionRef.current
+    if (!here) {
+      locatePending.current = true
+      return
+    }
+    locatePending.current = false
+    flewToUser.current = true
+    m.easeTo({ center: here, zoom: LOCATE_ZOOM, duration: cameraMs() })
+  }, [recenter])
+
+  // The destination pin: native shows it while there is a destination and no route yet.
+  useEffect(() => {
+    destMarker.current?.remove()
+    destMarker.current = null
+    const m = map.current
+    if (!m || !destination) return
+    const el = document.createElement('div')
+    el.className = 'dest-pin'
+    el.innerHTML = DEST_PIN
+    el.setAttribute('aria-label', destination.name)
+    destMarker.current = new maplibregl.Marker({ element: el, anchor: 'bottom' })
+      .setLngLat([destination.lon, destination.lat])
+      .addTo(m)
+  }, [destination])
 
   return <div ref={container} className="map" role="region" aria-label={t('map')} />
 }

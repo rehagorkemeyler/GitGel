@@ -1,11 +1,15 @@
 import type { GeoJSONSource, Map as MlMap } from 'maplibre-gl'
 import type * as GeoJSON from 'geojson'
 import type { LineView } from '../lib/lineDetail'
+import { fitCoords } from '../lib/camera'
 
 const SRC = 'line-view'
 
-/** The opened line: its path (stop to stop) and stops, framed above the sheet. */
-export function showLineView(map: MlMap, view: LineView | null, bottomPadding: number, drawPath: boolean): void {
+/**
+ * The opened line: its path (stop to stop) and stops. The camera is not moved here:
+ * see fitLineView.
+ */
+export function showLineView(map: MlMap, view: LineView | null, drawPath: boolean): void {
   const features: GeoJSON.Feature[] = []
   if (view && view.coords.length) {
     if (drawPath && view.coords.length > 1) {
@@ -34,11 +38,13 @@ export function showLineView(map: MlMap, view: LineView | null, bottomPadding: n
       paint: { 'circle-radius': 4, 'circle-color': '#ffffff', 'circle-stroke-color': ['get', 'color'], 'circle-stroke-width': 2.5 },
     })
   }
-  if (!view || view.coords.length < 1) return
-  let minX = 180, minY = 90, maxX = -180, maxY = -90
-  for (const [x, y] of view.coords) {
-    minX = Math.min(minX, x); minY = Math.min(minY, y); maxX = Math.max(maxX, x); maxY = Math.max(maxY, y)
-  }
-  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches
-  map.fitBounds([[minX, minY], [maxX, maxY]], { padding: { top: 64, left: 32, right: 32, bottom: bottomPadding + 32 }, duration: reduce ? 0 : 500, maxZoom: 15 })
+}
+
+/**
+ * Frames the open line above the sheet, as native does 450 ms after the line or direction changes
+ * (a line needs two stops to be framed). `bottomInset` is the map's bottom padding.
+ */
+export function fitLineView(map: MlMap, view: LineView | null, bottomInset: number): void {
+  if (!view || view.coords.length < 2) return
+  fitCoords(map, view.coords, bottomInset)
 }
