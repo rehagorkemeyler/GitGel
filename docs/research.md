@@ -275,3 +275,11 @@ MOTIS'in adres araması kısaltmaları ("tedü", "mcd"), "sancak 530" gibi mahal
 16. İBB Açık Veri Lisansı: https://data.ibb.gov.tr/license
 17. Marmaray tren saatleri: https://www.tcddtasimacilik.gov.tr/marmaray/tr/gunluk_tren_saatleri
 18. Rayİst, Google Play: https://play.google.com/store/apps/details?id=co.median.android.bnnnywd&hl=tr
+
+## İETT rate limit (found 2026-10-14)
+
+The İBB API gateway (Layer7) rate-limits İETT SOAP calls per source IP. When exceeded, every call returns
+HTTP 500 with a SOAP fault `faultstring` "Policy Falsified" and `l7:policyResult status="Rate limit exceeded."`.
+One request every 5 s around the clock (~17k a day, the old calibration sampler) triggered it and cut live
+buses off for all users. The exact quota is not published. live/src/iett.ts now backs off on this fault
+(2 min doubling to 30 min) and the İETT calibration sampler asks once every 30 s.
