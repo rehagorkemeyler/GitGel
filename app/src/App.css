@@ -135,19 +135,23 @@
   color: var(--live);
 }
 
+/* Native Legend: filled live dot 9 dp; scheduled dot a 10 dp hollow ring (2.5 dp border, no fill). */
 .dot {
+  box-sizing: border-box;
   width: 10px;
   height: 10px;
   border-radius: 50%;
 }
 
 .dot.live {
+  width: 9px;
+  height: 9px;
   background: var(--live);
 }
 
 .dot.scheduled {
   border: 2.5px solid var(--text-2);
-  background: var(--surface);
+  background: transparent;
 }
 
 .notice {
