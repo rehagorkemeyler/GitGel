@@ -83,18 +83,42 @@ function saved(): CityId | null {
   }
 }
 
-/** The city of this page load (Istanbul until the user picks one). */
-export const CITY: City = CITIES[saved() ?? 'istanbul']
+/**
+ * A city named in the link (`?city=ankara`, used by gitgel-site): remembered as the choice,
+ * then dropped from the address bar so a later switch or reload isn't overridden by it.
+ */
+function fromUrl(): CityId | null {
+  try {
+    const u = new URL(location.href)
+    const v = u.searchParams.get('city')
+    if (!isCityId(v)) return null
+    try {
+      localStorage.setItem(KEY, v)
+    } catch {
+      // Private mode: still use it for this load.
+    }
+    u.searchParams.delete('city')
+    history.replaceState(history.state, '', u.toString())
+    return v
+  } catch {
+    return null
+  }
+}
 
-/** False until the user has picked a city on this device. */
-export const CITY_CHOSEN: boolean = saved() !== null
+const initial = fromUrl() ?? saved()
+
+/** The city of this page load (Istanbul until the user picks one or a link names one). */
+export const CITY: City = CITIES[initial ?? 'istanbul']
+
+/** False until the user has picked a city on this device (or arrived through a city link). */
+export const CITY_CHOSEN: boolean = initial !== null
 
 /** Remember the choice and reload into it. */
 export function switchCity(id: CityId) {
   try {
     localStorage.setItem(KEY, id)
   } catch {
-    // Private mode: the switch still works for this load via the URL below.
+    // Private mode: the choice is not remembered.
   }
   const u = new URL(location.href)
   u.searchParams.delete('city')
