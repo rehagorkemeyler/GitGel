@@ -15,6 +15,48 @@
   box-shadow: 0 0 0 6px rgba(66, 133, 244, 0.25);
 }
 
+/* Route markers (native RouteLayer): the line badge where you board, the start dot and the end flag.
+   Sizes are native dp, 1:1 px; they keep their size at every zoom, as native markers do. */
+.route-badge {
+  box-sizing: border-box;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 7px;
+  border: 1.5px solid #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--fs-s);
+  font-weight: var(--fw-bold);
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.route-start {
+  box-sizing: border-box;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #2f7cf6;
+  border: 3px solid #ffffff;
+}
+
+.route-end {
+  box-sizing: border-box;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #ff3b30;
+  border: 2.5px solid #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.route-end svg {
+  display: block;
+}
+
 /* The destination pin (native red pin, #ff3b30). The tip sits on the point (anchor: bottom). */
 .dest-pin {
   width: 28px;

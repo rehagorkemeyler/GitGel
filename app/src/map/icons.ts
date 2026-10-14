@@ -1,4 +1,5 @@
 import type { Map as MlMap } from 'maplibre-gl'
+import { ACCENT } from '../lib/colors'
 
 // Small map symbols drawn on a canvas (no image files, sharp on retina).
 const GLYPHS = {
@@ -59,5 +60,9 @@ export function addTransitIcons(map: MlMap, dark: boolean): void {
     map.addImage('gg-busstop', draw('bus', dark ? '#2c2c2e' : '#ffffff', dark ? '#e5e5ea' : '#3a3a3c', dark ? '#636366' : '#8e8e93', 18, ratio), {
       pixelRatio: ratio,
     })
+  }
+  // The bus stop of the open station card: 24 dp, accent fill, white glyph and border (native StopMarkers).
+  if (!map.hasImage('gg-busstop-sel')) {
+    map.addImage('gg-busstop-sel', draw('bus', ACCENT, '#ffffff', '#ffffff', 24, ratio), { pixelRatio: ratio })
   }
 }

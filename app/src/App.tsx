@@ -460,8 +460,9 @@ export function App() {
           bubble={bus}
           onBubbleClose={closeBus}
           onMapTap={closeBus}
-          focusLine={lineId}
           focusLines={lineId ? [lineId] : station ? station.lines : null}
+          focusBus={station ? station.lines : []}
+          selectedStop={station?.id ?? null}
           lineView={view}
           pathInNetwork={!!lineData.line && (railModes.includes(lineData.line.mode) || (busShapes() && lineData.line.mode === 'bus'))}
         />
@@ -475,7 +476,8 @@ export function App() {
               <i className="dot live" /> {t('live')}
             </span>
           )}
-          {railCount > 0 && (
+          {/* Native: the scheduled item is hidden while a route or the results list is open. */}
+          {railCount > 0 && !shownRoute?.length && (
             <span>
               <i className="dot scheduled" /> {t('scheduled')}
             </span>

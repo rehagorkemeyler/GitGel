@@ -17,6 +17,7 @@ import { NET_TAP_LAYERS, NetworkLayer, type Station } from './networkLayer'
 import { VehicleBubble } from './VehicleBubble'
 import { showLineView, fitLineView } from './lineViewLayer'
 import type { LineView } from '../lib/lineDetail'
+import { stopToStopPaths } from '../lib/busFocus'
 import type { Vehicle } from '../lib/live'
 import { t } from '../i18n'
 import { FIRST_FIX_ZOOM, FIT_DELAY_MS, LOCATE_ZOOM, cameraMs, startZoom } from '../lib/camera'
@@ -62,10 +63,12 @@ type Props = {
   onBubbleClose?: () => void
   /** Tap on empty map (not a bus, station or train): closes the bubble (native onPress). */
   onMapTap?: () => void
-  /** Line to emphasise (line page). */
-  focusLine?: string | null
   /** Lines to emphasise on the base map (open line, or every line of a tapped stop). */
   focusLines?: string[] | null
+  /** Bus and ferry lines of a tapped stop, drawn stop to stop (Istanbul). */
+  focusBus?: string[]
+  /** The stop of the open station card: its bus stop is drawn selected (accent tile). */
+  selectedStop?: string | null
   /** Opened line page: path and stops. `pathInNetwork` = the base layer already draws its track. */
   lineView?: LineView | null
   pathInNetwork?: boolean
@@ -146,8 +149,9 @@ export function MapView({
   bubble = null,
   onBubbleClose,
   onMapTap,
-  focusLine = null,
   focusLines = null,
+  focusBus = [],
+  selectedStop = null,
   lineView = null,
   pathInNetwork = false,
   destination = null,
@@ -212,6 +216,9 @@ export function MapView({
       fadeDuration: matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 300,
     })
     m.touchZoomRotate.disableRotation()
+    // Native pitchEnabled={false}: no two-finger tilt.
+    m.touchPitch.disable()
+    m.setMaxPitch(0)
     map.current = m
     // Test hook for automated screenshots: only with ?debug in the URL.
     if (location.search.includes('debug')) (window as unknown as { __map: MlMap }).__map = m
@@ -282,14 +289,44 @@ export function MapView({
     return () => clearTimeout(id)
   }, [route, alternatives])
 
+  // Native: one focused line (a line page, or a stop with one line) keeps only that line's trains.
+  const onlyLine = focusLines?.length === 1 ? focusLines[0] : null
   useEffect(() => {
-    rail.current?.setOnly(focusLine)
-  }, [focusLine])
+    rail.current?.setOnly(onlyLine)
+  }, [onlyLine])
+
+  // Route results on screen (native dim): every line fades, the scheduled trains are off, the focus clears.
+  const dim = routesOf(route, alternatives).length > 0
+  useEffect(() => {
+    rail.current?.setSuspended(dim)
+    net.current?.setDim(dim)
+  }, [dim])
 
   const focusKey = (focusLines ?? []).join(',')
   useEffect(() => {
     net.current?.setFocus(focusKey ? focusKey.split(',') : null)
   }, [focusKey])
+
+  // Bus and ferry lines of a tapped stop, stop to stop (Istanbul); none while a route is on screen.
+  const busKey = dim ? '' : focusBus.join(',')
+  useEffect(() => {
+    let alive = true
+    if (!busKey) {
+      net.current?.setBusPaths([])
+      return
+    }
+    stopToStopPaths(busKey.split(',')).then(
+      (paths) => alive && net.current?.setBusPaths(paths),
+      () => {},
+    )
+    return () => {
+      alive = false
+    }
+  }, [busKey])
+
+  useEffect(() => {
+    net.current?.setSelected(selectedStop)
+  }, [selectedStop])
 
   const lineViewRef = useRef<{ v: LineView | null; inNet: boolean }>({ v: null, inNet: false })
   // The open line: drawn at once, framed 450 ms later (native). Closing it leaves the camera where it is.

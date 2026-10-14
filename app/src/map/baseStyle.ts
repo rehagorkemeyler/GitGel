@@ -1,8 +1,8 @@
 import type { StyleSpecification } from 'maplibre-gl'
 
-// Base map: OpenFreeMap "liberty" (colourful, detailed, shaded relief when zoomed
-// out). In dark mode the same style is recoloured into a navy/teal night palette,
-// so both themes keep parks, water, roads and places instead of a flat grey map.
+// Base map: OpenFreeMap "liberty", recoloured to the native map styles (native src/map/styles/light.json and
+// dark.json). Flat land, park, water, road and label colours in both themes; no POI, transit or shield icons,
+// no 3D buildings, no road casings in dark, and neighbourhood names only when zoomed in.
 
 const LIBERTY = 'https://tiles.openfreemap.org/styles/liberty'
 
@@ -16,93 +16,161 @@ function loadLiberty(): Promise<StyleSpecification> {
   return cached
 }
 
-type Rgba = [number, number, number, number]
+/** Colour roles of the map: each one is a native colour in one theme. */
+export type Role = 'land' | 'park' | 'water' | 'road' | 'arterial' | 'highway' | 'rail' | 'casing' | 'boundary' | 'text' | 'waterText'
 
-let ctx: CanvasRenderingContext2D | null = null
-function parse(color: string): Rgba | null {
-  ctx ??= document.createElement('canvas').getContext('2d')
-  if (!ctx) return null
-  ctx.fillStyle = '#010203'
-  ctx.fillStyle = color
-  const v = String(ctx.fillStyle)
-  if (v === '#010203' && color.replace(/\s/g, '') !== '#010203') return null
-  if (v.startsWith('#')) return [parseInt(v.slice(1, 3), 16), parseInt(v.slice(3, 5), 16), parseInt(v.slice(5, 7), 16), 1]
-  const m = v.match(/rgba?\(([^)]+)\)/)
-  if (!m) return null
-  const [r, g, b, a = '1'] = m[1].split(',').map((x) => x.trim())
-  return [+r, +g, +b, +a]
+type Palette = Record<Role, string | null> & { halo: string }
+
+/** Native light.json values. */
+export const LIGHT: Palette = {
+  land: '#f1f1f3',
+  park: '#dcebd9',
+  water: '#b9d3ec',
+  road: '#ffffff',
+  arterial: '#ffffff',
+  highway: '#fbfbfc',
+  rail: '#c9cbd1',
+  casing: '#e2e3e7',
+  boundary: '#c9cbd1',
+  text: '#8b8d94',
+  waterText: '#8b8d94',
+  halo: '#ffffff',
 }
 
-function toHsl([r, g, b]: Rgba): [number, number, number] {
-  r /= 255; g /= 255; b /= 255
-  const max = Math.max(r, g, b), min = Math.min(r, g, b)
-  const l = (max + min) / 2
-  if (max === min) return [0, 0, l]
-  const d = max - min
-  const s = l > 0.5 ? d / (2 - max - min) : d / (max + min)
-  const h = max === r ? (g - b) / d + (g < b ? 6 : 0) : max === g ? (b - r) / d + 2 : (r - g) / d + 4
-  return [h * 60, s, l]
+/** Native dark.json values. Dark roads have no casing (native geometry.stroke is off). */
+export const DARK: Palette = {
+  land: '#17191d',
+  park: '#1a211c',
+  water: '#0d1c2e',
+  road: '#202328',
+  arterial: '#2a2e34',
+  highway: '#343941',
+  rail: '#2a2d33',
+  casing: null,
+  boundary: '#2a2d33',
+  text: '#6b6f78',
+  waterText: '#6b6f78',
+  halo: '#17191d',
 }
 
-const hsla = (h: number, s: number, l: number, a: number) =>
-  `hsla(${h.toFixed(0)},${(s * 100).toFixed(0)}%,${(l * 100).toFixed(0)}%,${a})`
+/** Neighbourhood names: shown from zoom 14 only (native administrative.neighborhood is "simplified"). */
+const NEIGHBOURHOOD_CLASSES = ['neighbourhood', 'quarter']
+const NEIGHBOURHOOD_MIN_ZOOM = 14
 
-/** Map one colour of the light style into the night palette. `role` says how it is used. */
-function night(color: string, role: 'area' | 'road' | 'text' | 'halo'): string {
-  const c = parse(color)
-  if (!c) return color
-  let [h, s, l] = toHsl(c)
-  const green = h > 55 && h < 170 && s > 0.15
-  const water = h > 190 && h < 250 && c[2] > c[0] + 20
-  if (role === 'area') {
-    // Night palette: navy land, deep blue water, teal-green parks.
-    if (water) [h, s, l] = [214, 0.55, 0.13]
-    else if (green) [h, s, l] = [168, 0.32, 0.15 + (1 - l) * 0.1]
-    else [h, s, l] = [208, 0.3, 0.12 + (1 - l) * 0.22]
-  } else if (role === 'road') {
-    // Roads in cool blue-greys; big roads (warm colours in the day style) a bit brighter.
-    const major = s > 0.4 && h < 60
-    ;[h, s, l] = [208, major ? 0.22 : 0.18, major ? 0.3 : 0.2 + l * 0.06]
-  } else if (role === 'text') {
-    ;[h, s, l] = [205, 0.15, 0.9 - l * 0.3]
-  } else {
-    ;[h, s, l] = [210, 0.35, 0.1]
+/** Symbol layers that are hidden whole (icons or labels native does not show). */
+const HIDDEN_SYMBOL = /^(poi_|highway-name-(minor|path)$|road_one_way|highway-shield|road_shield)/
+
+type AnyLayer = {
+  id: string
+  type: string
+  minzoom?: number
+  filter?: unknown
+  'source-layer'?: string
+  paint?: Record<string, unknown>
+  layout?: Record<string, unknown>
+}
+
+/** The colour role of a liberty fill or line layer, from its id, source layer and type. */
+export function roleOf(id: string, type: string, sourceLayer = ''): Role {
+  if (type === 'symbol') return 'text'
+  if (type === 'fill') {
+    if (sourceLayer === 'water') return 'water'
+    if (sourceLayer === 'park' || (sourceLayer === 'landcover' && /wood|grass|wetland/.test(id))) return 'park'
+    if (sourceLayer === 'building') return 'road'
+    return 'land'
   }
-  return hsla(h, s, l, c[3])
+  // Lines
+  if (sourceLayer === 'boundary') return 'boundary'
+  if (sourceLayer === 'waterway') return 'water'
+  if (sourceLayer === 'park') return 'park'
+  if (/_casing$/.test(id)) return 'casing'
+  if (/rail/.test(id)) return 'rail'
+  if (/motorway|trunk_primary/.test(id)) return 'highway'
+  if (/secondary_tertiary|_link/.test(id)) return 'arterial'
+  return 'road'
 }
 
-function mapColors(v: unknown, fn: (c: string) => string): unknown {
-  if (typeof v === 'string') return parse(v) ? fn(v) : v
-  if (Array.isArray(v)) return v.map((x, i) => (i === 0 && typeof x === 'string' && !parse(x) ? x : mapColors(x, fn)))
-  return v
-}
-
-function nightStyle(style: StyleSpecification): StyleSpecification {
-  const s = structuredClone(style)
-  for (const layer of s.layers) {
-    const paint = (layer as { paint?: Record<string, unknown> }).paint
-    if (!paint) continue
-    const src = (layer as { 'source-layer'?: string })['source-layer']
-    for (const key of Object.keys(paint)) {
-      if (!key.endsWith('color')) continue
-      const role = key.startsWith('text-halo') || key.startsWith('icon-halo')
-        ? 'halo'
-        : key.startsWith('text') || key.startsWith('icon')
-          ? 'text'
-          : layer.type === 'line' && (src === 'transportation' || src === 'aeroway')
-            ? 'road'
-            : 'area'
-      paint[key] = mapColors(paint[key], (c) => night(c, role))
+/** A layer with its paint or layout changed for the theme; the names of the symbol layers are kept. */
+function restyle(layer: AnyLayer, pal: Palette): AnyLayer[] {
+  const paint = (layer.paint ??= {})
+  const layout = (layer.layout ??= {})
+  const src = layer['source-layer'] ?? ''
+  switch (layer.type) {
+    case 'background':
+      paint['background-color'] = pal.land
+      return [layer]
+    case 'raster':
+      // Shaded relief is not in the native style.
+      paint['raster-opacity'] = 0
+      return [layer]
+    case 'fill-extrusion':
+      // Native showsBuildings={false}.
+      layout.visibility = 'none'
+      return [layer]
+    case 'symbol': {
+      if (HIDDEN_SYMBOL.test(layer.id) || (!layout['text-field'] && layout['icon-image'])) {
+        layout.visibility = 'none'
+        return [layer]
+      }
+      // Place and airport icons go; the names stay.
+      delete layout['icon-image']
+      const water = src === 'water_name' || layer.id.startsWith('waterway_')
+      paint['text-color'] = water ? pal.waterText : pal.text
+      if ('text-halo-color' in paint) paint['text-halo-color'] = pal.halo
+      return [layer]
     }
-    if (layer.type === 'raster') paint['raster-opacity'] = 0
-    if (layer.type === 'fill-extrusion') paint['fill-extrusion-opacity'] = 0.25
+    case 'fill': {
+      // Pattern-only areas (pedestrian zones) have no native counterpart.
+      if ('fill-pattern' in paint && !('fill-color' in paint)) {
+        layout.visibility = 'none'
+        return [layer]
+      }
+      const color = pal[roleOf(layer.id, 'fill', src)] ?? pal.land
+      paint['fill-color'] = color
+      paint['fill-outline-color'] = color
+      return [layer]
+    }
+    case 'line': {
+      const role = roleOf(layer.id, 'line', src)
+      if (role === 'casing' && pal.casing === null) {
+        layout.visibility = 'none'
+        return [layer]
+      }
+      paint['line-color'] = pal[role] ?? pal.road
+      return [layer]
+    }
+    default:
+      return [layer]
   }
+}
+
+/**
+ * Recolour a liberty style for the theme. Returns a new style; the input is not changed.
+ * Exported for tests.
+ */
+export function recolour(style: StyleSpecification, scheme: 'light' | 'dark'): StyleSpecification {
+  const pal = scheme === 'dark' ? DARK : LIGHT
+  const s = structuredClone(style)
+  const out: AnyLayer[] = []
+  for (const layer of s.layers as unknown as AnyLayer[]) {
+    if (layer.id === 'label_other') {
+      // The rest of the place names keep their zoom; neighbourhoods appear later.
+      const base = layer.filter
+      const neighbourhood = ['match', ['get', 'class'], NEIGHBOURHOOD_CLASSES, true, false]
+      const named = structuredClone(layer)
+      out.push(...restyle(layer, pal))
+      out.push(...restyle(named, pal).map((l) => ({ ...l, id: 'label_neighbourhood', minzoom: NEIGHBOURHOOD_MIN_ZOOM, filter: ['all', base, neighbourhood] })))
+      layer.filter = ['all', base, ['!', neighbourhood]]
+      continue
+    }
+    out.push(...restyle(layer, pal))
+  }
+  s.layers = out as unknown as StyleSpecification['layers']
   return s
 }
 
 export async function baseStyle(scheme: 'light' | 'dark'): Promise<StyleSpecification> {
-  const style = await loadLiberty()
-  return scheme === 'dark' ? nightStyle(style) : style
+  return recolour(await loadLiberty(), scheme)
 }
 
 /** Placeholder until the real style arrives (keeps the page background colour). */

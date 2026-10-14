@@ -22,20 +22,31 @@ export function showLineView(map: MlMap, view: LineView | null, drawPath: boolea
   if (src) src.setData(data)
   else {
     map.addSource(SRC, { type: 'geojson', data })
+    const round = { 'line-cap': 'round', 'line-join': 'round' } as const
+    // Native: a white 8 dp casing under the 5 dp line (both only when the path is drawn).
+    map.addLayer({
+      id: SRC + '-casing',
+      type: 'line',
+      source: SRC,
+      filter: ['==', ['geometry-type'], 'LineString'],
+      layout: round,
+      paint: { 'line-color': '#ffffff', 'line-width': 8 },
+    })
     map.addLayer({
       id: SRC + '-line',
       type: 'line',
       source: SRC,
       filter: ['==', ['geometry-type'], 'LineString'],
-      layout: { 'line-cap': 'round', 'line-join': 'round' },
+      layout: round,
       paint: { 'line-color': ['get', 'color'], 'line-width': 5 },
     })
+    // Native stop node: 12 dp, a 3 dp line-colour border around a white fill (the stroke sits outside the radius).
     map.addLayer({
       id: SRC + '-stops',
       type: 'circle',
       source: SRC,
       filter: ['==', ['geometry-type'], 'Point'],
-      paint: { 'circle-radius': 4, 'circle-color': '#ffffff', 'circle-stroke-color': ['get', 'color'], 'circle-stroke-width': 2.5 },
+      paint: { 'circle-radius': 3, 'circle-color': '#ffffff', 'circle-stroke-color': ['get', 'color'], 'circle-stroke-width': 3 },
     })
   }
 }

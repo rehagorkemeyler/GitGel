@@ -10,16 +10,20 @@ export type TrainInfo = Pick<SimSegment, 'id' | 'line' | 'color' | 'from' | 'to'
 
 const SRC = 'rail-sim'
 /** The layer that takes a tap on a scheduled train (MapView keeps empty-map taps apart from it). */
-export const RAIL_TAP_LAYERS = ['rail-sim-halo']
-const MIN_ZOOM = 11
+export const RAIL_TAP_LAYERS = ['rail-sim-dots']
+// MapLibre zoom (512 px tiles): native zoom 11 is 10 here.
+const MIN_ZOOM = 10
 const REFRESH_MS = 60_000
-const TICK_MS = 500
+const TICK_MS = 1000
+/** Native RailLayer MAX_TRAINS: at most this many scheduled trains are drawn. */
+const MAX_TRAINS = 120
 
 export class RailLayer {
   private map: MlMap
   private segments: SimSegment[] = []
   private hidden = new Set<string>()
   private only: string | null = null
+  private suspended = false
   private fetchedFor = ''
   private timer = 0
   private refreshTimer = 0
@@ -38,22 +42,15 @@ export class RailLayer {
       const s = this.segments.find((x) => x.id === id && x.dep <= now && now <= x.arr) ?? this.segments.find((x) => x.id === id)
       if (s) this.onTrain?.({ id: s.id, line: s.line, color: s.color, from: s.from, to: s.to, arr: s.arr })
     }
-    map.on('click', 'rail-sim-halo', click)
-    map.on('mouseenter', 'rail-sim-halo', () => (map.getCanvas().style.cursor = 'pointer'))
-    map.on('mouseleave', 'rail-sim-halo', () => (map.getCanvas().style.cursor = ''))
+    map.on('click', 'rail-sim-dots', click)
+    map.on('mouseenter', 'rail-sim-dots', () => (map.getCanvas().style.cursor = 'pointer'))
+    map.on('mouseleave', 'rail-sim-dots', () => (map.getCanvas().style.cursor = ''))
   }
 
   ensure() {
     if (this.map.getSource(SRC)) return
     this.map.addSource(SRC, { type: 'geojson', data: { type: 'FeatureCollection', features: [] } })
-    // White halo under the ring so a train never looks like a station marker.
-    this.map.addLayer({
-      id: 'rail-sim-halo',
-      type: 'circle',
-      source: SRC,
-      paint: { 'circle-radius': ['interpolate', ['linear'], ['zoom'], 11, 5, 14, 10], 'circle-color': '#ffffff', 'circle-opacity': 0.9, 'circle-blur': 0.2 },
-    })
-    // Hollow ring in the line colour with a compass-style tip pointing where the train goes.
+    // Hollow ring in the line colour with a compass-style tip pointing where the train goes (native: 24 dp).
     this.map.addLayer({
       id: 'rail-sim-dots',
       type: 'symbol',
@@ -64,10 +61,18 @@ export class RailLayer {
         'icon-rotation-alignment': 'map',
         'icon-allow-overlap': true,
         'icon-ignore-placement': true,
-        'icon-size': ['interpolate', ['linear'], ['zoom'], 11, 0.55, 14, 1],
+        'icon-size': 1,
       },
     })
     this.refresh(true)
+  }
+
+  /** While route results are on screen the native map drops its rail layer: no trains are drawn. */
+  setSuspended(on: boolean) {
+    if (this.suspended === on) return
+    this.suspended = on
+    if (!on) this.refresh(true)
+    this.draw()
   }
 
   /** Lines with a reported service problem: their scheduled dots are hidden. */
@@ -83,33 +88,32 @@ export class RailLayer {
     this.draw()
   }
 
-  /** One small image per line colour: white disc, coloured ring, arrow tip at the top. */
+  /**
+   * One small image per line colour, drawn at native size (24 dp box): a solid tip 9 dp wide and 6 dp tall,
+   * then a 15 dp ring with a 3.5 dp line-colour border on white.
+   */
   private icon(color: string): string {
     const name = `train-${color.replace('#', '')}`
     if (this.map.hasImage(name)) return name
     const ratio = 2
-    const size = 32
+    const size = 24
     const c = document.createElement('canvas')
     c.width = c.height = size * ratio
     const ctx = c.getContext('2d')!
     ctx.scale(ratio, ratio)
-    // Tip with a white outline so it stays visible on top of its own line colour.
     ctx.beginPath()
-    ctx.moveTo(16, 2.5)
-    ctx.lineTo(21.5, 10.5)
-    ctx.lineTo(10.5, 10.5)
+    ctx.moveTo(12, 0)
+    ctx.lineTo(16.5, 6)
+    ctx.lineTo(7.5, 6)
     ctx.closePath()
-    ctx.lineJoin = 'round'
-    ctx.lineWidth = 2.5
-    ctx.strokeStyle = '#ffffff'
-    ctx.stroke()
     ctx.fillStyle = color
     ctx.fill()
+    // Stroke centre radius 5.75 with a 3.5 line gives a 15 dp outer ring.
     ctx.beginPath()
-    ctx.arc(16, 17, 7.5, 0, Math.PI * 2)
+    ctx.arc(12, 14.5, 5.75, 0, Math.PI * 2)
     ctx.fillStyle = '#ffffff'
     ctx.fill()
-    ctx.lineWidth = 3.4
+    ctx.lineWidth = 3.5
     ctx.strokeStyle = color
     ctx.stroke()
     this.map.addImage(name, ctx.getImageData(0, 0, size * ratio, size * ratio), { pixelRatio: ratio })
@@ -122,7 +126,7 @@ export class RailLayer {
   }
 
   private async refresh(force = false) {
-    if (document.hidden || !this.map.getSource(SRC)) return
+    if (document.hidden || this.suspended || !this.map.getSource(SRC)) return
     const z = this.map.getZoom()
     if (z < MIN_ZOOM) {
       this.segments = []
@@ -135,7 +139,8 @@ export class RailLayer {
     this.fetchedFor = key
     const now = Date.now()
     try {
-      const segs = await mapTrips([b.getWest(), b.getSouth()], [b.getEast(), b.getNorth()], z, new Date(now), new Date(now + REFRESH_MS + 30_000))
+      // The server takes native zoom (256 px tiles), one level more than MapLibre's.
+      const segs = await mapTrips([b.getWest(), b.getSouth()], [b.getEast(), b.getNorth()], z + 1, new Date(now), new Date(now + REFRESH_MS + 30_000))
       this.segments = prepare(segs, this.hidden)
       this.draw()
     } catch {
@@ -150,6 +155,8 @@ export class RailLayer {
     const seen = new Set<string>()
     const features: GeoJSON.Feature[] = []
     for (const s of this.segments) {
+      if (features.length >= MAX_TRAINS) break
+      if (this.suspended) break
       if (seen.has(s.id)) continue
       if (this.only && s.line.toLowerCase() !== this.only.toLowerCase()) continue
       const pos = positionAndBearing(s, now)
