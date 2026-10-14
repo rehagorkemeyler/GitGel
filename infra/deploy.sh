@@ -28,7 +28,8 @@ check_sources() {
   ls -la /opt/gitgel-data/photon/current/ 2>&1 | head -8
   df -h / /opt 2>&1 | tail -2
   free -m | head -2
-  docker compose -f infra/docker-compose.yml logs --tail 25 photon 2>&1 | cut -c1-300 | tail -25
+  tail -5 /opt/gitgel-data/photon-update.log 2>/dev/null
+  docker compose -f infra/docker-compose.yml logs --tail 6 photon 2>&1 | cut -c1-300
 }
 
 main() {
@@ -53,6 +54,11 @@ main() {
   if [ ! -e /opt/gitgel-data/motis/current ] || [ -z "$(ls -A /opt/gitgel-data/motis/current 2>/dev/null)" ]; then
     nohup bash infra/motis/update-data.sh > /opt/gitgel-data/motis/update.log 2>&1 &
     echo "started first MOTIS import (log: /opt/gitgel-data/motis/update.log)"
+  fi
+  # No place search index yet (or a failed first import): build it in the background.
+  if [ ! -d /opt/gitgel-data/photon/current/photon_data ] && ! pgrep -f "update-data.sh photon" > /dev/null; then
+    nohup bash infra/motis/update-data.sh photon > /opt/gitgel-data/photon-update.log 2>&1 &
+    echo "started Photon import (log: /opt/gitgel-data/photon-update.log)"
   fi
   check_sources || true
   echo "deployed $(git rev-parse --short HEAD)"
