@@ -176,7 +176,9 @@ export async function handle(req: IncomingMessage, res: ServerResponse) {
     return send(res, 404, { error: 'not found' })
   } catch (e) {
     if (e instanceof NotImplemented) return send(res, 501, { error: 'not implemented' }, 60)
-    // Calm, generic message; the app shows its own text.
+    // Calm, generic message; the app shows its own text. The reason goes to the container log.
+    const err = e as { message?: string; cause?: { code?: string } }
+    console.error(`${path} failed: ${err?.message ?? e}${err?.cause?.code ? ` (${err.cause.code})` : ''}`)
     return send(res, 503, { error: 'source unavailable' }, 5)
   }
 }
