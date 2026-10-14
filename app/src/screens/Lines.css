@@ -111,7 +111,10 @@
   line-height: 18px;
 }
 
-/* Native first and last trips: a fill card (20 px radius, 8 px padding). Today is a filled row with heading weight. */
+/* Native first and last trips (LineSheet.tsx:78, styles L193-197): a fill card (20 px radius, 8 px padding).
+   Columns are flex 1.3 : 1 : 1 (label : first : last). The row padding of 8 px sits on the outer edges only,
+   so the outer cells get 8 px and the value columns none; values and their headers are right aligned.
+   Rows are at least 36 px high. Today is a filled row (12 px radius) with heading weight (16.5 px semibold). */
 .first-last-card {
   padding: var(--s-2);
   border-radius: var(--r-card);
@@ -120,6 +123,7 @@
 
 .first-last {
   width: 100%;
+  table-layout: fixed;
   border-collapse: separate;
   border-spacing: 0;
   font-size: var(--fs-m);
@@ -128,10 +132,26 @@
 .first-last th,
 .first-last td {
   height: 36px;
-  padding: 0 var(--s-2);
+  padding: 0;
   text-align: left;
   font-weight: var(--fw-regular);
-  white-space: nowrap;
+}
+
+.first-last tr > :first-child {
+  padding-left: var(--s-2);
+}
+
+.first-last tr > :last-child {
+  padding-right: var(--s-2);
+}
+
+/* Column widths of the native flex 1.3 : 1 : 1 split. */
+.first-last thead th:first-child {
+  width: 39.4%;
+}
+
+.first-last thead th:not(:first-child) {
+  width: 30.3%;
 }
 
 .first-last thead th {
@@ -139,8 +159,12 @@
   color: var(--text-2);
 }
 
-.first-last td {
+.first-last td,
+.first-last thead th:not(:first-child) {
   text-align: right;
+}
+
+.first-last td {
   font-variant-numeric: tabular-nums;
 }
 
