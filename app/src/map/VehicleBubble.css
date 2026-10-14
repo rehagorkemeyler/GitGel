@@ -1,7 +1,9 @@
 /* Native VehicleBubble (LiveLayer.tsx): a 250 px card above the tapped bus, with a 14 x 8 px tail.
    The marker's 10 px bottom padding lifts the tail just above the 14 px dot. The card is glass, like the
-   other floating surfaces (owner decision). Only the card takes taps: the transparent padding passes them
-   through, so the dot under the bubble stays tappable. */
+   other floating surfaces and cards (owner decision; native paints it solid #ffffff / #1c1e24). With
+   reduced transparency the glass falls back to that solid colour, so those users see the native card.
+   Only the card takes taps: the transparent padding passes them through, so the dot under the bubble
+   stays tappable. */
 
 .bus-bubble-anchor {
   padding-bottom: 10px;

@@ -53,7 +53,8 @@
 
   /* Liquid glass: a translucent, blurred surface with a hairline edge, the same
      sheet tint as native. Floating surfaces (sheet, panels, notices, buttons, banners)
-     use these tokens. Native has no inner rim, sheen or glass shadow, so these stay none. */
+     and the bus bubble card use these tokens (owner decision: cards are glass too, though
+     native paints its card solid). Native has no inner rim, sheen or glass shadow, so these stay none. */
   --glass-bg: rgba(255, 255, 255, 0.72);
   --glass-edge: rgba(0, 0, 0, 0.06);
   --glass-rim: none;
