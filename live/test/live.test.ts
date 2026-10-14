@@ -1,7 +1,8 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { Cache } from '../src/cache.ts'
-import { RateGuard, extractResult, isRateLimited, istanbulToIso, parseVehicles } from '../src/iett.ts'
+import { extractResult, istanbulToIso, parseVehicles } from '../src/iett.ts'
+import { RateLimited, Upstream, isRateLimited } from '../src/guard.ts'
 import { linesIn, parseStatuses, stripHtml } from '../src/metro.ts'
 
 test('istanbul time to ISO', () => {
@@ -67,27 +68,46 @@ test('routes with and without the /live prefix', async () => {
   }
 })
 
-test('İBB gateway rate limit fault is recognised', () => {
+test('rate-limit answers are recognised (İBB gateway fault, 429, plain text)', () => {
   const fault =
     '<soapenv:Fault><faultcode>soapenv:Server</faultcode><faultstring>Policy Falsified</faultstring><detail><l7:policyResult status="Rate limit exceeded."/></detail></soapenv:Fault>'
-  assert.equal(isRateLimited(fault), true)
-  assert.equal(isRateLimited('<GetHatOtoKonum_jsonResult>[]</GetHatOtoKonum_jsonResult>'), false)
+  assert.equal(isRateLimited(500, fault), true)
+  assert.equal(isRateLimited(429, ''), true)
+  assert.equal(isRateLimited(503, 'Too Many Requests'), true)
+  assert.equal(isRateLimited(200, '<GetHatOtoKonum_jsonResult>[]</GetHatOtoKonum_jsonResult>'), false)
+  assert.equal(isRateLimited(500, 'Internal error'), false)
 })
 
-test('rate guard backs off 2, 4 ... 30 minutes and resets on a good answer', () => {
-  const g = new RateGuard()
+test('upstream backs off 2, 4 ... 30 minutes after a rate limit and resets on a good answer', () => {
+  const u = new Upstream('X', 100)
   const min = 60_000
-  assert.equal(g.blocked(0), false)
-  g.limited(0)
-  assert.equal(g.blocked(2 * min - 1), true)
-  assert.equal(g.blocked(2 * min), false)
-  g.limited(2 * min)
-  assert.equal(g.blocked(6 * min - 1), true)
-  for (let i = 0; i < 10; i++) g.limited(0)
-  assert.equal(g.blocked(30 * min - 1), true)
-  assert.equal(g.blocked(30 * min), false)
-  g.ok()
-  assert.equal(g.blocked(0), false)
-  g.limited(0)
-  assert.equal(g.blocked(2 * min), false)
+  const limit = (now: number) => assert.throws(() => u.answer(500, 'Rate limit exceeded.', now), RateLimited)
+  assert.equal(u.blocked(0), false)
+  limit(0)
+  assert.equal(u.blocked(2 * min - 1), true)
+  assert.throws(() => u.take(min), RateLimited)
+  assert.equal(u.blocked(2 * min), false)
+  limit(2 * min)
+  assert.equal(u.blocked(6 * min - 1), true)
+  for (let i = 0; i < 10; i++) limit(0)
+  assert.equal(u.blocked(30 * min - 1), true)
+  assert.equal(u.blocked(30 * min), false)
+  u.answer(200, 'ok')
+  assert.equal(u.blocked(0), false)
+  limit(0)
+  assert.equal(u.blocked(2 * min), false)
+})
+
+test('upstream never sends more than its budget per minute; the sampler only uses spare budget', () => {
+  const u = new Upstream('X', 4)
+  u.take(0)
+  assert.equal(u.spare(0), true)
+  u.take(1)
+  assert.equal(u.spare(1), false)
+  u.take(2)
+  u.take(3)
+  assert.throws(() => u.take(4), RateLimited)
+  assert.throws(() => u.take(59_999), RateLimited)
+  u.take(60_000)
+  assert.equal(u.used(60_003), 1)
 })

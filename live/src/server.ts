@@ -19,7 +19,8 @@
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http'
 import { Cache } from './cache.ts'
 import { Calibration, Sampler } from './calibration.ts'
-import { fetchLineVehicles, iettGuard, type Vehicle } from './iett.ts'
+import { fetchLineVehicles, type Vehicle } from './iett.ts'
+import { RateLimited, egoUpstream, iettUpstream } from './guard.ts'
 import { getStopBoard, getVehiclesByLine, NotImplemented, type AnkaraStopBoard, type AnkaraVehicle } from './providers/ego.ts'
 import { getBursaStopBoard, getBursaVehicles, type BursaStopBoard, type BursaVehicle } from './providers/burulas.ts'
 import { CITIES, search, type SearchResult } from './search.ts'
@@ -179,6 +180,7 @@ export async function handle(req: IncomingMessage, res: ServerResponse) {
     // Calm, generic message; the app shows its own text. The reason goes to the container log.
     const err = e as { message?: string; cause?: { code?: string } }
     console.error(`${path} failed: ${err?.message ?? e}${err?.cause?.code ? ` (${err.cause.code})` : ''}`)
+    if (e instanceof RateLimited) return send(res, 503, { error: 'source busy' }, 30)
     return send(res, 503, { error: 'source unavailable' }, 5)
   }
 }
@@ -206,19 +208,19 @@ function sample(sampler: Sampler, poll: (line: string) => void, everyMs: number,
 function startCalibration() {
   calibration.load(CAL_FILE)
   ankaraCalibration.load(ANKARA_CAL_FILE)
-  // Istanbul (İETT): one request every 30 s, 4 lines per batch (each line every 2 minutes), and none
-  // while the İBB gateway rate-limits us. One request every 5 s ran into its limit and cut live buses
-  // off for everyone. Ankara (EGO): one request every 5 s, 12 lines per batch (each about once a minute).
+  // İETT and EGO alike: one request every 30 s, 4 lines per batch (each line every 2 minutes), and
+  // only while users leave more than half of the source's budget (guard.ts). One request every 5 s
+  // got our server banned by the İBB gateway and cut live buses off for everyone.
   const sampler = new Sampler(4)
-  const ankaraSampler = new Sampler()
+  const ankaraSampler = new Sampler(4)
   const refresh = () => {
     void loadLines(sampler)
     void loadLines(ankaraSampler, ANKARA_LINES_URL)
   }
   refresh()
   setInterval(refresh, 24 * 3600_000)
-  sample(sampler, (line) => void vehicles.get(line, loadVehicles(line)).catch(() => {}), 30_000, () => iettGuard.blocked())
-  sample(ankaraSampler, (line) => void ankaraVehicles.get(line, loadAnkaraVehicles(line)).catch(() => {}), 5_000)
+  sample(sampler, (line) => void vehicles.get(line, loadVehicles(line)).catch(() => {}), 30_000, () => !iettUpstream.spare())
+  sample(ankaraSampler, (line) => void ankaraVehicles.get(line, loadAnkaraVehicles(line)).catch(() => {}), 30_000, () => !egoUpstream.spare())
   const save = () => {
     try {
       calibration.save(CAL_FILE)

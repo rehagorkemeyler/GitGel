@@ -9,6 +9,8 @@
 // the MIT-licensed EGO Mac project (github.com/byigitt/egomac, docs/api-discovery.md).
 // Set EGO_MOCK=1 to get deterministic fake data for development and demos.
 
+import { egoUpstream } from '../guard.ts'
+
 export type AnkaraVehicle = {
   id: string // vehicle or door number, stable per bus
   line: string // EGO line code, e.g. "185-7"
@@ -76,12 +78,15 @@ export async function getStopBoard(stopNo: string, now = Date.now()): Promise<An
 
 async function call(params: Record<string, string>): Promise<string> {
   const q = new URLSearchParams({ VER: '3.1.0', LAN: 'tr', ...params })
+  egoUpstream.take()
   const r = await fetch(`${BASE}?${q}`, {
     headers: { 'User-Agent': UA, Accept: 'application/json' },
     signal: AbortSignal.timeout(8000),
   })
+  const text = await r.text()
+  egoUpstream.answer(r.status, text)
   if (!r.ok) throw new Error(`EGO HTTP ${r.status}`)
-  return r.text()
+  return text
 }
 
 // ---- parsing (pure) -------------------------------------------------------

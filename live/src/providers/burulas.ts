@@ -10,6 +10,7 @@
 // copy it; it is not stored, logged or forwarded.
 
 import type { AnkaraArrival, AnkaraLineStatus, AnkaraStopBoard } from './ego.ts'
+import { burulasUpstream } from '../guard.ts'
 
 export type BursaVehicle = {
   id: string // validatorNo, stable per bus
@@ -64,14 +65,17 @@ async function linesAt(stopId: number, now: number): Promise<StopLine[]> {
 }
 
 async function call(path: string, body: unknown): Promise<string> {
+  burulasUpstream.take()
   const r = await fetch(BASE + path, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Accept: 'application/json', Origin: ORIGIN, Referer: ORIGIN + '/' },
     body: JSON.stringify(body),
     signal: AbortSignal.timeout(8000),
   })
+  const text = await r.text()
+  burulasUpstream.answer(r.status, text)
   if (!r.ok) throw new Error(`BURULAŞ HTTP ${r.status}`)
-  return r.text()
+  return text
 }
 
 // ---- parsing (pure) -------------------------------------------------------
