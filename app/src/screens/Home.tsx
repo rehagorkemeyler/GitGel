@@ -66,13 +66,14 @@ export function HomePeek({
           ))
         )}
       </div>
+      {/* Footer order follows native Home.tsx: support, contact, city, language. */}
       <div className="home-small">
-        <button className="small" onClick={() => go('contact')}>
-          {t('contact')}
-        </button>
         <button className="small" onClick={() => go('support')}>
           <Icon name="heart" size={15} />
           {t('support')}
+        </button>
+        <button className="small" onClick={() => go('contact')}>
+          {t('contact')}
         </button>
         <button className="small" onClick={onCity}>
           <Icon name="pin" size={15} />
