@@ -1,28 +1,44 @@
+/* Native link group (About.tsx:35, Info.tsx:39): one fill card with the shared card radius (20 px),
+   16 px side padding, and a hairline between rows. Each row is 56 px at least, 8 px above and below. */
 .link-list {
   list-style: none;
-  margin: var(--s-4) 0;
-  padding: 0;
+  margin: 0;
+  padding: 0 var(--s-4);
   display: flex;
   flex-direction: column;
-  gap: var(--s-2);
+  background: var(--fill);
+  border-radius: var(--r-card);
+}
+
+.link-list li + li {
+  border-top: 1px solid var(--hairline);
 }
 
 .link-list a,
 .link-list li.muted {
   display: flex;
-  flex-direction: column;
-  justify-content: center;
+  align-items: center;
+  gap: var(--s-2);
   min-height: 56px;
-  padding: var(--s-2) var(--s-4);
-  border-radius: var(--r-btn);
-  background: var(--fill);
+  padding: var(--s-2) 0;
   color: var(--text);
   text-decoration: none;
   font-weight: var(--fw-bold);
 }
 
+/* Native secondary body row (donate soon): no chevron, 16 px, secondary colour, regular weight. */
 .link-list li.muted {
+  color: var(--text-2);
+  font-size: var(--fs-m);
   font-weight: var(--fw-regular);
+}
+
+/* A row's text: the label, with the secondary line under it. */
+.link-text {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
 }
 
 .link-list small {
@@ -31,32 +47,49 @@
   color: var(--text-2);
 }
 
-.about-h {
-  letter-spacing: -0.2px;
-  font-size: var(--fs-s);
-  font-weight: var(--fw-bold);
+/* Native LinkRow chevron: the back arrow turned round, 18 px, secondary colour. */
+.link-chevron {
+  display: flex;
+  flex: none;
   color: var(--text-2);
-  margin: var(--s-4) 0 0;
+  transform: rotate(180deg);
 }
 
+/* The Contact row that opens About: a button, so the browser look is reset. */
 .link-row {
   width: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  justify-content: center;
   min-height: 56px;
-  padding: var(--s-2) var(--s-4);
-  border-radius: var(--r-btn);
-  background: var(--fill);
+  padding: var(--s-2) 0;
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  background: none;
+  border: 0;
+  color: var(--text);
+  font: inherit;
   font-weight: var(--fw-bold);
   text-align: left;
+  cursor: pointer;
 }
 
-.about-logo {
+/* Native About footer (About.tsx:62-75): Contact and Support in accent, 24 px apart, 44 px high. */
+.about-links {
   display: flex;
-  color: var(--text);
-  margin: var(--s-2) 0 var(--s-4);
+  gap: var(--s-5);
+}
+
+.about-links button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: var(--touch);
+  padding: 0;
+  background: none;
+  border: 0;
+  color: var(--accent);
+  font: inherit;
+  font-weight: var(--fw-bold);
+  cursor: pointer;
 }
 
 /* Native About, Contact, Support body: 8 px top, 24 px sides, 32 px bottom, 16 px between blocks.
@@ -71,9 +104,5 @@
 .info-body p,
 .info-body ul,
 .info-body h2 {
-  margin: 0;
-}
-
-.info-body .about-logo {
   margin: 0;
 }

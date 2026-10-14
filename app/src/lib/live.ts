@@ -116,12 +116,18 @@ export function useLiveVehicles(lines: string[]): Vehicle[] {
 const NONE: Vehicle[] = []
 
 let statusPromise: Promise<Status> | null = null
+// The language the cached status was asked in: its text is localized, so a language change asks again.
+let statusLang: string | null = null
 
-/** Metro İstanbul line problems. Cached for the session; null when unavailable. */
+/** Metro İstanbul line problems. Cached for the session (per language); null when unavailable. */
 export function useLineStatus(): Status | null {
   const [status, setStatus] = useState<Status | null>(null)
   useEffect(() => {
     if (!LIVE_BASE || CITY.live !== 'iett') return
+    if (statusLang !== lang) {
+      statusLang = lang
+      statusPromise = null
+    }
     statusPromise ??= get<Status>(`/live/status?lang=${lang}`)
     statusPromise.then(setStatus, () => {
       statusPromise = null
