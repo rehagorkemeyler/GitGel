@@ -58,6 +58,9 @@
   font-weight: var(--fw-bold);
 }
 
+/* Live label inside a section heading: keeps its own case and tracking (native chip variant). */
 .live-tag {
   font-weight: normal;
+  text-transform: none;
+  letter-spacing: normal;
 }
