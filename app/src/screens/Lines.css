@@ -21,7 +21,7 @@
 .segmented button {
   flex: 1;
   min-width: 0;
-  border-radius: var(--r-sm);
+  border-radius: 9px; /* native Segmented item radius */
   font-size: var(--fs-s);
   overflow: hidden;
   text-overflow: ellipsis;

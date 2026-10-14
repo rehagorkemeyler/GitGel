@@ -116,9 +116,15 @@ export function StationSheet({
           </li>
         ))}
       </ul>
-      {current?.list && current.list.length > 0 && (
-        <p className="muted small-note">{current.list.some((g) => g.times.some((x) => x.live)) ? t('live') : t('scheduledNote')}</p>
-      )}
+      {current?.list && current.list.length > 0 &&
+        (current.list.some((g) => g.times.some((x) => x.live)) ? (
+          <p className="small-note live-text">
+            <span className="live-icon" aria-hidden><Icon name="signal" size={12} /></span>
+            {t('live')}
+          </p>
+        ) : (
+          <p className="muted small-note">{t('scheduledNote')}</p>
+        ))}
     </div>
   )
 }

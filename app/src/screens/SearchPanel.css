@@ -64,10 +64,12 @@
   min-width: 0;
 }
 
+/* Native PlaceRow uses the heading variant (semibold, -0.2 tracking). */
 .result-name {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  letter-spacing: -0.2px;
 }
 
 .result-sub,
