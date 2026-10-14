@@ -23,6 +23,12 @@ check_sources() {
   echo "--- live service"
   curl -sS -m 20 'http://127.0.0.1:8081/live/vehicles?line=500T' | head -c 300; echo
   docker compose -f infra/docker-compose.yml logs --tail 20 live 2>&1 | tail -20
+  echo "--- photon"
+  ls -la /opt/gitgel-data/photon/ 2>&1 | tail -8
+  ls -la /opt/gitgel-data/photon/current/ 2>&1 | head -8
+  df -h / /opt 2>&1 | tail -2
+  free -m | head -2
+  docker compose -f infra/docker-compose.yml logs --tail 25 photon 2>&1 | cut -c1-300 | tail -25
 }
 
 main() {
