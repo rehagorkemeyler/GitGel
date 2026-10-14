@@ -2,6 +2,7 @@ import { StopCode } from '../components/StopCode'
 import { stopCode } from '../lib/city'
 import { useEffect, useState } from 'react'
 import { LineChip } from '../components/LineChip'
+import { CloseButton } from '../components/PanelHeader'
 import { stopTimes } from '../lib/api'
 import { hhmm } from '../lib/itinerary'
 import { CITY } from '../lib/city'
@@ -31,9 +32,7 @@ export function LineHeader({ line, error, dir, onDir, onClose }: Props) {
       <div className="line-head">
         <LineChip name={line.name} line={line} big />
         <span className="line-long">{line.long_name}</span>
-        <button className="close" onClick={onClose} aria-label={t('close')}>
-          ×
-        </button>
+        <CloseButton onClose={onClose} />
       </div>
       {line.directions.length > 1 && (
         <div className="segmented" role="tablist">

@@ -1,9 +1,12 @@
+/* Native GlassSheet: a detached glass sheet 8 px in from the screen edges, all four corners
+   rounded (radius.sheet 38), full height = screen minus the insets minus 16 px. */
 .sheet {
   position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 92dvh;
+  left: 8px;
+  right: 8px;
+  bottom: calc(8px + env(safe-area-inset-bottom));
+  height: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 16px);
+  height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 16px);
   max-width: 560px;
   margin: 0 auto;
   display: flex;
@@ -12,11 +15,10 @@
   background-image: var(--glass-shine);
   -webkit-backdrop-filter: var(--glass-blur);
   backdrop-filter: var(--glass-blur);
-  border-radius: var(--r-sheet) var(--r-sheet) 0 0;
+  border-radius: var(--r-sheet);
   border: 1px solid var(--glass-edge);
-  border-bottom: 0;
   box-shadow: none;
-  transition: transform var(--dur) var(--ease-spring);
+  transition: transform var(--dur) var(--ease-sheet);
   will-change: transform;
   touch-action: none;
   user-select: none;
@@ -28,29 +30,33 @@
   transition: none;
 }
 
+/* Native HandleBar: 8 px above the bar, 4 px below, 17 px in all. */
 .sheet-grip {
   display: flex;
   justify-content: center;
-  padding-top: var(--s-1);
+  padding: var(--s-2) 0 var(--s-1);
   touch-action: none;
 }
 
+/* Native handle: 36 x 5, radius 3, palette handle colour. */
 .sheet-handle {
-  width: 64px;
-  min-height: 24px;
   position: relative;
+  width: 36px;
+  height: 5px;
+  min-height: 0;
+  padding: 0;
+  border-radius: 3px;
+  background: var(--handle);
 }
 
-.sheet-handle::after {
+/* A 64 x 24 touch target around the bar, without changing the grip's height. */
+.sheet-handle::before {
   content: '';
   position: absolute;
   left: 50%;
   top: 50%;
-  /* Native GlassSheet handle: 36 x 5, radius 3, palette handle colour. */
-  width: 36px;
-  height: 5px;
-  border-radius: 3px;
-  background: var(--handle);
+  width: 64px;
+  height: 24px;
   transform: translate(-50%, -50%);
 }
 

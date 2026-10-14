@@ -1,7 +1,6 @@
 import { StopCode } from '../components/StopCode'
 import { CITY } from '../lib/city'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Panel } from '../components/Panel'
 import { Icon } from '../components/Icon'
 import { LineChip } from '../components/LineChip'
 import { categoryOf, formatDistance, freePlaces, googlePlace, googleSuggest, newSession, type Category, type Suggestion } from '../lib/places'
@@ -116,23 +115,29 @@ export function SearchPanel({ title, onPick, onBack, myLocation, near = null }: 
   const placesFound = (remote.q === query && remote.places.length > 0) || (google.q === query && google.list.length > 0)
 
   return (
-    <Panel title={title} onBack={onBack}>
-      <div className="search-box">
-        <Icon name="search" />
-        <input
-          ref={input}
-          type="search"
-          inputMode="search"
-          enterKeyHint="search"
-          autoComplete="off"
-          autoCorrect="off"
-          spellCheck={false}
-          placeholder={t('searchPlaceholder')}
-          aria-label={title}
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && results[0] && pick(results[0])}
-        />
+    <>
+      <div className="search-head">
+        <div className="search-box">
+          <Icon name="search" />
+          <input
+            ref={input}
+            type="search"
+            inputMode="search"
+            enterKeyHint="search"
+            autoComplete="off"
+            autoCorrect="off"
+            spellCheck={false}
+            placeholder={t('searchPlaceholder')}
+            aria-label={title}
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && results[0] && pick(results[0])}
+          />
+        </div>
+        {/* Native search: "Vazgeç" (cancel) closes the search, the field stays a field. */}
+        <button className="search-cancel" onClick={onBack}>
+          {t('cancel')}
+        </button>
       </div>
 
       {myLocation && showRecent && (
@@ -202,7 +207,7 @@ export function SearchPanel({ title, onPick, onBack, myLocation, near = null }: 
       {/* Native "nothing": only once no place search is pending and no place result came back for this query. */}
       {!showRecent && results.length === 0 && !placesFound && !searching && index && <p aria-live="polite" className="state-msg">{t('noResults')}</p>}
       {indexError && <p aria-live="polite" className="state-msg">{t('dataUnavailable')}</p>}
-    </Panel>
+    </>
   )
 }
 

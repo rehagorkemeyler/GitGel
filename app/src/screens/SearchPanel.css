@@ -106,3 +106,27 @@
   color: var(--text-2);
   font-variant-numeric: tabular-nums;
 }
+
+/* Search row in the sheet: the field and the native "cancel" text button. */
+.search-head {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  margin-bottom: var(--s-3);
+}
+
+.search-head .search-box {
+  flex: 1;
+  min-width: 0;
+  margin-bottom: 0;
+}
+
+/* Native cancel: accent text, semibold 16.5 px, touch height 44. */
+.search-cancel {
+  flex: none;
+  min-height: var(--touch);
+  padding: 0 var(--s-1);
+  color: var(--accent);
+  font-size: 16.5px;
+  font-weight: var(--fw-bold);
+}

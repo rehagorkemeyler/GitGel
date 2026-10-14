@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Panel } from '../components/Panel'
+import { PanelHeader } from '../components/PanelHeader'
 import { LineChip } from '../components/LineChip'
 import { loadLines, type Line } from '../lib/data'
 import { frequentLines } from '../lib/recent'
@@ -47,7 +47,8 @@ export function Lines({ onBack, onOpen }: { onBack: () => void; onOpen: (id: str
   }, [lines, q])
 
   return (
-    <Panel title={t('linesTitle')} onBack={onBack}>
+    <>
+      <PanelHeader title={t('linesTitle')} onClose={onBack} />
       <div className="search-box">
         <input
           type="search"
@@ -91,6 +92,6 @@ export function Lines({ onBack, onOpen }: { onBack: () => void; onOpen: (id: str
           {g.more && <p aria-live="polite" className="state-msg">{t('typeToFindBus')}</p>}
         </section>
       ))}
-    </Panel>
+    </>
   )
 }

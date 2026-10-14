@@ -1,5 +1,5 @@
-import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
-import { BottomSheet } from './components/BottomSheet'
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
+import { BottomSheet, type SheetHandle } from './components/BottomSheet'
 import { Icon } from './components/Icon'
 import { HomePeek } from './screens/Home'
 import { SearchPanel } from './screens/SearchPanel'
@@ -12,7 +12,6 @@ import { About } from './screens/About'
 import { StationSheet } from './screens/StationSheet'
 import { TrainSheet } from './screens/TrainSheet'
 import { VehicleSheet } from './screens/VehicleSheet'
-import type { TrainInfo } from './map/railLayer'
 import { LineHeader, LineStops } from './screens/LineSheet'
 import { lineView, useLineDetail } from './lib/lineDetail'
 import type { Station } from './map/networkLayer'
@@ -25,16 +24,22 @@ import { rememberLine, rememberStation, type RecentPlace } from './lib/recent'
 import { prepareAlerts, useTracking } from './lib/tracking'
 import { TrackingBanner } from './components/TrackingBanner'
 import { loadJson, loadSearchIndex, loadStops } from './lib/data'
-import { useLineStatus, useLiveVehicles, type Vehicle } from './lib/live'
+import { useLineStatus, useLiveVehicles } from './lib/live'
 import { StatusBand } from './components/StatusBand'
 import { LocationPicker } from './components/LocationPicker'
 import type { Map as MlMap } from 'maplibre-gl'
+import { SNAP } from './lib/sheet'
+import { defaultSnapOf, isTrip, popPanels, resetPanels, type Panel } from './lib/panels'
 import './App.css'
 
 // The map (MapLibre, the biggest chunk) loads in parallel; the panel is usable at once.
 const MapView = lazy(() => import('./map/MapView').then((m) => ({ default: m.MapView })))
 
+/** Screens the home menu can open (the sheet panels of the stack). */
 export type Screen = 'home' | 'search' | 'nearby' | 'lines' | 'contact' | 'support' | 'about'
+
+// Set once per page load: after a reload the panels start at home again (see the history effect).
+let historyResumed = false
 
 const CITY_IDS: CityId[] = ['istanbul', 'ankara', 'bursa']
 const OUTSIDE_KEY: Record<CityId, StringKey> = {
@@ -43,21 +48,25 @@ const OUTSIDE_KEY: Record<CityId, StringKey> = {
   bursa: 'outsideBursa',
 }
 
-
 export function App() {
-  const [screen, setScreen] = useState<Screen>('home')
-  const [searchFor, setSearchFor] = useState<'to' | 'from'>('to')
-  const [expanded, setExpanded] = useState(false)
+  // The panel stack (native App.tsx): the top panel is what the sheet shows; the one below is "back".
+  const [stack, setStackState] = useState<Panel[]>([{ kind: 'home' }])
+  const stackRef = useRef(stack)
+  const panel = stack[stack.length - 1]
+  const sheet = useRef<SheetHandle>(null)
+  // Trip state, kept while panels come and go (native destination, fromChoice, options, tracked).
   const [to, setTo] = useState<Place | null>(null)
   const [fromChoice, setFromChoice] = useState<Place | null>(null)
-  const [open, setOpen] = useState<Itinerary | null>(null)
   const [options, setOptions] = useState<Itinerary[] | null>(null)
-  const [station, setStation] = useState<Station | null>(null)
-  const [train, setTrain] = useState<TrainInfo | null>(null)
-  const [bus, setBus] = useState<Vehicle | null>(null)
-  const [lineId, setLineId] = useState<string | null>(null)
-  const [lineDir, setLineDir] = useState(0)
+  const [tracking, setTracking] = useState<Itinerary | null>(null)
   const geo = useGeolocation()
+  // What the top panel shows.
+  const station = panel.kind === 'station' ? panel.station : null
+  const lineId = panel.kind === 'line' ? panel.id : null
+  const lineDir = panel.kind === 'line' ? panel.dir : 0
+  const openRoute = panel.kind === 'route' ? panel.it : null
+  // Native shownRoute: the opened route, or the options on the results panel.
+  const shownRoute = openRoute ? [openRoute] : panel.kind === 'results' ? options : null
   const lineData = useLineDetail(lineId)
   const view = useMemo(() => lineView(lineData.line, lineData.stops, lineDir), [lineData, lineDir])
   const railModes = ['metro', 'rail', 'tram', 'funicular', 'cablecar']
@@ -66,10 +75,10 @@ export function App() {
   const openBusLine = busShapes() && lineData.line?.mode === 'bus' ? lineData.line.name : null
   const busLines = useMemo(
     () => [
-      ...(open?.legs ?? []).filter((l) => l.mode === 'BUS' && l.routeShortName).map((l) => l.routeShortName!),
+      ...(openRoute?.legs ?? []).filter((l) => l.mode === 'BUS' && l.routeShortName).map((l) => l.routeShortName!),
       ...(openBusLine ? [openBusLine] : []),
     ],
-    [open, openBusLine],
+    [openRoute, openBusLine],
   )
   const vehicles = useLiveVehicles(busLines)
   const status = useLineStatus()
@@ -79,7 +88,6 @@ export function App() {
   const [picking, setPicking] = useState(false)
   const [choosingCity, setChoosingCity] = useState(false)
   // "Başla": the trip is followed while the page is open; alerts are asked only when the user starts it.
-  const [tracking, setTracking] = useState<Itinerary | null>(null)
   const track = useTracking(tracking, geo.position)
   // A stop card and a line page count as uses (frequent places and lines); the search counts places itself.
   useEffect(() => {
@@ -88,17 +96,6 @@ export function App() {
   useEffect(() => {
     if (lineId) rememberLine(lineId)
   }, [lineId])
-  // A recent stop opens its card again; a recent place becomes the destination.
-  const openRecent = (p: RecentPlace) => {
-    if (p.station) {
-      setLineId(null)
-      setTrain(null)
-      setBus(null)
-      setStation(p.station)
-      setExpanded(false)
-      map?.jumpTo({ center: [p.station.lon, p.station.lat], zoom: 16.5 })
-    } else setTo(p)
-  }
   const outside = !!geo.position && !inCity(geo.position)
   // First visit outside the default city: ask for the city before offering a test location.
   const cityPrompt = choosingCity || (!CITY_CHOSEN && outside)
@@ -126,17 +123,227 @@ export function App() {
   // Follow the live position only while "my location" is the origin.
   const from = fromChoice ?? me
 
-  const openSearch = (which: 'to' | 'from') => {
-    setSearchFor(which)
-    setScreen('search')
+  // ---- Panel stack -------------------------------------------------------------------------
+  // The state and a ref: callbacks that run later (a search answer, a back gesture) read the current stack.
+  const setPanels = (next: Panel[]) => {
+    stackRef.current = next
+    setStackState(next)
   }
+  // Each panel above home is one browser history entry, so Android back closes the top panel first.
+  const move = (next: Panel[]) => {
+    const prevLen = stackRef.current.length
+    const d = next.length - prevLen
+    setPanels(next)
+    if (d > 0) for (let i = 0; i < d; i++) history.pushState({ depth: prevLen + i }, '')
+    else if (d < 0) history.go(d)
+    else if (next.length > 1) history.replaceState({ depth: next.length - 1 }, '')
+  }
+  const top = () => stackRef.current[stackRef.current.length - 1]
+  // The sheet's next move (native goTo): the new panel's default, or the height it had when it comes back.
+  const goTo = (p: Panel) => sheet.current?.goTo(defaultSnapOf(p), p.snapH)
+
+  /** Opens a panel on top; the one below keeps the height it had. */
+  const push = (p: Panel) => {
+    const s = stackRef.current
+    const h = sheet.current?.height()
+    goTo(p)
+    move([...s.slice(0, -1), { ...s[s.length - 1], snapH: h }, p])
+  }
+  /** Replaces the stack down to the panels `keep` allows, then opens `p` (native resetTo). */
+  const resetTo = (keep: (p: Panel) => boolean, p: Panel | null) => {
+    const next = resetPanels(stackRef.current, keep, p)
+    goTo(next[next.length - 1])
+    move(next)
+  }
+  /** Replaces the top panel, as a stop card does for another stop (native replaceTop). */
+  const replaceTop = (p: Panel) => move([...stackRef.current.slice(0, -1), p])
+  /** Back: the panel below comes back at the height it had. */
+  const pop = () => {
+    const next = popPanels(stackRef.current)
+    if (next === stackRef.current) return
+    goTo(next[next.length - 1])
+    move(next)
+  }
+  // Android back: the browser goes back one entry; the top panel closes instead while there is one.
+  useEffect(() => {
+    // After a reload the panels start at home, but the browser still holds this page's entries above
+    // the first one: go back to it, so the back gesture is not spent on panels that are gone.
+    const depth = typeof history.state?.depth === 'number' ? history.state.depth : 0
+    if (!historyResumed && depth > 0) {
+      historyResumed = true
+      history.go(-depth)
+    }
+    const onPop = (e: PopStateEvent) => {
+      const depth = typeof e.state?.depth === 'number' ? e.state.depth : 0
+      const s = stackRef.current
+      if (depth + 1 >= s.length) return
+      const next = s.slice(0, depth + 1)
+      goTo(next[next.length - 1])
+      setPanels(next)
+    }
+    window.addEventListener('popstate', onPop)
+    return () => window.removeEventListener('popstate', onPop)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const showResults = () => resetTo((x) => !isTrip(x), { kind: 'results' })
+
+  /** A destination: its results open (native chooseDestination). */
+  const chooseDestination = (p: Place) => {
+    setTo(p)
+    setPicking(false)
+    showResults()
+  }
+  /** An origin: back to the trip when there is a destination, else back to the search that asked (native chooseOrigin). */
+  const chooseOrigin = (p: Place) => {
+    if (p.kind === 'me') {
+      setFromChoice(null)
+      geo.start()
+    } else setFromChoice(p)
+    if (to) showResults()
+    else pop()
+  }
+  /** Closing a trip removes its panels and forgets the destination, origin, options and tracking (native closeTrip). */
+  const closeTrip = () => {
+    setTo(null)
+    setFromChoice(null)
+    setOptions(null)
+    setTracking(null)
+    resetTo((x) => !isTrip(x), null)
+  }
+  /** "Başla" follows the trip and drops the sheet to the peek; the same button stops it (native toggleTracking). */
+  const toggleTracking = (it: Itinerary) => {
+    if (tracking) {
+      setTracking(null)
+      return
+    }
+    // The user asked for it, so alerts may be asked for now.
+    void prepareAlerts()
+    geo.start()
+    setTracking(it)
+    sheet.current?.snapTo(SNAP.peek)
+  }
+  /** A stop card: the card replaces the one already on top (native openStation). */
+  const openStation = (st: Station, fly = false) => {
+    if (top().kind === 'station') replaceTop({ kind: 'station', station: st })
+    else push({ kind: 'station', station: st })
+    if (fly) map?.jumpTo({ center: [st.lon, st.lat], zoom: 16.5 })
+  }
+  const openLine = (id: string) => push({ kind: 'line', id, dir: 0 })
+  const setLineDirection = (d: number) => {
+    if (panel.kind === 'line') replaceTop({ ...panel, dir: d })
+  }
+  /** A recent stop opens its card again; anything else is a destination. */
+  const onRecent = (p: RecentPlace) => (p.station ? openStation(p.station, true) : chooseDestination(p))
+  const onSearchPick = (which: 'to' | 'from', p: Place) => {
+    // A stop picked by its number (Ankara) opens its card: that is what people look up.
+    if (which === 'to' && p.code) {
+      pop()
+      loadStops().then((all) => {
+        const s = all.find((x) => x.id === `eg_${p.code}`)
+        if (!s) return chooseDestination(p)
+        openStation({ ...s, ids: [s.id] }, true)
+      }, () => chooseDestination(p))
+      return
+    }
+    if (which === 'to') chooseDestination(p)
+    else chooseOrigin(p)
+  }
+  const go = (s: Screen) => {
+    if (s === 'search') push({ kind: 'search', which: 'to' })
+    else if (s === 'nearby') push({ kind: 'nearby' })
+    else if (s === 'lines') push({ kind: 'lines' })
+    else if (s === 'contact') push({ kind: 'contact' })
+    else if (s === 'support') push({ kind: 'support' })
+  }
+
+  const contentId =
+    panel.kind === 'station'
+      ? panel.station.id
+      : panel.kind === 'line'
+        ? panel.id
+        : panel.kind === 'route'
+          ? panel.it.startTime
+          : panel.kind === 'train'
+            ? panel.train.id
+            : panel.kind === 'vehicle'
+              ? panel.vehicle.id
+              : panel.kind === 'search'
+                ? panel.which
+                : ''
+  // Same panel: the sheet keeps the user's height. A new panel: its default (or the height it had).
+  const panelKey = `${stack.length}:${panel.kind}:${contentId}`
+
+  const content = (() => {
+    switch (panel.kind) {
+      case 'home':
+        return <HomePeek go={go} onCity={() => setChoosingCity(true)} onRecent={onRecent} />
+      case 'search':
+        return (
+          <SearchPanel
+            title={t(panel.which === 'to' ? 'whereTo' : 'from')}
+            myLocation={panel.which === 'from' ? (me ?? { name: t('myLocation'), kind: 'me', lat: 0, lon: 0 }) : null}
+            near={stablePos}
+            onBack={pop}
+            onPick={(p) => onSearchPick(panel.which, p)}
+          />
+        )
+      case 'results':
+        return to ? (
+          <Results
+            from={from}
+            to={to}
+            onEditFrom={() => push({ kind: 'search', which: 'from' })}
+            onEditTo={() => push({ kind: 'search', which: 'to' })}
+            onClose={closeTrip}
+            onOpen={(it) => push({ kind: 'route', it })}
+            onOptions={setOptions}
+          />
+        ) : null
+      case 'route':
+        return (
+          <RouteDetail
+            it={panel.it}
+            liveCount={vehicles.length}
+            tracking={tracking === panel.it}
+            onBack={pop}
+            onStart={() => toggleTracking(panel.it)}
+          />
+        )
+      case 'station':
+        return (
+          <StationSheet
+            station={panel.station}
+            onClose={pop}
+            onDirections={() => chooseDestination({ name: panel.station.name, lat: panel.station.lat, lon: panel.station.lon, kind: 'stop' })}
+            onLine={openLine}
+          />
+        )
+      case 'line':
+        return <LineHeader {...lineData} dir={lineDir} onDir={setLineDirection} onClose={pop} />
+      case 'vehicle':
+        return <VehicleSheet vehicle={panel.vehicle} onClose={pop} onLine={openLine} />
+      case 'train':
+        return <TrainSheet train={panel.train} onClose={pop} />
+      case 'lines':
+        return <Lines onBack={pop} onOpen={openLine} />
+      case 'nearby':
+        return <Nearby position={geo.position} onLocate={geo.start} onBack={pop} />
+      case 'contact':
+        return <Contact onBack={pop} onAbout={() => push({ kind: 'about' })} />
+      case 'support':
+        return <Support onBack={pop} />
+      case 'about':
+        return <About onBack={pop} />
+    }
+  })()
 
   return (
     <>
       <Suspense fallback={<div className="map" />}>
         <MapView
           position={geo.position}
-          route={open}
+          route={openRoute}
           alternatives={to ? options : null}
           vehicles={vehicles}
           hiddenLines={hiddenLines}
@@ -144,26 +351,16 @@ export function App() {
           bottomInset={Math.round(window.innerHeight * 0.45)}
           onReady={setMap}
           onStation={(st) => {
-            if (open || to) return // a route is on screen: keep it
-            setLineId(null)
-            setTrain(null)
-            setBus(null)
-            setStation(st)
-            setExpanded(false)
+            if (shownRoute?.length) return // a route is on screen: keep it
+            openStation(st)
           }}
           onTrain={(tr) => {
-            if (open || to) return
-            setStation(null)
-            setBus(null)
-            setTrain(tr)
-            setExpanded(false)
+            if (!shownRoute?.length) push({ kind: 'train', train: tr })
           }}
           onVehicle={(v) => {
-            if (open || to) return
-            setStation(null)
-            setTrain(null)
-            setBus(v)
-            setExpanded(false)
+            if (shownRoute?.length) return
+            if (top().kind === 'vehicle') replaceTop({ kind: 'vehicle', vehicle: v })
+            else push({ kind: 'vehicle', vehicle: v })
           }}
           focusLine={lineId}
           focusLines={lineId ? [lineId] : station ? station.lines : null}
@@ -232,123 +429,9 @@ export function App() {
           }}
         />
       )}
-      <BottomSheet
-        label={t('whereTo')}
-        contentKey={
-          bus ? `bus:${bus.id}` : lineId ? `line:${lineId}` : open ? `route:${open.startTime}` : to ? `to:${to.name}` : train ? `train:${train.id}` : station ? `st:${station.id}` : 'home'
-        }
-        expanded={expanded}
-        onExpandedChange={setExpanded}
-        peek={
-          bus ? (
-            <VehicleSheet
-              vehicle={bus}
-              onClose={() => setBus(null)}
-              onLine={(id) => {
-                setBus(null)
-                setLineDir(0)
-                setLineId(id)
-              }}
-            />
-          ) : lineId ? (
-            <LineHeader {...lineData} dir={lineDir} onDir={setLineDir} onClose={() => setLineId(null)} />
-          ) : open ? (
-            <RouteDetail
-              it={open}
-              liveCount={vehicles.length}
-              onBack={() => setOpen(null)}
-              onStart={() => {
-                void prepareAlerts()
-                geo.start()
-                setTracking(open)
-              }}
-            />
-          ) : to ? (
-            <Results
-              from={from}
-              to={to}
-              onEditFrom={() => openSearch('from')}
-              onEditTo={() => openSearch('to')}
-              onClose={() => {
-                setOpen(null)
-                setTo(null)
-                setFromChoice(null)
-              }}
-              onOpen={setOpen}
-              onOptions={setOptions}
-            />
-          ) : train ? (
-            <TrainSheet train={train} onClose={() => setTrain(null)} />
-          ) : station ? (
-            <StationSheet
-              station={station}
-              onClose={() => setStation(null)}
-              onDirections={() => {
-                setTo({ name: station.name, lat: station.lat, lon: station.lon, kind: 'stop' })
-                setStation(null)
-              }}
-              onLine={(id) => {
-                setLineDir(0)
-                setLineId(id)
-              }}
-            />
-          ) : (
-            <HomePeek
-              go={(s) => (s === 'search' ? openSearch('to') : setScreen(s))}
-              onCity={() => setChoosingCity(true)}
-              onRecent={openRecent}
-            />
-          )
-        }
-      >
-        {lineId && !bus && <LineStops {...lineData} dir={lineDir} onDir={setLineDir} onClose={() => setLineId(null)} />}
+      <BottomSheet ref={sheet} label={t('whereTo')} contentKey={panelKey} defaultSnap={defaultSnapOf(panel)} peek={content}>
+        {lineId && <LineStops {...lineData} dir={lineDir} onDir={setLineDirection} onClose={pop} />}
       </BottomSheet>
-      {screen === 'search' && (
-        <SearchPanel
-          title={t(searchFor === 'to' ? 'whereTo' : 'from')}
-          myLocation={searchFor === 'from' ? (me ?? { name: t('myLocation'), kind: 'me', lat: 0, lon: 0 }) : null}
-          near={stablePos}
-          onBack={() => setScreen('home')}
-          onPick={(p) => {
-            // A stop picked by its number (Ankara) opens its card: that is what people look up.
-            if (searchFor === 'to' && p.code) {
-              setScreen('home')
-              loadStops().then((all) => {
-                const s = all.find((x) => x.id === `eg_${p.code}`)
-                if (!s) return setTo(p)
-                setLineId(null)
-                setTrain(null)
-                setBus(null)
-                setStation({ ...s, ids: [s.id] })
-                setExpanded(false)
-                map?.jumpTo({ center: [s.lon, s.lat], zoom: 16.5 })
-              }, () => setTo(p))
-              return
-            }
-            if (searchFor === 'to') setTo(p)
-            else if (p.kind === 'me') {
-              setFromChoice(null)
-              geo.start()
-            } else setFromChoice(p)
-            setScreen('home')
-          }}
-        />
-      )}
-      {screen === 'nearby' && <Nearby position={geo.position} onLocate={geo.start} onBack={() => setScreen('home')} />}
-      {screen === 'lines' && (
-        <Lines
-          onBack={() => setScreen('home')}
-          onOpen={(id) => {
-            setLineDir(0)
-            setLineId(id)
-            setExpanded(false)
-            setScreen('home')
-          }}
-        />
-      )}
-      {screen === 'contact' && <Contact onBack={() => setScreen('home')} onAbout={() => setScreen('about')} />}
-      {screen === 'about' && <About onBack={() => setScreen('contact')} />}
-      {screen === 'support' && <Support onBack={() => setScreen('home')} />}
     </>
   )
 }

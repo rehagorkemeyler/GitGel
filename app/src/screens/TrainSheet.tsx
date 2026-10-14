@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { LineChip } from '../components/LineChip'
+import { CloseButton } from '../components/PanelHeader'
 import { trip, type LegPlace } from '../lib/api'
 import { hhmm } from '../lib/itinerary'
 import type { TrainInfo } from '../map/railLayer'
@@ -42,9 +43,7 @@ export function TrainSheet({ train, onClose }: { train: TrainInfo; onClose: () =
             {train.from} → {train.to}
           </span>
         </div>
-        <button className="close" onClick={onClose} aria-label={t('close')}>
-          ×
-        </button>
+        <CloseButton onClose={onClose} />
       </div>
       <p className="train-eta">
         {train.to}: <strong>{eta <= 0 ? t('arriving') : `${eta} ${t('min')}`}</strong> ({hhmm(new Date(train.arr))})

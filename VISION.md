@@ -56,7 +56,7 @@ Apple benzeri, sade ve profesyonel. Her telefonda akıcı çalışır.
 | Konu | Kural |
 |---|---|
 | Izgara | 8 px ızgara. Tüm boşluklar 4, 8, 12, 16, 24, 32 |
-| Köşeler | Tutarlı yarıçap ölçeği: 8 (küçük), 12 (buton), 16 (kart), 24 (alt panel). İç içe öğelerde iç yarıçap = dış yarıçap eksi iç boşluk, böylece kenarlar birbirine paralel durur |
+| Köşeler | Tutarlı yarıçap ölçeği: 8 (küçük), 12 (buton), 16 (kart), 38 (alt panel ve sheet, yerel uygulamadaki radius.sheet). İç içe öğelerde iç yarıçap = dış yarıçap eksi iç boşluk, böylece kenarlar birbirine paralel durur |
 | Yazı | Sistem yazı tipi (iOS'ta SF, Android'de Roboto). En fazla 3 boyut ve 2 kalınlık |
 | Renk | Nötr gri tonlar, tek bir vurgu rengi. Hat renkleri resmi renkler (Metro İstanbul API'sinden) |
 | Tema | Açık ve koyu mod renk değişkenleri, sistem ayarını izler |

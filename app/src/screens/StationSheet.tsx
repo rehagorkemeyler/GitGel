@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Icon } from '../components/Icon'
+import { CloseButton } from '../components/PanelHeader'
 import { LineChip } from '../components/LineChip'
 import { stopTimes } from '../lib/api'
 import { groupDepartures, type DepartureGroup } from '../lib/departures'
@@ -81,9 +82,7 @@ export function StationSheet({
             })}
           </div>
         </div>
-        <button className="close" onClick={onClose} aria-label={t('close')}>
-          ×
-        </button>
+        <CloseButton onClose={onClose} />
       </div>
       {CITY.routing && (
         <button className="directions" onClick={onDirections}>
