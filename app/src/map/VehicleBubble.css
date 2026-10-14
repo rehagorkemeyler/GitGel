@@ -1,0 +1,96 @@
+/* Native VehicleBubble (LiveLayer.tsx): a 250 px card above the tapped bus, with a 14 x 8 px tail.
+   The marker's 10 px bottom padding lifts the tail just above the 14 px dot. The card is glass, like the
+   other floating surfaces (owner decision). Only the card takes taps: the transparent padding passes them
+   through, so the dot under the bubble stays tappable. */
+
+.bus-bubble-anchor {
+  padding-bottom: 10px;
+  pointer-events: none;
+}
+
+.bus-bubble {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 250px;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  pointer-events: auto;
+  cursor: pointer;
+  text-align: left;
+  color: var(--text);
+  /* Native "secondary" type: 13.5 px regular, 18 px line height, primary colour. */
+  font-size: 13.5px;
+  line-height: 18px;
+  font-weight: var(--fw-regular);
+}
+
+.bus-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  box-sizing: border-box;
+  width: 250px;
+  padding: 9px 12px;
+  border-radius: 14px;
+  border: 1px solid var(--glass-edge);
+  background: var(--glass-bg);
+  background-image: var(--glass-shine);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  box-shadow: none;
+}
+
+/* The tail: a glass triangle pointing down at the bus. */
+.bus-tail {
+  display: block;
+  width: 14px;
+  height: 8px;
+  background: var(--glass-bg);
+  background-image: var(--glass-shine);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+}
+
+/* Row 1: line chip, title, crowding. */
+.bus-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.bus-head > .chip,
+.bus-head > .crowd {
+  flex: none;
+}
+
+.bus-title {
+  flex: 1;
+  min-width: 0;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+  overflow: hidden;
+}
+
+/* Row 2: the live signal and the age. */
+.bus-live {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--live);
+}
+
+.bus-live > svg {
+  flex: none;
+}
+
+/* Row 3: plate, speed, features. Two lines at most. */
+.bus-facts {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}

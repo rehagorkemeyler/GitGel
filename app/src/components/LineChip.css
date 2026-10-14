@@ -7,7 +7,7 @@
   min-width: 32px;
   padding: 0 7px;
   border-radius: 7px;
-  border: 1px solid var(--hairline);
+  /* Native LineChip has no border; the neutral fill is native colors.fill. */
   background: var(--fill);
   color: var(--text);
   font-size: var(--fs-s);

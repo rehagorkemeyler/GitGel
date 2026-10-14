@@ -31,6 +31,8 @@ const LINE_OPACITY: ExpressionSpecification = ['interpolate', ['linear'], ['zoom
 const ST = 'net-stations'
 const BUS = 'net-bus-stops'
 const BUS_MIN_ZOOM = 14
+/** Layers that take a tap on a station or a bus stop (MapView keeps empty-map taps apart from them). */
+export const NET_TAP_LAYERS = [ST + '-dot', ST + '-far', BUS + '-dot']
 
 export class NetworkLayer {
   private map: MlMap
@@ -67,6 +69,8 @@ export class NetworkLayer {
     const dark = matchMedia('(prefers-color-scheme: dark)').matches
     const ink = dark ? '#e5e5ea' : '#3a3a3c'
     const paper = dark ? '#1c1c1e' : '#ffffff'
+    // Native StopMarkers: far station dots are white, or #1c1e24 in dark.
+    const stationFill = dark ? '#1c1e24' : '#ffffff'
     addTransitIcons(m, dark)
     m.addSource(NET, { type: 'geojson', data: { type: 'FeatureCollection', features: [] } })
     m.addSource(ST, { type: 'geojson', data: { type: 'FeatureCollection', features: [] } })
@@ -118,7 +122,8 @@ export class NetworkLayer {
         'icon-allow-overlap': true,
       },
     })
-    // Far away: small white dots on the line. Closer: mode icons (train, tram, ferry...).
+    // Far away: small dots on the line (native: 8 px, transfer 12 px, outer size; the stroke sits outside the radius).
+    // Closer: mode icons (train, tram, ferry...).
     m.addLayer({
       id: ST + '-far',
       type: 'circle',
@@ -126,10 +131,10 @@ export class NetworkLayer {
       minzoom: 10,
       maxzoom: 12.5,
       paint: {
-        'circle-radius': ['interpolate', ['linear'], ['zoom'], 10, ['case', ['get', 'transfer'], 2.7, 1.8], 12.5, ['case', ['get', 'transfer'], 5.2, 3.5]],
-        'circle-color': paper,
+        'circle-radius': ['case', ['get', 'transfer'], 4, 2.5],
+        'circle-color': stationFill,
         'circle-stroke-color': ink,
-        'circle-stroke-width': 1,
+        'circle-stroke-width': ['case', ['get', 'transfer'], 2, 1.5],
       },
     })
     m.addLayer({
@@ -139,26 +144,11 @@ export class NetworkLayer {
       minzoom: 12.5,
       layout: {
         'icon-image': ['concat', 'gg-', ['get', 'glyph']],
-        // Transfer stations 50% bigger.
-        'icon-size': ['interpolate', ['linear'], ['zoom'], 12.5, ['case', ['get', 'transfer'], 1.05, 0.7], 16, ['case', ['get', 'transfer'], 1.5, 1]],
+        // The glyph image is 22 px. Native: 16 px below zoom 15, 20 px from 15; transfers 1.3x (21 and 26 px).
+        'icon-size': ['step', ['zoom'], ['case', ['get', 'transfer'], 0.9545, 0.7273], 15, ['case', ['get', 'transfer'], 1.1818, 0.9091]],
         'symbol-sort-key': ['case', ['get', 'transfer'], 0, 1],
         'icon-allow-overlap': true,
       },
-    })
-    m.addLayer({
-      id: ST + '-label',
-      type: 'symbol',
-      source: ST,
-      minzoom: 13,
-      layout: {
-        'text-field': ['get', 'name'],
-        'text-size': 12,
-        'text-offset': [0, 1.2],
-        'text-anchor': 'top',
-        'text-optional': true,
-        'text-font': ['Noto Sans Regular'],
-      },
-      paint: { 'text-color': ink, 'text-halo-color': paper, 'text-halo-width': 1.5 },
     })
     this.ink = ink
     this.accent = ACCENT
