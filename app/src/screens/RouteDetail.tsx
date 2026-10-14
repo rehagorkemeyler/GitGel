@@ -10,11 +10,14 @@ import './RouteDetail.css'
 export function RouteDetail({
   it,
   liveCount = 0,
+  tracking = false,
   onBack,
   onStart,
 }: {
   it: Itinerary
   liveCount?: number
+  /** The trip is followed on the map: the button stops it. */
+  tracking?: boolean
   onBack: () => void
   /** "Başla": follow the trip on the map (the user asked for it, so alerts may be asked for now). */
   onStart?: () => void
@@ -37,7 +40,7 @@ export function RouteDetail({
         {onStart && (
           <button className="directions detail-start" onClick={onStart}>
             <Icon name="route" size={18} />
-            {t('start')}
+            {tracking ? t('stop') : t('start')}
           </button>
         )}
       </div>

@@ -58,3 +58,22 @@
   color: var(--text);
   margin: var(--s-2) 0 var(--s-4);
 }
+
+/* Native About, Contact, Support body: 8 px top, 24 px sides, 32 px bottom, 16 px between blocks.
+   The sheet adds 16 px at the sides and the bottom, so the rest is added here. */
+.info-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+  padding: var(--s-2) var(--s-2) var(--s-4);
+}
+
+.info-body p,
+.info-body ul,
+.info-body h2 {
+  margin: 0;
+}
+
+.info-body .about-logo {
+  margin: 0;
+}

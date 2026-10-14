@@ -1,4 +1,4 @@
-import { Panel } from '../components/Panel'
+import { PanelHeader } from '../components/PanelHeader'
 import { REPO_URL } from '../lib/config'
 import { t, type StringKey } from '../i18n'
 import { Logo } from '../components/Logo'
@@ -20,7 +20,8 @@ const SOURCES: { name: string; url: string; what: StringKey }[] = [
 
 export function About({ onBack }: { onBack: () => void }) {
   return (
-    <Panel title={t('about')} onBack={onBack}>
+    <div className="info-body">
+      <PanelHeader title={t('about')} subtitle="GitGel" onClose={onBack} />
       <div className="about-logo">
         <Logo height={40} />
       </div>
@@ -45,6 +46,6 @@ export function About({ onBack }: { onBack: () => void }) {
           {t('sourceCode')} (AGPL-3.0)
         </a>
       </p>
-    </Panel>
+    </div>
   )
 }

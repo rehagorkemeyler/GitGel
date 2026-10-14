@@ -61,3 +61,11 @@
   color: var(--live);
 }
 
+
+/* Back arrow in the trip header (native RouteDetail round back button). */
+.panel-back {
+  width: var(--touch);
+  display: grid;
+  place-items: center;
+  border-radius: var(--r-btn);
+}

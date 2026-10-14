@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Panel } from '../components/Panel'
+import { PanelHeader } from '../components/PanelHeader'
 import { LineChip } from '../components/LineChip'
 import { loadStops, lineColors, type Line } from '../lib/data'
 import { nearestStops, type NearbyStop } from '../lib/nearby'
@@ -44,7 +44,8 @@ export function Nearby({ position, onLocate, onBack }: Props) {
   }, [position])
 
   return (
-    <Panel title={t('nearbyTitle')} onBack={onBack}>
+    <>
+      <PanelHeader title={t('nearbyTitle')} onClose={onBack} />
       {!position && (
         <div className="empty">
           <p aria-live="polite" className="state-msg">{t('nearbyNeedsLocation')}</p>
@@ -81,7 +82,7 @@ export function Nearby({ position, onLocate, onBack }: Props) {
           </li>
         ))}
       </ul>
-    </Panel>
+    </>
   )
 }
 

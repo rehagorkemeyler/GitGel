@@ -1,135 +1,175 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
+import {
+  forwardRef,
+  useCallback,
+  useImperativeHandle,
+  useLayoutEffect,
+  useEffect,
+  useRef,
+  useState,
+  type FocusEvent,
+  type PointerEvent,
+  type ReactNode,
+} from 'react'
+import { DEFAULT_SHARE, PENDING_MS, SNAP, nearestSnap, snapHeights } from '../lib/sheet'
 import './BottomSheet.css'
+
+/** What the parent can ask of the sheet (native GlassSheet ref). */
+export type SheetHandle = {
+  /** The next content change moves the sheet: to this snap, or to a saved height `px` (a panel coming back). */
+  goTo: (snap: number, px?: number) => void
+  /** Moves now (a trip started: peek). */
+  snapTo: (snap: number) => void
+  /** Height in px the sheet last settled at. */
+  height: () => number
+}
 
 type Props = {
   /** Main content (search, station card, route list...). */
   peek: ReactNode
   /** More content below the main part (line page stops). */
   children?: ReactNode
-  expanded: boolean
-  onExpandedChange: (expanded: boolean) => void
   label: string
-  /** When this changes (new station, route, line...), the sheet opens at its default height again. */
-  contentKey?: string
+  /** Changes with the top panel. A new panel moves the sheet to its goTo target; replaced content keeps the height. */
+  contentKey: string
+  /** The snap the handle returns to from the top: the top panel's default. */
+  defaultSnap?: number
 }
 
 const VELOCITY = 0.4 // px/ms that counts as a flick
-const MIN_VISIBLE = 88 // px left on screen when minimized: grip + title
-const DEFAULT_SHARE = 0.4 // default height: the content, but at most 40% of the screen
-const MID_SHARE = 0.65
-const FIT_SHARE = 0.5 // content up to half the screen opens whole
 
-// Snap indexes, lowest to highest.
-const MIN = 0
-const DEFAULT = 1
-const MID = 2
-const FULL = 3
+type Dims = { sheetH: number; gripH: number; contentH: number; vh: number }
+
+const sameDims = (a: Dims, b: Dims) =>
+  a.sheetH === b.sheetH && a.gripH === b.gripH && a.contentH === b.contentH && a.vh === b.vh
+
+const isTextField = (el: EventTarget) => el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement
 
 /**
- * Draggable bottom sheet with four heights: minimized, default (content up to
- * 40% of the screen), middle and full. Heights taller than the content are
- * skipped, so a short menu never opens onto an empty screen. The content
- * scrolls inside at full height; from the top of the content a downward drag
- * moves the sheet again, anywhere on the sheet.
+ * Draggable bottom sheet, floating 8 px in from the screen edges (native GlassSheet), with five
+ * heights (native App.tsx): minimized, peek, default, middle and full. Heights taller than the
+ * content collapse, so short content opens whole. The content scrolls inside at full height; from
+ * its top a downward drag moves the sheet again, anywhere on the sheet. The sheet stops hard at
+ * its highest and lowest height (no rubber band, as native).
  *
- * Moves only with transform (60 fps on low-end Android); the spring-like easing
- * lives in CSS and respects reduced motion.
+ * Moves only with transform (60 fps on low-end Android); the spring-like easing lives in CSS and
+ * respects reduced motion.
  */
-export function BottomSheet({ peek, children, expanded, onExpandedChange, label, contentKey }: Props) {
+export const BottomSheet = forwardRef<SheetHandle, Props>(function BottomSheet(
+  { peek, children, label, contentKey, defaultSnap = SNAP.def },
+  ref,
+) {
   const sheet = useRef<HTMLElement>(null)
   const grip = useRef<HTMLDivElement>(null)
   const scroller = useRef<HTMLDivElement>(null)
   const inner = useRef<HTMLDivElement>(null)
-  const [dims, setDims] = useState({ sheetH: 0, gripH: 0, contentH: 0, vh: typeof window !== 'undefined' ? window.innerHeight : 800 })
+  const [dims, setDims] = useState<Dims>({
+    sheetH: 0,
+    gripH: 0,
+    contentH: 0,
+    vh: typeof window !== 'undefined' ? window.innerHeight : 800,
+  })
+  const [visible, setVisible] = useState(0) // px the sheet rests at
   const [drag, setDrag] = useState<number | null>(null)
+  // Where the sheet goes when the content changes (set by goTo); null keeps the height the user has.
+  const pending = useRef<{ snap: number; px?: number } | null>({ snap: SNAP.peek })
+  const lastPx = useRef(0) // last height the sheet settled at
+  // Height to return to when the text field that extended the sheet is left (null when none did).
+  const restoreAfterFocus = useRef<number | null>(null)
 
-  useLayoutEffect(() => {
-    const measure = () =>
-      setDims({
-        sheetH: sheet.current?.offsetHeight ?? 0,
-        gripH: grip.current?.offsetHeight ?? 0,
-        contentH: inner.current?.offsetHeight ?? 0,
-        vh: window.innerHeight,
-      })
-    measure()
-    const ro = new ResizeObserver(measure)
-    for (const el of [sheet.current, inner.current]) if (el) ro.observe(el)
-    window.addEventListener('resize', measure)
-    return () => {
-      ro.disconnect()
-      window.removeEventListener('resize', measure)
+  const { sheetH, gripH, contentH, vh } = dims
+  const heights = snapHeights(gripH + contentH, vh, sheetH)
+  const heightsRef = useRef(heights)
+  const shown = visible
+  const y = drag ?? sheetH - shown
+  const topY = sheetH - heights[SNAP.full]
+  const bottomY = sheetH - heights[SNAP.min]
+  const atFull = shown >= heights[SNAP.full] && heights[SNAP.full] > heights[SNAP.mid]
+
+  // Measures the content and puts the sheet where its pending target says, or keeps its height.
+  const place = useCallback(() => {
+    const next: Dims = {
+      sheetH: sheet.current?.offsetHeight ?? 0,
+      gripH: grip.current?.offsetHeight ?? 0,
+      contentH: inner.current?.offsetHeight ?? 0,
+      vh: window.innerHeight,
     }
+    const hs = snapHeights(next.gripH + next.contentH, next.vh, next.sheetH)
+    const p = pending.current
+    const want = p ? (p.px ?? hs[p.snap]) : lastPx.current
+    const px = hs[nearestSnap(hs, want)]
+    lastPx.current = px
+    setDims((d) => (sameDims(d, next) ? d : next))
+    setVisible(px)
   }, [])
 
-  // Visible height of each snap, lowest first; heights above what the content needs collapse down.
-  const { sheetH, gripH, contentH, vh } = dims
-  const need = Math.min(sheetH, gripH + contentH)
-  const heights = [
-    Math.min(MIN_VISIBLE, need),
-    // Short content (the home menu) is shown whole; long content (a stop, route results) at 40%.
-    need <= vh * FIT_SHARE ? need : Math.round(vh * DEFAULT_SHARE),
-    Math.min(need, Math.round(vh * MID_SHARE)),
-    need,
-  ].map((h, i, a) => Math.max(h, i ? a[i - 1] : 0))
+  useLayoutEffect(() => {
+    const ro = new ResizeObserver(place)
+    for (const el of [sheet.current, inner.current]) if (el) ro.observe(el)
+    window.addEventListener('resize', place)
+    return () => {
+      ro.disconnect()
+      window.removeEventListener('resize', place)
+    }
+  }, [place])
 
-  // Snap per content: new content opens at the default height.
-  const key = contentKey ?? ''
-  const [snapState, setSnapState] = useState({ key, snap: DEFAULT })
-  const own = snapState.key === key ? snapState.snap : DEFAULT
-  // The parent can ask for full height (expanded) or give it back.
-  const snap = expanded ? FULL : own === FULL ? DEFAULT : own
-  const setSnap = useCallback(
-    (s: number) => {
-      setSnapState({ key, snap: s })
-      onExpandedChange(s === FULL)
-    },
-    [key, onExpandedChange],
+  // A new panel (or replaced content) is measured at once, before paint. The pending target
+  // lasts 1.5 s, so content that loads in (skeleton, then rows) still lands on the target.
+  useLayoutEffect(() => {
+    place()
+    restoreAfterFocus.current = null // a field of the previous content does not restore the new one
+    if (scroller.current) scroller.current.scrollTop = 0 // new content starts at the top
+    const id = setTimeout(() => {
+      pending.current = null
+    }, PENDING_MS)
+    return () => clearTimeout(id)
+  }, [contentKey, place])
+
+  useLayoutEffect(() => {
+    heightsRef.current = heights
+  })
+
+  // Lets the map keep its attribution and focus above the sheet, never under the default height (native).
+  useLayoutEffect(() => {
+    document.documentElement.style.setProperty('--map-bottom-inset', `${Math.min(shown, Math.round(vh * DEFAULT_SHARE))}px`)
+  }, [shown, vh])
+
+  // Every move the user or the app makes ends a pending target.
+  const moveTo = useCallback((px: number) => {
+    pending.current = null
+    lastPx.current = px
+    setVisible(px)
+  }, [])
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      goTo: (snap, px) => {
+        pending.current = { snap, px }
+      },
+      snapTo: (snap) => moveTo(heightsRef.current[snap]),
+      height: () => lastPx.current,
+    }),
+    [moveTo],
   )
-  // Closing a route or opening a stop: tell the parent it is no longer expanded.
-  useEffect(() => {
-    if (expanded && snapState.key !== key) onExpandedChange(false)
-  }, [key]) // eslint-disable-line react-hooks/exhaustive-deps
-
-  const visible = heights[snap]
-  const y = drag ?? sheetH - visible
-  const topY = sheetH - heights[FULL]
-  const bottomY = sheetH - heights[MIN]
-
-  useLayoutEffect(() => {
-    // Lets the map keep its attribution above the sheet.
-    document.documentElement.style.setProperty('--map-bottom-inset', `${Math.min(visible, heights[DEFAULT])}px`)
-  }, [visible, heights[DEFAULT]]) // eslint-disable-line react-hooks/exhaustive-deps
-
-  // New content starts scrolled to the top.
-  useLayoutEffect(() => {
-    if (scroller.current) scroller.current.scrollTop = 0
-  }, [key])
 
   // Release: a flick moves one height in its direction, otherwise the nearest height wins.
-  const settle = useCallback(
-    (fromY: number, atY: number, v: number) => {
-      const nearest = (visibleH: number) =>
-        heights.reduce((best, h, i) => (Math.abs(h - visibleH) < Math.abs(heights[best] - visibleH) ? i : best), 0)
-      let target: number
-      if (Math.abs(v) > VELOCITY) {
-        const cur = heights[nearest(sheetH - fromY)]
-        const up = heights.findIndex((h) => h > cur)
-        const down = heights.map((h, i) => (h < cur ? i : -1)).filter((i) => i >= 0).pop()
-        target = v < 0 ? (up === -1 ? nearest(cur) : up) : (down ?? nearest(cur))
-      } else {
-        target = nearest(sheetH - atY)
-      }
-      // Several snaps can share a height (short content): keep the lowest of them.
-      setDrag(null)
-      setSnap(heights.indexOf(heights[target]))
-    },
-    [heights, sheetH, setSnap], // eslint-disable-line react-hooks/exhaustive-deps
-  )
+  // `base` and `dropY` are y positions of the sheet top, as the gesture saw them.
+  const settle = (base: number, dropY: number, v: number) => {
+    const hs = heightsRef.current
+    const cur = hs[nearestSnap(hs, sheetH - base)]
+    let px: number
+    if (Math.abs(v) > VELOCITY) {
+      // Negative velocity moves the finger up: the sheet grows to the next height.
+      px = v < 0 ? (hs.find((h) => h > cur) ?? cur) : ([...hs].reverse().find((h) => h < cur) ?? cur)
+    } else {
+      px = hs[nearestSnap(hs, sheetH - dropY)]
+    }
+    setDrag(null)
+    moveTo(px)
+  }
 
-  const clampY = useCallback(
-    (next: number) => (next < topY ? topY - (topY - next) / 4 : next > bottomY ? bottomY + (next - bottomY) / 4 : next),
-    [topY, bottomY],
-  )
+  // Hard limits: the sheet stops at its highest and lowest height (native enableOverDrag false).
+  const clampY = useCallback((next: number) => Math.min(bottomY, Math.max(topY, next)), [topY, bottomY])
 
   // Touch: decide per gesture whether it scrolls the content or moves the sheet.
   const gesture = useRef({ y0: 0, x0: 0, t0: 0, base: 0, mode: '' as '' | 'drag' | 'scroll' | 'none' })
@@ -141,8 +181,8 @@ export function BottomSheet({ peek, children, expanded, onExpandedChange, label,
   // Native touch listeners read the latest values through refs.
   useLayoutEffect(() => {
     dragRef.current = drag
-    baseRef.current = sheetH - visible
-    atFullRef.current = visible >= heights[FULL] && heights[FULL] > heights[MID]
+    baseRef.current = sheetH - shown
+    atFullRef.current = atFull
     settleRef.current = settle
     clampRef.current = clampY
   })
@@ -194,11 +234,11 @@ export function BottomSheet({ peek, children, expanded, onExpandedChange, label,
 
   // Mouse (desktop): drag anywhere after a clear vertical move; the wheel scrolls the content.
   const mouse = useRef({ y: 0, x: 0, t: 0, base: 0, active: false })
-  const onPointerDown = (e: React.PointerEvent) => {
+  const onPointerDown = (e: PointerEvent) => {
     if (e.pointerType !== 'mouse' || e.button !== 0) return
-    mouse.current = { y: e.clientY, x: e.clientX, t: e.timeStamp, base: sheetH - visible, active: true }
+    mouse.current = { y: e.clientY, x: e.clientX, t: e.timeStamp, base: sheetH - shown, active: true }
   }
-  const onPointerMove = (e: React.PointerEvent) => {
+  const onPointerMove = (e: PointerEvent) => {
     const m = mouse.current
     if (!m.active) return
     const dy = e.clientY - m.y
@@ -208,13 +248,33 @@ export function BottomSheet({ peek, children, expanded, onExpandedChange, label,
     }
     setDrag(clampY(m.base + dy))
   }
-  const onPointerUp = (e: React.PointerEvent) => {
+  const onPointerUp = (e: PointerEvent) => {
     const m = mouse.current
     if (!m.active) return
     m.active = false
     if (drag === null) return
     e.currentTarget.releasePointerCapture?.(e.pointerId)
     settle(m.base, drag, (e.clientY - m.y) / Math.max(1, e.timeStamp - m.t))
+  }
+
+  // A focused text field extends the sheet to full height, and it returns when the field is left
+  // (native keyboardBehavior extend and keyboardBlurBehavior restore).
+  const onFocus = (e: FocusEvent) => {
+    if (!isTextField(e.target)) return
+    if (restoreAfterFocus.current === null) restoreAfterFocus.current = shown
+    moveTo(heightsRef.current[SNAP.full])
+  }
+  const onBlur = (e: FocusEvent) => {
+    if (!isTextField(e.target) || restoreAfterFocus.current === null) return
+    // Focus may hop to another field of the sheet: decide once it has settled.
+    setTimeout(() => {
+      const back = restoreAfterFocus.current
+      if (back === null || sheet.current?.contains(document.activeElement)) return
+      restoreAfterFocus.current = null
+      const hs = heightsRef.current
+      // Only when the user has not moved the sheet since.
+      if (lastPx.current === hs[SNAP.full]) moveTo(hs[nearestSnap(hs, back)])
+    }, 150)
   }
 
   return (
@@ -227,22 +287,23 @@ export function BottomSheet({ peek, children, expanded, onExpandedChange, label,
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
       onPointerCancel={onPointerUp}
+      onFocus={onFocus}
+      onBlur={onBlur}
     >
       <div ref={grip} className="sheet-grip">
         <button
           className="sheet-handle"
           aria-label={label}
-          aria-expanded={expanded}
+          aria-expanded={atFull}
           onClick={() => {
             if (drag !== null) return
-            // Tap: one step up, from the top back to the default height.
-            const next = heights.findIndex((h) => h > visible)
-            setSnap(next === -1 ? DEFAULT : next)
+            // Tap: one height up; from the top back to the panel's default.
+            moveTo(heights.find((h) => h > shown) ?? heights[defaultSnap])
           }}
         />
       </div>
       {/* Height follows the snap (not during a drag), so everything below the fold can scroll into view. */}
-      <div ref={scroller} className="sheet-scroll" style={{ height: Math.max(0, visible - gripH) }}>
+      <div ref={scroller} className="sheet-scroll" style={{ height: Math.max(0, shown - gripH) }}>
         <div ref={inner}>
           <div className="sheet-peek">{peek}</div>
           {children && <div className="sheet-body">{children}</div>}
@@ -250,4 +311,4 @@ export function BottomSheet({ peek, children, expanded, onExpandedChange, label,
       </div>
     </section>
   )
-}
+})

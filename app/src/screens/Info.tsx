@@ -1,11 +1,12 @@
-import { Panel } from '../components/Panel'
+import { PanelHeader } from '../components/PanelHeader'
 import { CONTACT_EMAIL, DONATE_URL, ISSUES_URL, REPO_URL } from '../lib/config'
 import { t } from '../i18n'
 import './Info.css'
 
 export function Contact({ onBack, onAbout }: { onBack: () => void; onAbout: () => void }) {
   return (
-    <Panel title={t('contact')} onBack={onBack}>
+    <div className="info-body">
+      <PanelHeader title={t('contact')} onClose={onBack} />
       <p>{t('contactIntro')}</p>
       <ul className="link-list">
         <li>
@@ -35,13 +36,14 @@ export function Contact({ onBack, onAbout }: { onBack: () => void; onAbout: () =
           </button>
         </li>
       </ul>
-    </Panel>
+    </div>
   )
 }
 
 export function Support({ onBack }: { onBack: () => void }) {
   return (
-    <Panel title={t('support')} onBack={onBack}>
+    <div className="info-body">
+      <PanelHeader title={t('support')} onClose={onBack} />
       <p>{t('supportIntro1')}</p>
       <p>{t('supportIntro2')}</p>
       <ul className="link-list">
@@ -62,6 +64,6 @@ export function Support({ onBack }: { onBack: () => void }) {
         </li>
       </ul>
       <p className="muted">{t('supportNoStrings')}</p>
-    </Panel>
+    </div>
   )
 }

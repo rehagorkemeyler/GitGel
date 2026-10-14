@@ -1,6 +1,7 @@
 import { CITY } from '../lib/city'
 import { useEffect, useState } from 'react'
 import { Icon } from '../components/Icon'
+import { CloseButton } from '../components/PanelHeader'
 import { LineChip } from '../components/LineChip'
 import { plan, type Itinerary } from '../lib/api'
 import { hhmm, pickOptions, summarize } from '../lib/itinerary'
@@ -64,9 +65,7 @@ export function Results({ from, to, onEditFrom, onEditTo, onClose, onOpen, onOpt
             <span>{to.name}</span>
           </button>
         </div>
-        <button className="close" onClick={onClose} aria-label={t('close')}>
-          ×
-        </button>
+        <CloseButton onClose={onClose} />
       </div>
 
       <div className="when-row">

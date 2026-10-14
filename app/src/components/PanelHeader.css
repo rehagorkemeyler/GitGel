@@ -1,0 +1,70 @@
+/* Native PanelHeader.tsx: row, flex-start, 12 px gap; no divider. */
+.panel-head {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s-3);
+}
+
+.panel-title {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.panel-title-row {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  min-width: 0;
+}
+
+/* Native largeTitle: 30 px bold, line 36, tracking -0.8. */
+.panel-title h1 {
+  flex: 0 1 auto;
+  min-width: 0;
+  margin: 0;
+  font-size: 30px;
+  line-height: 36px;
+  font-weight: var(--fw-bold);
+  letter-spacing: -0.8px;
+  overflow-wrap: anywhere;
+}
+
+/* Native title: 22 px bold, line 28, tracking -0.4. */
+.panel-title h1.small {
+  font-size: 22px;
+  line-height: 28px;
+  letter-spacing: -0.4px;
+}
+
+/* Native secondary text: 13.5 px, line 18. */
+.panel-sub {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 18px;
+  color: var(--text-2);
+}
+
+/* Native close: 32 px round, fill background, 18 px glyph in the secondary colour. */
+.round-close {
+  position: relative;
+  flex: none;
+  width: 32px;
+  height: 32px;
+  min-height: 32px;
+  margin-top: 2px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--fill);
+  color: var(--text-2);
+}
+
+/* Native hitSlop 8: a 48 px touch area around the 32 px button. */
+.round-close::before {
+  content: '';
+  position: absolute;
+  inset: -8px;
+}

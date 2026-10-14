@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { CrowdBadge } from '../components/CrowdBadge'
 import { LineChip } from '../components/LineChip'
+import { CloseButton } from '../components/PanelHeader'
 import { loadLines, type Line } from '../lib/data'
 import { crowding, type Vehicle } from '../lib/live'
 import { useNow } from '../lib/useNow'
@@ -35,9 +36,7 @@ export function VehicleSheet({ vehicle, onClose, onLine }: { vehicle: Vehicle; o
             <i className="dot live" aria-hidden /> {t('liveBus')} · {ago(vehicle.at, now)}
           </span>
         </div>
-        <button className="close" onClick={onClose} aria-label={t('close')}>
-          ×
-        </button>
+        <CloseButton onClose={onClose} />
       </div>
       {facts.length > 0 && <p>{facts.join(' · ')}</p>}
       {crowd && <CrowdBadge level={crowd} />}
