@@ -304,7 +304,9 @@ export function App() {
       el.style.transform = `translate3d(0, ${-px}px, 0)`
       const fade = locateFade(sheetTopOf(px, vh, safe.bottom), vh, safe.top)
       el.style.setProperty('--locate-fade', String(fade))
-      el.style.visibility = fade > 0 ? '' : 'hidden'
+      // Faded out, the button takes no taps (it is not visible). inert keeps it out of focus order too.
+      el.inert = fade === 0
+      el.classList.toggle('dragging', live)
     }
     if (!live) setSheetPx(px)
   }, [])

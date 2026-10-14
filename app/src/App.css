@@ -1,6 +1,7 @@
 /* Native round glass button: 48 px circle, accent arrow, 16 px from the right edge. It sits 12 px above
    the sheet's top edge: the base offset is 8 px (sheet gap) + 12 px, and BottomSheet's visible height
-   lifts it by transform (set from App, live during a drag). Its fade comes from --locate-fade. */
+   lifts it by transform (set from App, live during a drag). Its fade comes from --locate-fade.
+   Native rides on the same animated sheet top, so the button eases with the sheet's snap (same timing). */
 .locate {
   position: fixed;
   right: var(--s-4);
@@ -18,8 +19,16 @@
   border: 1px solid var(--glass-edge);
   box-shadow: none;
   opacity: var(--locate-fade, 1);
+  transition:
+    transform var(--dur) var(--ease-sheet),
+    opacity var(--dur) var(--ease-sheet);
   will-change: transform, opacity;
   z-index: 5;
+}
+
+/* While the sheet is dragged the button follows the finger with no lag (same as .sheet.dragging). */
+.locate.dragging {
+  transition: none;
 }
 
 /* Native GlassButton: 0.7 opacity while pressed. */
