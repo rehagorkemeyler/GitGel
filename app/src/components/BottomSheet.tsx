@@ -33,6 +33,11 @@ type Props = {
   contentKey: string
   /** The snap the handle returns to from the top: the top panel's default. */
   defaultSnap?: number
+  /**
+   * The sheet's visible height in px. `live` is true while a drag moves it (the locate button rides
+   * on it frame by frame), false once it has settled (the map's padding follows that).
+   */
+  onVisible?: (px: number, live: boolean) => void
 }
 
 const VELOCITY = 0.4 // px/ms that counts as a flick
@@ -55,7 +60,7 @@ const isTextField = (el: EventTarget) => el instanceof HTMLInputElement || el in
  * respects reduced motion.
  */
 export const BottomSheet = forwardRef<SheetHandle, Props>(function BottomSheet(
-  { peek, children, label, contentKey, defaultSnap = SNAP.def },
+  { peek, children, label, contentKey, defaultSnap = SNAP.def, onVisible },
   ref,
 ) {
   const sheet = useRef<HTMLElement>(null)
@@ -132,6 +137,12 @@ export const BottomSheet = forwardRef<SheetHandle, Props>(function BottomSheet(
   useLayoutEffect(() => {
     document.documentElement.style.setProperty('--map-bottom-inset', `${Math.min(shown, Math.round(vh * DEFAULT_SHARE))}px`)
   }, [shown, vh])
+
+  // The visible height: `sheetH - y` is exact both at rest and during a drag.
+  const visibleNow = sheetH - y
+  useLayoutEffect(() => {
+    onVisible?.(visibleNow, drag !== null)
+  }, [visibleNow, drag, onVisible])
 
   // Every move the user or the app makes ends a pending target.
   const moveTo = useCallback((px: number) => {

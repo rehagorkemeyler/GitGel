@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { BottomSheet, type SheetHandle } from './components/BottomSheet'
 import { Icon } from './components/Icon'
 import { HomePeek } from './screens/Home'
@@ -15,20 +15,20 @@ import { VehicleSheet } from './screens/VehicleSheet'
 import { LineHeader, LineStops } from './screens/LineSheet'
 import { lineView, useLineDetail } from './lib/lineDetail'
 import type { Station } from './map/networkLayer'
-import { inCity, useGeolocation, useStablePosition } from './lib/useGeolocation'
-import { CITY, CITY_CHOSEN, busShapes, switchCity, type CityId } from './lib/city'
+import { useGeolocation, useStablePosition } from './lib/useGeolocation'
+import { CITY, CITY_CHOSEN, busShapes, cityAt, rememberCity, switchCity, type CityId } from './lib/city'
 import type { Place } from './lib/search'
 import type { Itinerary } from './lib/api'
-import { cityName, t, type StringKey } from './i18n'
-import { rememberLine, rememberStation, type RecentPlace } from './lib/recent'
+import { cityName, t } from './i18n'
+import { rememberLine, rememberPlace, rememberStation, type RecentPlace } from './lib/recent'
 import { prepareAlerts, useTracking } from './lib/tracking'
 import { TrackingBanner } from './components/TrackingBanner'
-import { loadJson, loadSearchIndex, loadStops } from './lib/data'
+import { loadJson, loadSearchIndex, loadStops, type StopRow } from './lib/data'
 import { useLineStatus, useLiveVehicles } from './lib/live'
 import { StatusBand } from './components/StatusBand'
-import { LocationPicker } from './components/LocationPicker'
 import type { Map as MlMap } from 'maplibre-gl'
 import { SNAP } from './lib/sheet'
+import { STOP_ZOOM, cameraMs, locateFade, mapBottomInset, safeInsets, sheetTopOf } from './lib/camera'
 import { defaultSnapOf, isTrip, popPanels, resetPanels, type Panel } from './lib/panels'
 import './App.css'
 
@@ -42,10 +42,15 @@ export type Screen = 'home' | 'search' | 'nearby' | 'lines' | 'contact' | 'suppo
 let historyResumed = false
 
 const CITY_IDS: CityId[] = ['istanbul', 'ankara', 'bursa']
-const OUTSIDE_KEY: Record<CityId, StringKey> = {
-  istanbul: 'outsideIstanbul',
-  ankara: 'outsideAnkara',
-  bursa: 'outsideBursa',
+
+/**
+ * The stop a search result names (native SearchPanel): an Ankara stop by its id, a Bursa stop by its
+ * position and name (its code is not an id), else any stop at the same place.
+ */
+function matchStop(all: StopRow[], p: Place): StopRow | undefined {
+  if (CITY.live === 'ego') return all.find((x) => x.id === `eg_${p.code}`)
+  const near = (x: StopRow) => Math.abs(x.lat - p.lat) < 0.0002 && Math.abs(x.lon - p.lon) < 0.0002
+  return all.find((x) => near(x) && x.name === p.name) ?? all.find(near)
 }
 
 export function App() {
@@ -96,9 +101,24 @@ export function App() {
   useEffect(() => {
     if (lineId) rememberLine(lineId)
   }, [lineId])
-  const outside = !!geo.position && !inCity(geo.position)
-  // First visit outside the default city: ask for the city before offering a test location.
-  const cityPrompt = choosingCity || (!CITY_CHOSEN && outside)
+  // The city chooser opens only from home (native: the city panel). No prompt for an outside position.
+  const cityPrompt = choosingCity
+  // Locate (native onLocate): a press bumps `recenter`, so the map flies to the user. The sheet reports
+  // its height: the locate button rides on it, and the map's bottom padding follows it once it settles.
+  const [recenter, setRecenter] = useState(0)
+  const [sheetPx, setSheetPx] = useState(0)
+  const locateRef = useRef<HTMLButtonElement>(null)
+  // First launch (native setCity): the city the phone is in is remembered, without asking. A supported
+  // city elsewhere is switched to (a reload here, where native re-mounts).
+  const cityNoted = useRef(false)
+  useEffect(() => {
+    if (CITY_CHOSEN || cityNoted.current || !geo.position) return
+    const here = cityAt(geo.position)
+    if (!here) return
+    cityNoted.current = true
+    if (here === CITY.id) rememberCity(here)
+    else switchCity(here)
+  }, [geo.position])
 
   // Nightly data missing (first night of a new city, or Pages down): say so instead of an empty map.
   const [dataMissing, setDataMissing] = useState(false)
@@ -188,11 +208,12 @@ export function App() {
 
   const showResults = () => resetTo((x) => !isTrip(x), { kind: 'results' })
 
-  /** A destination: its results open (native chooseDestination). */
+  /** A destination: its results open (native chooseDestination). With no origin, the position is asked for now. */
   const chooseDestination = (p: Place) => {
     setTo(p)
     setPicking(false)
     showResults()
+    if (!fromChoice && !geo.position) geo.start()
   }
   /** An origin: back to the trip when there is a destination, else back to the search that asked (native chooseOrigin). */
   const chooseOrigin = (p: Place) => {
@@ -227,7 +248,8 @@ export function App() {
   const openStation = (st: Station, fly = false) => {
     if (top().kind === 'station') replaceTop({ kind: 'station', station: st })
     else push({ kind: 'station', station: st })
-    if (fly) map?.jumpTo({ center: [st.lon, st.lat], zoom: 16.5 })
+    // A stop picked from a list flies to it (native); a tap on the map leaves the camera alone.
+    if (fly && map) map.easeTo({ center: [st.lon, st.lat], zoom: STOP_ZOOM, duration: cameraMs() })
   }
   const openLine = (id: string) => push({ kind: 'line', id, dir: 0 })
   const setLineDirection = (d: number) => {
@@ -236,11 +258,18 @@ export function App() {
   /** A recent stop opens its card again; anything else is a destination. */
   const onRecent = (p: RecentPlace) => (p.station ? openStation(p.station, true) : chooseDestination(p))
   const onSearchPick = (which: 'to' | 'from', p: Place) => {
-    // A stop picked by its number (Ankara) opens its card: that is what people look up.
+    // A recent stop that was opened as a card opens its card again (native pickRecent).
+    const station = (p as RecentPlace).station
+    if (which === 'to' && station) {
+      pop()
+      openStation(station, true)
+      return
+    }
+    // A stop picked by its number (Ankara, Bursa) opens its card: that is what people look up.
     if (which === 'to' && p.code) {
       pop()
       loadStops().then((all) => {
-        const s = all.find((x) => x.id === `eg_${p.code}`)
+        const s = matchStop(all, p)
         if (!s) return chooseDestination(p)
         openStation({ ...s, ids: [s.id] }, true)
       }, () => chooseDestination(p))
@@ -249,9 +278,44 @@ export function App() {
     if (which === 'to') chooseDestination(p)
     else chooseOrigin(p)
   }
+  /** "Locate me" (native onLocate): asks for the position, and the map flies to it. */
+  const locateMe = () => {
+    geo.start()
+    setRecenter((n) => n + 1)
+  }
+  /** Long press on the map (native onLongPress): the point becomes the destination, and is remembered. */
+  const onLongPress = (p: { lat: number; lon: number }) => {
+    const here: Place = { name: t('pickedPoint'), kind: 'address', lat: p.lat, lon: p.lon }
+    rememberPlace(here)
+    chooseDestination(here)
+  }
+  /** "Haritada seç" (native onPickOnMap): the search closes, the sheet drops to its minimum, a long press picks. */
+  const pickOnMap = () => {
+    setPicking(true)
+    resetTo((x) => x.kind !== 'search', null)
+    sheet.current?.goTo(SNAP.min)
+  }
+  /** The sheet's height: live while it is dragged (the locate button follows, without re-rendering the app), settled after. */
+  const onSheetVisible = useCallback((px: number, live: boolean) => {
+    const el = locateRef.current
+    if (el) {
+      const vh = window.innerHeight
+      const safe = safeInsets()
+      el.style.transform = `translate3d(0, ${-px}px, 0)`
+      const fade = locateFade(sheetTopOf(px, vh, safe.bottom), vh, safe.top)
+      el.style.setProperty('--locate-fade', String(fade))
+      el.style.visibility = fade > 0 ? '' : 'hidden'
+    }
+    if (!live) setSheetPx(px)
+  }, [])
+
   const go = (s: Screen) => {
     if (s === 'search') push({ kind: 'search', which: 'to' })
-    else if (s === 'nearby') push({ kind: 'nearby' })
+    else if (s === 'nearby') {
+      push({ kind: 'nearby' })
+      // Native: the nearby list asks for the position when it has none, and flies there.
+      if (!geo.position) locateMe()
+    }
     else if (s === 'lines') push({ kind: 'lines' })
     else if (s === 'contact') push({ kind: 'contact' })
     else if (s === 'support') push({ kind: 'support' })
@@ -286,6 +350,7 @@ export function App() {
             near={stablePos}
             onBack={pop}
             onPick={(p) => onSearchPick(panel.which, p)}
+            onPickOnMap={pickOnMap}
           />
         )
       case 'results':
@@ -328,7 +393,7 @@ export function App() {
       case 'lines':
         return <Lines onBack={pop} onOpen={openLine} />
       case 'nearby':
-        return <Nearby position={geo.position} onLocate={geo.start} onBack={pop} />
+        return <Nearby position={geo.position} onLocate={locateMe} onBack={pop} />
       case 'contact':
         return <Contact onBack={pop} onAbout={() => push({ kind: 'about' })} />
       case 'support':
@@ -348,7 +413,10 @@ export function App() {
           vehicles={vehicles}
           hiddenLines={hiddenLines}
           onRailCount={setRailCount}
-          bottomInset={Math.round(window.innerHeight * 0.45)}
+          bottomInset={mapBottomInset(sheetPx, window.innerHeight)}
+          destination={to && !options?.length ? to : null}
+          recenter={recenter}
+          onLongPress={onLongPress}
           onReady={setMap}
           onStation={(st) => {
             if (shownRoute?.length) return // a route is on screen: keep it
@@ -383,8 +451,16 @@ export function App() {
           )}
         </div>
       )}
-      <button className="locate" onClick={geo.start} aria-label={t('locateMe')}>
-        <Icon name="locate" />
+      <button
+        ref={locateRef}
+        className="locate"
+        onClick={() => {
+          navigator.vibrate?.(8)
+          locateMe()
+        }}
+        aria-label={t('locateMe')}
+      >
+        <Icon name="navigate" size={22} />
       </button>
       {tracking && track && <TrackingBanner it={tracking} state={track} onStop={() => setTracking(null)} />}
       {!picking && cityPrompt && (
@@ -409,27 +485,13 @@ export function App() {
           <span>{t('cityDataMissing')}</span>
         </div>
       )}
-      {!picking && !cityPrompt && !dataMissing && (outside || geo.status === 'denied' || geo.status === 'unavailable') && (
-        <div className="notice" role="status">
-          <span>
-            {t(outside ? OUTSIDE_KEY[CITY.id] : geo.status === 'denied' ? 'locationDenied' : 'locationUnavailable')}
-          </span>
-          <button className="link" onClick={() => setPicking(true)}>
-            {t('pickLocation')}
-          </button>
-        </div>
-      )}
       {picking && (
-        <LocationPicker
-          map={map}
-          onCancel={() => setPicking(false)}
-          onPick={(p) => {
-            geo.setOverride(p)
-            setPicking(false)
-          }}
-        />
+        <button className="pick-hint" onClick={() => setPicking(false)}>
+          <span>{t('pickOnMapHint')}</span>
+          <span className="pick-cancel">{t('cancel')}</span>
+        </button>
       )}
-      <BottomSheet ref={sheet} label={t('whereTo')} contentKey={panelKey} defaultSnap={defaultSnapOf(panel)} peek={content}>
+      <BottomSheet ref={sheet} label={t('whereTo')} contentKey={panelKey} defaultSnap={defaultSnapOf(panel)} peek={content} onVisible={onSheetVisible}>
         {lineId && <LineStops {...lineData} dir={lineDir} onDir={setLineDirection} onClose={pop} />}
       </BottomSheet>
     </>

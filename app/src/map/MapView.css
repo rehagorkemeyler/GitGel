@@ -4,13 +4,26 @@
   background: var(--bg);
 }
 
+/* The user's dot: Google's standard location puck (blue, white ring, translucent halo), as native
+   shows Google's own dot. Not the app accent. */
 .me-dot {
   width: 18px;
   height: 18px;
   border-radius: 50%;
-  background: var(--accent);
+  background: #4285f4;
   border: 3px solid #fff;
-  box-shadow: 0 0 0 6px color-mix(in srgb, var(--accent) 25%, transparent);
+  box-shadow: 0 0 0 6px rgba(66, 133, 244, 0.25);
+}
+
+/* The destination pin (native red pin, #ff3b30). The tip sits on the point (anchor: bottom). */
+.dest-pin {
+  width: 28px;
+  height: 36px;
+  line-height: 0;
+}
+
+.dest-pin svg {
+  display: block;
 }
 
 /* Keep the attribution clear of the bottom sheet's rounded top. */

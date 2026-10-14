@@ -32,9 +32,11 @@ type Props = {
   myLocation?: Place | null
   /** User position [lon, lat]: nearest results first, with distances. */
   near?: [number, number] | null
+  /** "Haritada seç": closes the search, and a long press on the map picks the destination. */
+  onPickOnMap?: () => void
 }
 
-export function SearchPanel({ title, onPick, onBack, myLocation, near = null }: Props) {
+export function SearchPanel({ title, onPick, onBack, myLocation, near = null, onPickOnMap }: Props) {
   const [query, setQuery] = useState('')
   const [index, setIndex] = useState<IndexRow[] | null>(null)
   const [indexError, setIndexError] = useState(false)
@@ -207,6 +209,23 @@ export function SearchPanel({ title, onPick, onBack, myLocation, near = null }: 
       {/* Native "nothing": only once no place search is pending and no place result came back for this query. */}
       {!showRecent && results.length === 0 && !placesFound && !searching && index && <p aria-live="polite" className="state-msg">{t('noResults')}</p>}
       {indexError && <p aria-live="polite" className="state-msg">{t('dataUnavailable')}</p>}
+
+      {/* Native: the pick-on-map row sits below the results, above the attribution. */}
+      {onPickOnMap && (
+        <ul className="results">
+          <li>
+            <button className="result" onClick={onPickOnMap}>
+              <span className="result-icon">
+                <Icon name="pin" />
+              </span>
+              <span className="result-text">
+                <span className="result-name">{t('pickOnMap')}</span>
+                <span className="result-sub">{t('pickOnMapSub')}</span>
+              </span>
+            </button>
+          </li>
+        </ul>
+      )}
     </>
   )
 }
