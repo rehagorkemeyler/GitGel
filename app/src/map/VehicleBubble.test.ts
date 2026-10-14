@@ -15,8 +15,8 @@ function rule(selector: string): string {
 }
 
 describe('bus bubble geometry matches native VehicleBubble', () => {
-  it('the marker padding lifts the tail 10 px above the bus', () => {
-    expect(rule('.bus-bubble-anchor')).toContain('padding-bottom: 10px;')
+  it('the marker padding lifts the tail just above the 30 px bus marker', () => {
+    expect(rule('.bus-bubble-anchor')).toContain('padding-bottom: 18px;')
   })
 
   it('the bubble and card are 250 px wide', () => {
