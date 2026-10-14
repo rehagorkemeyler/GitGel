@@ -11,12 +11,11 @@ import { Contact, Support } from './screens/Info'
 import { About } from './screens/About'
 import { StationSheet } from './screens/StationSheet'
 import { TrainSheet } from './screens/TrainSheet'
-import { VehicleSheet } from './screens/VehicleSheet'
 import { LineHeader, LineStops } from './screens/LineSheet'
 import { lineView, useLineDetail } from './lib/lineDetail'
 import type { Station } from './map/networkLayer'
 import { useGeolocation, useStablePosition } from './lib/useGeolocation'
-import { CITY, CITY_CHOSEN, busShapes, cityAt, rememberCity, switchCity, type CityId } from './lib/city'
+import { CITY, CITY_CHOSEN, busShapes, cityAt, liveStop, rememberCity, switchCity, type CityId } from './lib/city'
 import type { Place } from './lib/search'
 import type { Itinerary } from './lib/api'
 import { cityName, t } from './i18n'
@@ -24,7 +23,7 @@ import { rememberLine, rememberPlace, rememberStation, type RecentPlace } from '
 import { prepareAlerts, useTracking } from './lib/tracking'
 import { TrackingBanner } from './components/TrackingBanner'
 import { loadJson, loadSearchIndex, loadStops, type StopRow } from './lib/data'
-import { useLineStatus, useLiveVehicles } from './lib/live'
+import { plateKey, useLineStatus, useLiveArrivals, useLiveVehicles, type Vehicle } from './lib/live'
 import { StatusBand } from './components/StatusBand'
 import type { Map as MlMap } from 'maplibre-gl'
 import { SNAP } from './lib/sheet'
@@ -75,17 +74,46 @@ export function App() {
   const lineData = useLineDetail(lineId)
   const view = useMemo(() => lineView(lineData.line, lineData.stops, lineDir), [lineData, lineDir])
   const railModes = ['metro', 'rail', 'tram', 'funicular', 'cablecar']
-  // Buses (and Metrobüs) of the open route: İETT or EGO publish their GPS positions.
-  // Ankara: EGO publishes bus positions per line, so the open line page shows its buses too.
-  const openBusLine = busShapes() && lineData.line?.mode === 'bus' ? lineData.line.name : null
+  // Live buses (native App.tsx): the open route's bus lines (Bursa: trams too), the open bus line (Ankara
+  // and Bursa: EGO and BURULAŞ publish bus positions per line; Bursa trams too), and the buses coming to the
+  // open stop (its live board, matched by plate). Istanbul has no stop board, so only the route counts there.
+  const liveTram = CITY.live === 'burulas'
+  const openBusLine =
+    busShapes() && (lineData.line?.mode === 'bus' || (liveTram && lineData.line?.mode === 'tram')) ? lineData.line.name : null
+  const boardStop = station ? liveStop(station.id) : null
+  const coming = useLiveArrivals(boardStop)?.arrivals
+  const comingLines = useMemo(() => [...new Set((coming ?? []).map((a) => a.line))].sort().join(','), [coming])
+  const comingPlates = useMemo(() => new Set((coming ?? []).map((a) => plateKey(a.plate)).filter(Boolean)), [coming])
   const busLines = useMemo(
     () => [
-      ...(openRoute?.legs ?? []).filter((l) => l.mode === 'BUS' && l.routeShortName).map((l) => l.routeShortName!),
+      ...(openRoute?.legs ?? [])
+        .filter((l) => (l.mode === 'BUS' || (liveTram && l.mode === 'TRAM')) && l.routeShortName)
+        .map((l) => l.routeShortName!),
       ...(openBusLine ? [openBusLine] : []),
+      ...(comingLines ? comingLines.split(',') : []),
     ],
-    [openRoute, openBusLine],
+    [openRoute, openBusLine, comingLines, liveTram],
   )
-  const vehicles = useLiveVehicles(busLines)
+  const lineVehicles = useLiveVehicles(busLines)
+  const vehicles = useMemo(
+    () => (boardStop ? lineVehicles.filter((v) => comingPlates.has(plateKey(v.plate))) : lineVehicles),
+    [boardStop, lineVehicles, comingPlates],
+  )
+  // The tapped live bus (native bubbleId): a bubble over the map, not a panel, so the panel stack and the
+  // station or train card stay as they are. It is kept by id and read from the live list on every render,
+  // so speed, plate, crowding and age refresh with each poll (native MapScreen.tsx:69).
+  const [busId, setBusId] = useState<string | null>(null)
+  const bus = busId ? vehicles.find((v) => v.id === busId) ?? null : null
+  // Set on render: while a bubble is open, a station or train tap only closes it (native guardedStation).
+  const busShown = useRef(false)
+  busShown.current = bus !== null
+  // The bus left the list (its line closed, or it passed the stop): the bubble goes with it (native MapScreen.tsx:72-74).
+  useEffect(() => {
+    if (busId && !bus) setBusId(null)
+  }, [busId, bus])
+  const closeBus = useCallback(() => setBusId(null), [])
+  // A tap on a bus opens its bubble; the same bus again closes it; another bus moves it (native MapScreen.tsx:76).
+  const onVehicle = useCallback((v: Vehicle) => setBusId((id) => (id === v.id ? null : v.id)), [])
   const status = useLineStatus()
   const hiddenLines = useMemo(() => status?.lines.map((l) => l.line) ?? [], [status])
   const [railCount, setRailCount] = useState(0)
@@ -285,6 +313,8 @@ export function App() {
   }
   /** Long press on the map (native onLongPress): the point becomes the destination, and is remembered. */
   const onLongPress = (p: { lat: number; lon: number }) => {
+    // Native: a long press closes the bus bubble, then picks the point.
+    closeBus()
     const here: Place = { name: t('pickedPoint'), kind: 'address', lat: p.lat, lon: p.lon }
     rememberPlace(here)
     chooseDestination(here)
@@ -332,11 +362,9 @@ export function App() {
           ? panel.it.startTime
           : panel.kind === 'train'
             ? panel.train.id
-            : panel.kind === 'vehicle'
-              ? panel.vehicle.id
-              : panel.kind === 'search'
-                ? panel.which
-                : ''
+            : panel.kind === 'search'
+              ? panel.which
+              : ''
   // Same panel: the sheet keeps the user's height. A new panel: its default (or the height it had).
   const panelKey = `${stack.length}:${panel.kind}:${contentId}`
 
@@ -388,8 +416,6 @@ export function App() {
         )
       case 'line':
         return <LineHeader {...lineData} dir={lineDir} onDir={setLineDirection} onClose={pop} />
-      case 'vehicle':
-        return <VehicleSheet vehicle={panel.vehicle} onClose={pop} onLine={openLine} />
       case 'train':
         return <TrainSheet train={panel.train} onClose={pop} />
       case 'lines':
@@ -421,17 +447,19 @@ export function App() {
           onLongPress={onLongPress}
           onReady={setMap}
           onStation={(st) => {
+            // A bus bubble is open: this tap only closes it (native guardedStation).
+            if (busShown.current) return closeBus()
             if (shownRoute?.length) return // a route is on screen: keep it
             openStation(st)
           }}
           onTrain={(tr) => {
+            if (busShown.current) return closeBus()
             if (!shownRoute?.length) push({ kind: 'train', train: tr })
           }}
-          onVehicle={(v) => {
-            if (shownRoute?.length) return
-            if (top().kind === 'vehicle') replaceTop({ kind: 'vehicle', vehicle: v })
-            else push({ kind: 'vehicle', vehicle: v })
-          }}
+          onVehicle={onVehicle}
+          bubble={bus}
+          onBubbleClose={closeBus}
+          onMapTap={closeBus}
           focusLine={lineId}
           focusLines={lineId ? [lineId] : station ? station.lines : null}
           lineView={view}
@@ -439,10 +467,11 @@ export function App() {
         />
       </Suspense>
       {status && <StatusBand lines={status.lines} />}
-      {(railCount > 0 || vehicles.length > 0) && (
+      {/* The legend shares the top slot with the tracking banner, notices and the pick hint: it waits for them. */}
+      {(railCount > 0 || vehicles.length > 0) && !(tracking && track) && !picking && !cityPrompt && !dataMissing && (
         <div className="legend" aria-label={t('legend')}>
           {vehicles.length > 0 && (
-            <span>
+            <span className="legend-live">
               <i className="dot live" /> {t('live')}
             </span>
           )}

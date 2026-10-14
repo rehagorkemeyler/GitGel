@@ -1,6 +1,5 @@
 // The panel stack of the map screen (native App.tsx Panel[]): the panel on top is what the sheet shows.
 import type { Itinerary } from './api'
-import type { Vehicle } from './live'
 import type { Station } from '../map/networkLayer'
 import type { TrainInfo } from '../map/railLayer'
 import { SNAP } from './sheet'
@@ -13,7 +12,6 @@ export type Panel = (
   | { kind: 'station'; station: Station }
   | { kind: 'line'; id: string; dir: number }
   | { kind: 'train'; train: TrainInfo }
-  | { kind: 'vehicle'; vehicle: Vehicle }
   | { kind: 'lines' }
   | { kind: 'nearby' }
   | { kind: 'contact' }

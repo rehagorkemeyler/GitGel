@@ -42,3 +42,15 @@
   fill: var(--crowd);
   fill-opacity: 1;
 }
+
+/* Native CrowdBadge: the medium and high tints are brighter in dark mode (#ffcc33, #ff6b6b).
+   Later in the file than .crowd-medium and .crowd-high, so it wins at the same specificity. */
+@media (prefers-color-scheme: dark) {
+  .crowd-medium {
+    --crowd: #ffcc33;
+  }
+
+  .crowd-high {
+    --crowd: #ff6b6b;
+  }
+}

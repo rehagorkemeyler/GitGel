@@ -100,18 +100,27 @@
   user-select: none;
 }
 
+/* Native Legend: a glass chip centred at the top of the map, under the status pill. It tells live
+   dots (filled, green) from scheduled ones (hollow). */
 .legend {
   position: fixed;
-  left: var(--s-4);
-  bottom: calc(var(--map-bottom-inset, 0px) + var(--s-6));
+  top: calc(var(--s-3) + 36px + var(--s-2) + env(safe-area-inset-top));
+  left: 0;
+  right: 0;
+  margin: 0 auto;
+  width: max-content;
   display: flex;
   gap: var(--s-3);
-  padding: var(--s-1) var(--s-3);
-  border-radius: var(--r-sm);
-  background: var(--surface);
-  border: 1px solid var(--hairline);
+  padding: 6px var(--s-3);
+  border-radius: 14px;
+  background: var(--glass-bg);
+  background-image: var(--glass-shine);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-edge);
   box-shadow: none;
   font-size: var(--fs-s);
+  font-weight: var(--fw-bold);
   color: var(--text-2);
   z-index: 5;
 }
@@ -119,7 +128,11 @@
 .legend span {
   display: inline-flex;
   align-items: center;
-  gap: var(--s-1);
+  gap: 6px;
+}
+
+.legend .legend-live {
+  color: var(--live);
 }
 
 .dot {

@@ -9,6 +9,8 @@ export type TrainInfo = Pick<SimSegment, 'id' | 'line' | 'color' | 'from' | 'to'
 // times per second from the timetable. Never labelled live.
 
 const SRC = 'rail-sim'
+/** The layer that takes a tap on a scheduled train (MapView keeps empty-map taps apart from it). */
+export const RAIL_TAP_LAYERS = ['rail-sim-halo']
 const MIN_ZOOM = 11
 const REFRESH_MS = 60_000
 const TICK_MS = 500

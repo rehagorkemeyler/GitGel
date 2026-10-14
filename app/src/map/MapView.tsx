@@ -1,4 +1,5 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import * as maplibregl from 'maplibre-gl'
 import type { Map as MlMap } from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
@@ -10,9 +11,10 @@ import { inCity } from '../lib/useGeolocation'
 import type { Itinerary } from '../lib/api'
 import type { Place } from '../lib/search'
 import { showRoute, fitRoute } from './routeLayer'
-import { LiveLayer } from './liveLayer'
-import { RailLayer, type TrainInfo } from './railLayer'
-import { NetworkLayer, type Station } from './networkLayer'
+import { LIVE_TAP_LAYER, LiveLayer, fromBubble } from './liveLayer'
+import { RAIL_TAP_LAYERS, RailLayer, type TrainInfo } from './railLayer'
+import { NET_TAP_LAYERS, NetworkLayer, type Station } from './networkLayer'
+import { VehicleBubble } from './VehicleBubble'
 import { showLineView, fitLineView } from './lineViewLayer'
 import type { LineView } from '../lib/lineDetail'
 import type { Vehicle } from '../lib/live'
@@ -23,6 +25,8 @@ import './MapView.css'
 // Vite bundles MapLibre's module worker separately; tell MapLibre where it is.
 maplibregl.setWorkerUrl(workerUrl)
 
+/** Taps that belong to a bus, station or train layer (their own handlers): the rest of the map is "empty map". */
+const TAP_LAYERS = [LIVE_TAP_LAYER, ...NET_TAP_LAYERS, ...RAIL_TAP_LAYERS]
 /** Native long press: a still press of this length picks the point under the finger. */
 const LONG_PRESS_MS = 500
 /** A finger that moves this far (px) is panning, not pressing. */
@@ -52,6 +56,12 @@ type Props = {
   onTrain?: (t: TrainInfo) => void
   /** Tap on a live vehicle dot. */
   onVehicle?: (v: Vehicle) => void
+  /** The live bus whose bubble is open: the card is drawn above it and follows it. */
+  bubble?: Vehicle | null
+  /** Tap on the bubble card: closes it. */
+  onBubbleClose?: () => void
+  /** Tap on empty map (not a bus, station or train): closes the bubble (native onPress). */
+  onMapTap?: () => void
   /** Line to emphasise (line page). */
   focusLine?: string | null
   /** Lines to emphasise on the base map (open line, or every line of a tapped stop). */
@@ -89,7 +99,7 @@ function watchLongPress(m: MlMap, el: HTMLElement, fire: (lat: number, lon: numb
     pointers++
     cancel()
     if (pointers > 1 || e.button !== 0) return
-    if ((e.target as Element | null)?.closest?.('.maplibregl-ctrl')) return
+    if ((e.target as Element | null)?.closest?.('.maplibregl-ctrl, .bus-bubble')) return
     start = { x: e.clientX, y: e.clientY }
     const box = el.getBoundingClientRect()
     timer = setTimeout(() => {
@@ -120,6 +130,8 @@ function watchLongPress(m: MlMap, el: HTMLElement, fire: (lat: number, lon: numb
   }
 }
 
+const noop = () => {}
+
 export function MapView({
   position,
   route = null,
@@ -131,6 +143,9 @@ export function MapView({
   onStation,
   onTrain,
   onVehicle,
+  bubble = null,
+  onBubbleClose,
+  onMapTap,
   focusLine = null,
   focusLines = null,
   lineView = null,
@@ -161,6 +176,15 @@ export function MapView({
   schemeRef.current = scheme
   const onVehicleRef = useRef(onVehicle)
   onVehicleRef.current = onVehicle
+  const onMapTapRef = useRef(onMapTap)
+  onMapTapRef.current = onMapTap
+  // The bubble: a DOM marker anchored at the bus (bottom centre, so its tail sits just above the dot).
+  const [bubbleEl] = useState(() => {
+    const el = document.createElement('div')
+    el.className = 'bus-bubble-anchor'
+    return el
+  })
+  const bubbleMarker = useRef<maplibregl.Marker | null>(null)
   const onLongPressRef = useRef(onLongPress)
   onLongPressRef.current = onLongPress
   const positionRef = useRef<[number, number] | null>(position ?? null)
@@ -192,6 +216,14 @@ export function MapView({
     // Test hook for automated screenshots: only with ?debug in the URL.
     if (location.search.includes('debug')) (window as unknown as { __map: MlMap }).__map = m
     m.once('load', () => onReady?.(m))
+    // A tap on empty map closes the bubble. A tap on the bubble itself or on a bus, station or train is
+    // handled by that element or layer, so it is not an empty-map tap.
+    m.on('click', (e) => {
+      if (fromBubble(e)) return
+      const tapLayers = TAP_LAYERS.filter((id) => m.getLayer(id))
+      if (tapLayers.length && m.queryRenderedFeatures(e.point, { layers: tapLayers }).length) return
+      onMapTapRef.current?.()
+    })
     // setStyle (theme change) drops our layers: add the route back.
     live.current = new LiveLayer(m)
     live.current.onVehicle = (v) => onVehicleRef.current?.(v)
@@ -211,6 +243,8 @@ export function MapView({
     const stopLongPress = watchLongPress(m, el, (lat, lon) => onLongPressRef.current?.({ lat, lon }))
     return () => {
       stopLongPress()
+      bubbleMarker.current?.remove()
+      bubbleMarker.current = null
       rail.current?.destroy()
       m.remove()
       map.current = null
@@ -280,6 +314,20 @@ export function MapView({
     live.current?.update(vehicles ?? [])
   }, [vehicles])
 
+  // The bubble follows its bus: the marker moves with each fix (the list refreshes every 15 s).
+  useEffect(() => {
+    const m = map.current
+    if (!m) return
+    if (!bubble) {
+      bubbleMarker.current?.remove()
+      bubbleMarker.current = null
+      return
+    }
+    const at: [number, number] = [bubble.lon, bubble.lat]
+    if (bubbleMarker.current) bubbleMarker.current.setLngLat(at)
+    else bubbleMarker.current = new maplibregl.Marker({ element: bubbleEl, anchor: 'bottom' }).setLngLat(at).addTo(m)
+  }, [bubble, bubbleEl])
+
   // The user's dot. The first fix of the session flies to the user inside the city (native, zoom 15);
   // a locate press flies to the fix it asked for (zoom 16), or waits for the first fix.
   useEffect(() => {
@@ -333,5 +381,10 @@ export function MapView({
       .addTo(m)
   }, [destination])
 
-  return <div ref={container} className="map" role="region" aria-label={t('map')} />
+  return (
+    <>
+      <div ref={container} className="map" role="region" aria-label={t('map')} />
+      {bubble && createPortal(<VehicleBubble vehicle={bubble} onClose={onBubbleClose ?? noop} />, bubbleEl)}
+    </>
+  )
 }
