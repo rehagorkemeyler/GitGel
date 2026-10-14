@@ -20,7 +20,7 @@ import { createServer, type IncomingMessage, type ServerResponse } from 'node:ht
 import { Cache } from './cache.ts'
 import { Calibration, Sampler } from './calibration.ts'
 import { fetchLineVehicles, type Vehicle } from './iett.ts'
-import { RateLimited, egoUpstream, iettUpstream } from './guard.ts'
+import { RateLimited, burulasUpstream, egoUpstream, iettUpstream } from './guard.ts'
 import { getStopBoard, getVehiclesByLine, NotImplemented, type AnkaraStopBoard, type AnkaraVehicle } from './providers/ego.ts'
 import { getBursaStopBoard, getBursaVehicles, type BursaStopBoard, type BursaVehicle } from './providers/burulas.ts'
 import { CITIES, search, type SearchResult } from './search.ts'
@@ -34,7 +34,8 @@ const LINES_URL = process.env.LINES_URL ?? 'https://rehagorkemeyler.github.io/Gi
 const ANKARA_CAL_FILE = process.env.ANKARA_CAL_FILE ?? '/data/calibration-ankara.json'
 const ANKARA_LINES_URL = process.env.ANKARA_LINES_URL ?? 'https://rehagorkemeyler.github.io/GitGel/data/ankara/lines.json'
 
-const vehicles = new Cache<Vehicle[]>(15_000, 10 * 60_000)
+// 30 s fresh: the İBB gateway quota on İETT is tight (guard.ts), and one answer serves every user of the line.
+const vehicles = new Cache<Vehicle[]>(30_000, 10 * 60_000)
 const calibration = new Calibration()
 
 // Every İETT answer, whether the app or the sampler asked, also feeds the calibration.
@@ -208,18 +209,15 @@ function sample(sampler: Sampler, poll: (line: string) => void, everyMs: number,
 function startCalibration() {
   calibration.load(CAL_FILE)
   ankaraCalibration.load(ANKARA_CAL_FILE)
-  // İETT and EGO alike: one request every 30 s, 4 lines per batch (each line every 2 minutes), and
-  // only while users leave more than half of the source's budget (guard.ts). One request every 5 s
-  // got our server banned by the İBB gateway and cut live buses off for everyone.
-  const sampler = new Sampler(4)
+  // İETT: no background sampling at all. The İBB gateway banned our server IP at one request every
+  // 5 s, and again within the hour at one every 30 s plus users, cutting live buses off for everyone.
+  // The Istanbul calibration still learns from every answer users ask for (loadVehicles).
+  // EGO: one request every 30 s, 4 lines per batch (each line every 2 minutes), and only while users
+  // leave more than half of its budget (guard.ts).
   const ankaraSampler = new Sampler(4)
-  const refresh = () => {
-    void loadLines(sampler)
-    void loadLines(ankaraSampler, ANKARA_LINES_URL)
-  }
+  const refresh = () => void loadLines(ankaraSampler, ANKARA_LINES_URL)
   refresh()
   setInterval(refresh, 24 * 3600_000)
-  sample(sampler, (line) => void vehicles.get(line, loadVehicles(line)).catch(() => {}), 30_000, () => !iettUpstream.spare())
   sample(ankaraSampler, (line) => void ankaraVehicles.get(line, loadAnkaraVehicles(line)).catch(() => {}), 30_000, () => !egoUpstream.spare())
   const save = () => {
     try {
@@ -238,5 +236,9 @@ function startCalibration() {
 
 if (import.meta.url === `file://${process.argv[1]}`) {
   if (process.env.CALIBRATE !== '0') startCalibration()
+  // One line an hour per source: requests sent, refused by our budget, rate-limited by the source.
+  setInterval(() => {
+    for (const u of [iettUpstream, egoUpstream, burulasUpstream]) console.log(u.report())
+  }, 3600_000)
   createServer(handle).listen(PORT, () => console.log(`live listening on :${PORT}`))
 }

@@ -2,24 +2,10 @@
 # Called over SSH by .github/workflows/deploy-server.yml (forced command of the deploy key).
 # Wrapped in main() so bash parses the whole file before git replaces it.
 set -euo pipefail
-# Prints how the server reaches the upstream live sources (İETT SOAP), from the host and from the
-# live container, so a blocked or broken source shows up in the deploy log. Never fails the deploy.
+# Prints the live service's view of İETT and its recent log (which names why a source failed), and
+# Photon's state. It never calls İETT directly: the İBB gateway quota is tight. Never fails the deploy.
 check_sources() {
-  local op=GetHatOtoKonum_json url=https://api.ibb.gov.tr/iett/FiloDurum/SeferGerceklesme.asmx
-  local body="<?xml version=\"1.0\" encoding=\"utf-8\"?><soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"><soap:Body><$op xmlns=\"http://tempuri.org/\"><HatKodu>500T</HatKodu></$op></soap:Body></soap:Envelope>"
-  echo "--- İETT from host"
-  curl -sS -m 15 -o /tmp/iett-check.txt -w 'HTTP %{http_code} in %{time_total}s from %{local_ip}\n' -X POST "$url" \
-    -H 'Content-Type: text/xml; charset=utf-8' -H "SOAPAction: \"http://tempuri.org/$op\"" --data "$body" || true
-  head -c 400 /tmp/iett-check.txt 2>/dev/null; echo
-  echo "--- İETT from live container"
   sleep 5
-  docker compose -f infra/docker-compose.yml exec -T live node -e '
-    const op = "GetHatOtoKonum_json"
-    fetch("'"$url"'", { method: "POST", headers: { "Content-Type": "text/xml; charset=utf-8", SOAPAction: `"http://tempuri.org/${op}"` },
-      body: process.argv[1], signal: AbortSignal.timeout(15000) })
-      .then(async (r) => console.log("HTTP", r.status, (await r.text()).slice(0, 400)))
-      .catch((e) => console.log("ERR", e?.message, e?.cause?.code ?? "", e?.cause?.message ?? ""))
-  ' "$body" || true
   echo "--- live service"
   curl -sS -m 20 'http://127.0.0.1:8081/live/vehicles?line=500T' | head -c 300; echo
   docker compose -f infra/docker-compose.yml logs --tail 20 live 2>&1 | tail -20

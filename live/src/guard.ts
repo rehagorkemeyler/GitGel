@@ -20,6 +20,7 @@ export class Upstream {
   private sent: number[] = []
   private until = 0
   private backoffMs = 0
+  private stats = { sent: 0, overBudget: 0, limited: 0 }
 
   constructor(name: string, perMinute: number, minMs = 2 * 60_000, maxMs = 30 * 60_000) {
     this.name = name
@@ -46,13 +47,25 @@ export class Upstream {
   /** Call before every request: throws instead of sending when blocked or over budget. */
   take(now = Date.now()) {
     if (this.blocked(now)) throw new RateLimited(`${this.name}: rate limited, waiting`)
-    if (this.used(now) >= this.perMinute) throw new RateLimited(`${this.name}: over our own budget`)
+    if (this.used(now) >= this.perMinute) {
+      this.stats.overBudget++
+      throw new RateLimited(`${this.name}: over our own budget`)
+    }
     this.sent.push(now)
+    this.stats.sent++
+  }
+
+  /** "İETT: 312 sent, 0 over budget, 1 rate-limited in the last hour", then the counts start again. */
+  report(): string {
+    const { sent, overBudget, limited } = this.stats
+    this.stats = { sent: 0, overBudget: 0, limited: 0 }
+    return `${this.name}: ${sent} sent, ${overBudget} over budget, ${limited} rate-limited in the last hour`
   }
 
   /** Call with every answer. Throws RateLimited (and starts the back-off) on a rate-limit answer. */
   answer(status: number, body: string, now = Date.now()) {
     if (isRateLimited(status, body)) {
+      this.stats.limited++
       this.backoffMs = this.backoffMs ? Math.min(this.backoffMs * 2, this.maxMs) : this.minMs
       this.until = now + this.backoffMs
       throw new RateLimited(`${this.name}: rate limit exceeded`)
@@ -64,8 +77,9 @@ export class Upstream {
   }
 }
 
-// Budgets: well above what the app needs (each line is cached for 10-15 s and shared by all users),
-// well below the request rate that got İETT banned.
-export const iettUpstream = new Upstream('İETT', 40)
+// Budgets: each line is cached for 10-30 s and shared by all users, so these cover many users.
+// İETT is the tightest: the İBB gateway banned us at one request every 5 s, and again within the hour
+// at one every 30 s plus users (its quota is not published).
+export const iettUpstream = new Upstream('İETT', 15)
 export const egoUpstream = new Upstream('EGO', 40)
 export const burulasUpstream = new Upstream('BURULAŞ', 40)
