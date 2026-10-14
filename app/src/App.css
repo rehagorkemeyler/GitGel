@@ -123,3 +123,8 @@
   margin-right: var(--s-1);
   color: var(--live);
 }
+
+/* Live status text, in the live colour (native: color live). */
+.live-text {
+  color: var(--live);
+}

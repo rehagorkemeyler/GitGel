@@ -93,6 +93,8 @@ export function SearchPanel({ title, onPick, onBack, myLocation, near = null }: 
     return () => {
       alive = false
       clearTimeout(timer)
+      // The request for the previous query is ignored from now on; its loading state goes with it.
+      setSearching(false)
     }
   }, [query, near, exactLocal])
 
@@ -114,6 +116,7 @@ export function SearchPanel({ title, onPick, onBack, myLocation, near = null }: 
 
   const showRecent = !query.trim()
   const results = showRecent ? recent : [...local, ...(remote.q === query ? remote.places : [])]
+  const placesFound = (remote.q === query && remote.places.length > 0) || (google.q === query && google.list.length > 0)
 
   return (
     <Panel title={title} onBack={onBack}>
@@ -170,11 +173,12 @@ export function SearchPanel({ title, onPick, onBack, myLocation, near = null }: 
         </div>
       )}
 
-      {searching && query.trim().length >= 2 && results.length === 0 && (
+      <PlaceList places={results} colors={colors} onPick={pick} />
+
+      {/* Native places.loading: shown until a Google or free place result for this query arrives. */}
+      {searching && !showRecent && !placesFound && (
         <p aria-live="polite" className="state-msg">{t('searching')}</p>
       )}
-
-      <PlaceList places={results} colors={colors} onPick={pick} />
 
       {google.q === query && google.list.length > 0 && (
         <>

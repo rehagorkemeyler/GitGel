@@ -46,10 +46,11 @@
   position: absolute;
   left: 50%;
   top: 50%;
-  width: 40px;
-  height: 4px;
-  border-radius: 2px;
-  background: var(--border);
+  /* Native GlassSheet handle: 36 x 5, radius 3, palette handle colour. */
+  width: 36px;
+  height: 5px;
+  border-radius: 3px;
+  background: var(--handle);
   transform: translate(-50%, -50%);
 }
 

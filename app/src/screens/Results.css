@@ -81,7 +81,7 @@
   padding: var(--s-3) var(--s-4);
   border-radius: var(--r-card);
   border: 1px solid var(--hairline);
-  background: var(--surface);
+  background: var(--fill); /* native option card: translucent fill over the glass */
   text-align: left;
 }
 

@@ -13,7 +13,7 @@
   --r-sm: 8px;
   --r-btn: 12px;
   --r-card: 20px;
-  --r-sheet: 24px;
+  --r-sheet: 38px; /* native radius.sheet */
   --r-pill: 999px;
 
   --fs-s: 13px;
@@ -42,6 +42,8 @@
   --warning-bg: #fff3dc;
   --warning-text: #8a5a00;
   --sheet-solid: #ffffff;
+  /* Sheet grip (native palettes.handle). */
+  --handle: rgba(0, 0, 0, 0.18);
 
   /* Liquid glass: a translucent, blurred surface with a hairline edge, the same
      sheet tint as native. Floating surfaces (sheet, panels, notices, buttons, banners)
@@ -78,6 +80,7 @@
     --warning-bg: rgba(28, 30, 36, 0.66);
     --warning-text: #ffb340;
     --sheet-solid: #1c1e24;
+    --handle: rgba(255, 255, 255, 0.28);
     --glass-bg: rgba(28, 30, 36, 0.66);
     --glass-edge: rgba(255, 255, 255, 0.08);
   }
