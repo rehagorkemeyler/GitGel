@@ -72,7 +72,11 @@ main() {
 update_photon() {
   local base=/opt/gitgel-data/photon
   local image=ghcr.io/rtuszik/photon-docker@sha256:21549c60f9e6488fff3217e40429a652c4b445f374800333fe32859e47cec293
-  mkdir -p "$base"
+  # docker creates "$base/current" as root when photon starts before the first import, and then this
+  # script (run as the server user) cannot write here: take the folder back through Docker.
+  if ! mkdir -p "$base" 2>/dev/null || [ ! -w "$base" ]; then
+    docker run --rm --user 0 -v /opt/gitgel-data:/d --entrypoint chown "$image" -R "$(id -u):$(id -g)" /d/photon
+  fi
   if [ -L "$base/current" ] && [ -z "$(find -L "$base/current" -maxdepth 0 -mtime +6)" ]; then return; fi
   local new="$base/build-$(date +%Y%m%d%H%M)"
   mkdir -p "$new" && chmod a+rwx "$new"
@@ -91,5 +95,6 @@ update_photon() {
   done
   echo "photon data updated: $new"
 }
-main "$@"
+# "photon" only refreshes the place search index (deploy.sh starts it when the index is missing).
+if [ "${1:-}" = photon ]; then update_photon; else main "$@"; fi
 exit
