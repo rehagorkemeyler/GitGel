@@ -1,13 +1,23 @@
+/* Native LineChip: 24 px high, radius 7, 7 px side padding. `.big` is the sheet header size. */
 .chip {
   display: inline-flex;
   align-items: center;
-  height: 22px;
-  padding: 0 var(--s-2);
-  border-radius: 6px;
-  border: 1px solid var(--border);
-  background: var(--surface-2);
+  justify-content: center;
+  height: 24px;
+  min-width: 32px;
+  padding: 0 7px;
+  border-radius: 7px;
+  border: 1px solid var(--hairline);
+  background: var(--fill);
   color: var(--text);
   font-size: var(--fs-s);
   font-weight: var(--fw-bold);
   white-space: nowrap;
+}
+
+.chip.big {
+  height: 30px;
+  padding: 0 10px;
+  border-radius: 9px;
+  font-size: 15px;
 }

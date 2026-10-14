@@ -5,7 +5,7 @@
   min-height: 56px;
   padding: 0 var(--s-4);
   border-radius: var(--r-btn);
-  background: var(--surface-2);
+  background: var(--fill);
   color: var(--text-2);
   margin-bottom: var(--s-3);
 }
@@ -35,7 +35,7 @@
   min-height: 56px;
   padding: var(--s-2) 0;
   text-align: left;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--hairline);
 }
 
 .result:active {
@@ -49,7 +49,7 @@
   display: grid;
   place-items: center;
   border-radius: var(--r-sm);
-  background: var(--surface-2);
+  background: var(--fill);
   color: var(--text-2);
 }
 
@@ -83,13 +83,11 @@
   overflow: hidden;
 }
 
+/* Section heads: colour, size and caps come from the shared .section-label. */
 .result-head {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  color: var(--text-2);
-  font-size: var(--fs-s);
-  margin-top: var(--s-2);
 }
 
 .link {

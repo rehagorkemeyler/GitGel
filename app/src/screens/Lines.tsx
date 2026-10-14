@@ -5,6 +5,7 @@ import { loadLines, type Line } from '../lib/data'
 import { frequentLines } from '../lib/recent'
 import { fold, type Mode } from '../lib/search'
 import { t, type StringKey } from '../i18n'
+import { Skeleton } from '../components/Skeleton'
 import './Lines.css'
 
 const MODE_LABEL: Record<Mode, StringKey> = {
@@ -46,7 +47,7 @@ export function Lines({ onBack, onOpen }: { onBack: () => void; onOpen: (id: str
   }, [lines, q])
 
   return (
-    <Panel title={t('lines')} onBack={onBack}>
+    <Panel title={t('linesTitle')} onBack={onBack}>
       <div className="search-box">
         <input
           type="search"
@@ -57,10 +58,11 @@ export function Lines({ onBack, onOpen }: { onBack: () => void; onOpen: (id: str
           autoComplete="off"
         />
       </div>
-      {error && <p className="muted">{t('dataUnavailable')}</p>}
+      {!lines && !error && <Skeleton rows={6} height={44} />}
+      {error && <p aria-live="polite" className="state-msg">{t('dataUnavailable')}</p>}
       {!q && frequent.length > 0 && (
         <section className="line-group">
-          <h2>{t('frequent')}</h2>
+          <h2 className="section-label">{t('frequent')}</h2>
           <ul className="results">
             {frequent.map((l) => (
               <li key={l.id}>
@@ -75,7 +77,7 @@ export function Lines({ onBack, onOpen }: { onBack: () => void; onOpen: (id: str
       )}
       {groups.map((g) => (
         <section key={g.mode} className="line-group">
-          <h2>{t(MODE_LABEL[g.mode])}</h2>
+          <h2 className="section-label">{t(MODE_LABEL[g.mode])}</h2>
           <ul className="results">
             {g.lines.map((l) => (
               <li key={l.id}>
@@ -86,7 +88,7 @@ export function Lines({ onBack, onOpen }: { onBack: () => void; onOpen: (id: str
               </li>
             ))}
           </ul>
-          {g.more && <p className="muted">{t('typeToFindBus')}</p>}
+          {g.more && <p aria-live="polite" className="state-msg">{t('typeToFindBus')}</p>}
         </section>
       ))}
     </Panel>

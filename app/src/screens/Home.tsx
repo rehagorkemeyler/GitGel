@@ -28,11 +28,17 @@ export function HomePeek({
       <div className="home-squares">
         <button className="square" onClick={() => go('nearby')}>
           <Icon name="pin" size={28} />
-          <span>{t('nearby')}</span>
+          <span>
+            {t('nearbyTitle')}
+            <small>{t('nearbySub')}</small>
+          </span>
         </button>
         <button className="square" onClick={() => go('lines')}>
           <Icon name="train" size={28} />
-          <span>{t('lines')}</span>
+          <span>
+            {t('linesTitle')}
+            <small>{t('linesSub')}</small>
+          </span>
         </button>
       </div>
       {recent.length > 0 && (

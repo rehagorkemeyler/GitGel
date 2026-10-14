@@ -41,6 +41,8 @@ export function SearchPanel({ title, onPick, onBack, myLocation, near = null }: 
   const [indexError, setIndexError] = useState(false)
   const [remote, setRemote] = useState<{ q: string; places: Place[] }>({ q: '', places: [] })
   const [google, setGoogle] = useState<{ q: string; list: Suggestion[] }>({ q: '', list: [] })
+  // A place search request is in flight (native places.loading); shown only once the debounce has fired.
+  const [searching, setSearching] = useState(false)
   const [colors, setColors] = useState<Map<string, Line>>(new Map())
   const [recent, setRecent] = useState<Place[]>(recentPlaces)
   // Places opened most often on this phone, above the recent ones while nothing is typed.
@@ -65,18 +67,27 @@ export function SearchPanel({ title, onPick, onBack, myLocation, near = null }: 
     if (text.length < 2 || !(LIVE_BASE || (API_BASE && CITY.routing))) return
     let alive = true
     const timer = setTimeout(async () => {
+      setSearching(true)
       if (LIVE_BASE && text.length >= 3 && !exactLocal) {
         try {
           const list = await googleSuggest(query, session.current, near)
-          if (alive) setGoogle({ q: query, list })
+          if (alive) {
+            setGoogle({ q: query, list })
+            setSearching(false)
+          }
           return
         } catch {
           // Capped or down: the free search below.
         }
       }
       freePlaces(query, lang, near).then(
-        (r) => alive && setRemote({ q: query, places: r }),
-        () => {},
+        (r) => {
+          if (alive) {
+            setRemote({ q: query, places: r })
+            setSearching(false)
+          }
+        },
+        () => alive && setSearching(false),
       )
     }, 300)
     return () => {
@@ -137,7 +148,7 @@ export function SearchPanel({ title, onPick, onBack, myLocation, near = null }: 
 
       {showRecent && frequent.length > 0 && (
         <>
-          <div className="result-head">
+          <div className="result-head section-label">
             <span>{t('frequent')}</span>
           </div>
           <PlaceList places={frequent} colors={colors} onPick={pick} />
@@ -145,7 +156,7 @@ export function SearchPanel({ title, onPick, onBack, myLocation, near = null }: 
       )}
 
       {showRecent && recent.length > 0 && (
-        <div className="result-head">
+        <div className="result-head section-label">
           <span>{t('recent')}</span>
           <button
             className="link"
@@ -157,6 +168,10 @@ export function SearchPanel({ title, onPick, onBack, myLocation, near = null }: 
             {t('clear')}
           </button>
         </div>
+      )}
+
+      {searching && query.trim().length >= 2 && results.length === 0 && (
+        <p aria-live="polite" className="state-msg">{t('searching')}</p>
       )}
 
       <PlaceList places={results} colors={colors} onPick={pick} />
@@ -179,12 +194,12 @@ export function SearchPanel({ title, onPick, onBack, myLocation, near = null }: 
               </li>
             ))}
           </ul>
-          <p className="muted">{t('byGoogle')}</p>
+          <p aria-live="polite" className="state-msg">{t('byGoogle')}</p>
         </>
       )}
 
-      {!showRecent && results.length === 0 && google.list.length === 0 && index && <p className="muted">{t('noResults')}</p>}
-      {indexError && <p className="muted">{t('dataUnavailable')}</p>}
+      {!showRecent && results.length === 0 && google.list.length === 0 && index && <p aria-live="polite" className="state-msg">{t('noResults')}</p>}
+      {indexError && <p aria-live="polite" className="state-msg">{t('dataUnavailable')}</p>}
     </Panel>
   )
 }

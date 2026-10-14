@@ -8,6 +8,7 @@
 .detail-min {
   font-size: var(--fs-l);
   font-weight: var(--fw-bold);
+  letter-spacing: -0.4px;
 }
 
 .steps {
@@ -64,9 +65,3 @@
   color: var(--live);
 }
 
-.live-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: var(--live);
-}

@@ -8,6 +8,7 @@ import { CITY } from '../lib/city'
 import { currentDayType, type LineDetail } from '../lib/lineDetail'
 import type { StopRow } from '../lib/data'
 import { t } from '../i18n'
+import { Skeleton } from '../components/Skeleton'
 import './Lines.css'
 
 type Props = {
@@ -21,14 +22,14 @@ type Props = {
 
 /** Always-visible part of the line page (the map above shows the line). */
 export function LineHeader({ line, error, dir, onDir, onClose }: Props) {
-  if (error) return <p className="muted">{t('dataUnavailable')}</p>
-  if (!line) return <p className="muted">…</p>
+  if (error) return <p aria-live="polite" className="state-msg">{t('dataUnavailable')}</p>
+  if (!line) return <Skeleton rows={5} height={40} />
   const d = line.directions[dir]
   const today = currentDayType()
   return (
     <div className="line-sheet">
       <div className="line-head">
-        <LineChip name={line.name} line={line} />
+        <LineChip name={line.name} line={line} big />
         <span className="line-long">{line.long_name}</span>
         <button className="close" onClick={onClose} aria-label={t('close')}>
           ×
@@ -115,9 +116,9 @@ function StopArrivals({ stopId, line, headsign }: { stopId: string; line: string
       alive = false
     }
   }, [stopId, line, headsign])
-  if (error) return <p className="muted arrivals">{t('routingUnavailable')}</p>
-  if (!times) return <p className="muted arrivals">…</p>
-  if (!times.length) return <p className="muted arrivals">{t('noDepartures')}</p>
+  if (error) return <p aria-live="polite" className="state-msg arrivals">{t('routingUnavailable')}</p>
+  if (!times) return <Skeleton rows={3} height={56} />
+  if (!times.length) return <p aria-live="polite" className="state-msg arrivals">{t('noDepartures')}</p>
   return (
     <div className="arrivals">
       {times.map((x, i) => (

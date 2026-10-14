@@ -1,0 +1,59 @@
+/* Native Skeleton: rows of a 32x24 circle and two grey bars (12 px high, radius 6,
+   second bar 35%), 8 px between rows, opacity 0.55 to 1 over 800 ms.
+   Opacity only; the duration is fixed and does not follow --dur. */
+.skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  padding: var(--s-2) 0;
+  animation: skeleton-pulse 800ms ease-in-out infinite alternate;
+}
+
+.skeleton-row {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+}
+
+.skeleton-circle {
+  flex: none;
+  width: 32px;
+  height: 24px;
+  border-radius: 7px;
+  background: var(--fill);
+}
+
+.skeleton-lines {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.skeleton-line {
+  display: block;
+  height: 12px;
+  border-radius: 6px;
+  background: var(--fill);
+}
+
+.skeleton-line.short {
+  width: 35%;
+}
+
+@keyframes skeleton-pulse {
+  from {
+    opacity: 0.55;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Reduced motion: no pulse, held at the native resting opacity. */
+@media (prefers-reduced-motion: reduce) {
+  .skeleton {
+    animation: none;
+    opacity: 0.55;
+  }
+}

@@ -35,7 +35,7 @@ export function TrainSheet({ train, onClose }: { train: TrainInfo; onClose: () =
       <div className="station-head">
         <div className="station-title">
           <div className="ride-line">
-            <LineChip name={train.line} color={train.color.replace('#', '')} textColor="ffffff" />
+            <LineChip name={train.line} color={train.color.replace('#', '')} textColor="ffffff" big />
             <strong>{d ? `${d.headsign} ${t('direction')}` : '…'}</strong>
           </div>
           <span className="muted">

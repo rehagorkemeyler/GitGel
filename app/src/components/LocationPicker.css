@@ -19,7 +19,7 @@
   padding: var(--s-4) var(--s-4) calc(var(--s-4) + env(safe-area-inset-bottom));
   background: var(--surface);
   border-radius: var(--r-sheet) var(--r-sheet) 0 0;
-  border: 1px solid var(--border);
+  border: 1px solid var(--hairline);
   box-shadow: var(--shadow);
   z-index: 30;
 }
@@ -43,7 +43,7 @@
 }
 
 .picker-cancel {
-  background: var(--surface-2);
+  background: var(--fill);
 }
 
 .picker-ok {

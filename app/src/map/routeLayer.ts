@@ -2,6 +2,7 @@ import type * as GeoJSON from 'geojson'
 import type { GeoJSONSource, LngLatBoundsLike, Map as MlMap } from 'maplibre-gl'
 import type { Itinerary } from '../lib/api'
 import { decodePolyline } from '../lib/polyline'
+import { ACCENT } from '../lib/colors'
 
 const SRC = 'route'
 
@@ -27,14 +28,14 @@ function legFeatures(it: Itinerary, rank: number): GeoJSON.Feature[] {
     const walk = leg.mode === 'WALK'
     features.push({
       type: 'Feature',
-      properties: { walk, rank, color: rank > 0 ? ALT : walk ? '#8e8e93' : `#${leg.routeColor || '0a66c2'}` },
+      properties: { walk, rank, color: rank > 0 ? ALT : walk ? '#8e8e93' : leg.routeColor ? `#${leg.routeColor}` : ACCENT },
       geometry: { type: 'LineString', coordinates: coords },
     })
     if (!walk && rank === 0) {
       for (const p of [leg.from, leg.to]) {
         features.push({
           type: 'Feature',
-          properties: { stop: true, rank, color: `#${leg.routeColor || '0a66c2'}` },
+          properties: { stop: true, rank, color: leg.routeColor ? `#${leg.routeColor}` : ACCENT },
           geometry: { type: 'Point', coordinates: [p.lon, p.lat] },
         })
       }

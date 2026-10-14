@@ -8,6 +8,7 @@ import type { Place } from '../lib/search'
 import { t } from '../i18n'
 import { WhenPicker } from '../components/WhenPicker'
 import type { When } from '../lib/when'
+import { Skeleton } from '../components/Skeleton'
 import './Results.css'
 
 type Props = {
@@ -71,18 +72,22 @@ export function Results({ from, to, onEditFrom, onEditTo, onClose, onOpen, onOpt
       <div className="when-row">
         <WhenPicker value={when} onChange={setWhen} />
       </div>
-      {!CITY.routing && <p className="muted pad">{t('routingSoonAnkara')}</p>}
-      {CITY.routing && !from && <p className="muted pad">{t('pickOrigin')}</p>}
-      {CITY.routing && from && state.status === 'loading' && <p className="muted pad">{t('searchingRoutes')}</p>}
+      {!CITY.routing && <p aria-live="polite" className="state-msg">{t('routingSoonAnkara')}</p>}
+      {CITY.routing && !from && <p aria-live="polite" className="state-msg">{t('pickOrigin')}</p>}
+      {CITY.routing && from && state.status === 'loading' && (
+        <div className="pad">
+          <Skeleton rows={3} height={96} label={t('searchingRoutes')} />
+        </div>
+      )}
       {from && state.status === 'error' && (
         <div className="pad">
-          <p className="muted">{t('routingUnavailable')}</p>
+          <p aria-live="polite" className="state-msg">{t('routingUnavailable')}</p>
           <button className="retry" onClick={() => setAttempt((a) => a + 1)}>
             {t('retry')}
           </button>
         </div>
       )}
-      {from && state.status === 'ok' && state.options.length === 0 && <p className="muted pad">{t('noRoute')}</p>}
+      {from && state.status === 'ok' && state.options.length === 0 && <p aria-live="polite" className="state-msg">{t('noRoute')}</p>}
       {from && state.status === 'ok' && (
         <ul className="options">
           {state.options.map((it, i) => (
@@ -123,7 +128,10 @@ function OptionCard({ it, slower, onOpen }: { it: Itinerary; slower: number; onO
         <span>
           <Icon name="walk" size={14} /> {s.walkMinutes} {t('min')}
         </span>
-        <span className={live ? 'tag live' : 'tag'}>{live ? t('live') : t('scheduled')}</span>
+        <span className={live ? 'tag live' : 'tag'}>
+          {live && <span className="live-icon" aria-hidden><Icon name="signal" size={12} /></span>}
+          {live ? t('live') : t('scheduled')}
+        </span>
       </div>
       {s.firstDeparture && (
         <div className="option-next">

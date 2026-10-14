@@ -9,7 +9,7 @@
   display: flex;
   flex-direction: column;
   border-radius: var(--r-btn);
-  background: var(--surface-2);
+  background: var(--fill);
   overflow: hidden;
 }
 
@@ -25,7 +25,7 @@
 }
 
 .end + .end {
-  border-top: 1px solid var(--border);
+  border-top: 1px solid var(--hairline);
 }
 
 .end .placeholder {
@@ -80,7 +80,7 @@
   gap: var(--s-2);
   padding: var(--s-3) var(--s-4);
   border-radius: var(--r-card);
-  border: 1px solid var(--border);
+  border: 1px solid var(--hairline);
   background: var(--surface);
   text-align: left;
 }
@@ -139,8 +139,8 @@
 .tag {
   margin-left: auto;
   padding: 0 var(--s-2);
-  border-radius: 6px;
-  border: 1px solid var(--border);
+  border-radius: 7px;
+  border: 1px solid var(--hairline);
 }
 
 .tag.live {

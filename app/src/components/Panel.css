@@ -22,18 +22,47 @@
 
 .panel-head {
   display: flex;
-  align-items: center;
-  gap: var(--s-2);
-  padding: calc(var(--s-2) + env(safe-area-inset-top)) var(--s-2) var(--s-2);
-  border-bottom: 1px solid var(--border);
+  align-items: flex-start;
+  gap: var(--s-3);
+  padding: calc(var(--s-2) + env(safe-area-inset-top)) var(--s-4) var(--s-2);
+  border-bottom: 1px solid var(--hairline);
 }
 
+/* Native PanelHeader: 30px bold large title, tracking -0.8. */
 .panel-head h1 {
+  flex: 1;
+  min-width: 0;
   margin: 0;
-  font-size: var(--fs-l);
+  font-size: 30px;
   font-weight: var(--fw-bold);
+  letter-spacing: -0.8px;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
 }
 
+/* Native: 32px round grey close button, glyph 18px in secondary text colour. */
+.panel-close {
+  position: relative;
+  flex: none;
+  width: 32px;
+  height: 32px;
+  min-height: 32px;
+  margin-top: 2px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--fill);
+  color: var(--text-2);
+}
+
+/* Keeps a 48px touch area around the 32px button, like native hitSlop 8. */
+.panel-close::before {
+  content: '';
+  position: absolute;
+  inset: -8px;
+}
+
+/* Back arrow for screens with their own header (RouteDetail). */
 .panel-back {
   width: var(--touch);
   display: grid;

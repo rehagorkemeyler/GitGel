@@ -15,7 +15,7 @@
   padding: 0;
   text-align: left;
   color: inherit;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--hairline);
   overflow: hidden;
 }
 

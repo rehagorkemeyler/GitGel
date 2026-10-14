@@ -74,6 +74,8 @@ export function MapView({ position, route = null, alternatives = null, bottomIns
   onStationRef.current = onStation
   const onTrainRef = useRef(onTrain)
   onTrainRef.current = onTrain
+  const schemeRef = useRef(scheme)
+  schemeRef.current = scheme
   const onVehicleRef = useRef(onVehicle)
   onVehicleRef.current = onVehicle
   const insetRef = useRef(0)
@@ -116,7 +118,7 @@ export function MapView({ position, route = null, alternatives = null, bottomIns
       rail.current?.ensure()
       showRoute(m, routesOf(routeRef.current, altRef.current), insetRef.current)
       showLineView(m, lineViewRef.current.v, insetRef.current, !lineViewRef.current.inNet)
-      live.current?.ensure()
+      live.current?.ensure(schemeRef.current)
     })
     return () => {
       rail.current?.destroy()
@@ -183,7 +185,7 @@ export function MapView({ position, route = null, alternatives = null, bottomIns
 
   useEffect(() => {
     if (!styleReady.current) return
-    live.current?.ensure()
+    live.current?.ensure(schemeRef.current)
     live.current?.update(vehicles ?? [])
   }, [vehicles])
 
