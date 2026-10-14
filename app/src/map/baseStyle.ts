@@ -53,7 +53,10 @@ export const DARK: Palette = {
   halo: '#17191d',
 }
 
-/** Neighbourhood names: shown from zoom 14 only (native administrative.neighborhood is "simplified"). */
+/**
+ * Neighbourhood names: shown from zoom 14 only (native administrative.neighborhood is "simplified").
+ * OpenMapTiles place classes (openmaptiles layers/place/place.yaml); suburb and borough stay on the zoom-8 layer.
+ */
 const NEIGHBOURHOOD_CLASSES = ['neighbourhood', 'quarter']
 const NEIGHBOURHOOD_MIN_ZOOM = 14
 
