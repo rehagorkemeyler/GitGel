@@ -1,3 +1,4 @@
+/* Nearby panel, native Nearby.tsx: stop cards, next departures under the closest five. */
 .empty {
   display: flex;
   flex-direction: column;
@@ -5,36 +6,111 @@
   gap: var(--s-3);
 }
 
-.distance {
-  margin-left: auto;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
+/* Native primary Button: 52 px, fully rounded, accent fill, white label, 20 px glyph. */
+.locate-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s-2);
+  height: 52px;
+  min-height: 52px;
+  padding: 0 var(--s-4);
+  border-radius: 26px;
+  background: var(--accent);
+  color: var(--accent-text);
+  font-size: 16.5px;
   font-weight: var(--fw-bold);
-  white-space: nowrap;
 }
 
-.distance small,
-.dep-time small {
+/* Native list: 12 px between cards. */
+.nearby-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Native stop card: fill background, 20 px radius, 16 px padding, 12 px between its parts. */
+.stop-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+  width: 100%;
+  padding: var(--s-4);
+  border-radius: var(--r-card);
+  background: var(--fill);
+  text-align: left;
+}
+
+.stop-card:active {
+  opacity: 0.6;
+}
+
+.stop-card-row {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+}
+
+.stop-card-text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.stop-card-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 16.5px;
+  font-weight: var(--fw-bold);
+  letter-spacing: -0.2px;
+}
+
+.nearby-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+/* Native distance: minutes in heading size, metres below; digits line up (tabular). */
+.distance {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  align-items: flex-end;
+  margin-left: auto;
+  white-space: nowrap;
+  font-size: 16.5px;
+  font-weight: var(--fw-bold);
+  font-variant-numeric: tabular-nums;
+}
+
+.distance small {
+  display: block;
   font-size: var(--fs-s);
   font-weight: var(--fw-regular);
   color: var(--text-2);
 }
 
-.departures {
-  list-style: none;
-  margin: 0;
-  padding: var(--s-2) 0 var(--s-3);
+/* Native next departures: a hairline above, 12 px padding, 8 px between rows. */
+.deps {
   display: flex;
   flex-direction: column;
   gap: var(--s-2);
-  border-bottom: 1px solid var(--hairline);
+  padding-top: var(--s-3);
+  border-top: 1px solid var(--hairline);
 }
 
-.departures li {
+.dep {
   display: flex;
   align-items: center;
   gap: var(--s-2);
+  min-width: 0;
 }
 
 .dep-head {
@@ -47,12 +123,18 @@
 }
 
 .dep-time {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
+  flex: none;
+  font-size: var(--fs-s);
   font-weight: var(--fw-bold);
+  font-variant-numeric: tabular-nums;
 }
 
+.deps-foot {
+  font-size: var(--fs-s);
+  color: var(--text-2);
+}
+
+/* Live data is green (also used by the route and station cards). */
 .live-text {
   color: var(--live);
 }
