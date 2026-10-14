@@ -281,5 +281,8 @@ MOTIS'in adres araması kısaltmaları ("tedü", "mcd"), "sancak 530" gibi mahal
 The İBB API gateway (Layer7) rate-limits İETT SOAP calls per source IP. When exceeded, every call returns
 HTTP 500 with a SOAP fault `faultstring` "Policy Falsified" and `l7:policyResult status="Rate limit exceeded."`.
 One request every 5 s around the clock (~17k a day, the old calibration sampler) triggered it and cut live
-buses off for all users. The exact quota is not published. live/src/iett.ts now backs off on this fault
-(2 min doubling to 30 min) and the İETT calibration sampler asks once every 30 s.
+buses off for all users. The ban lifted after a while, then came back within the hour at one request
+every 30 s plus users, so the quota is low and likely counted per hour or day (not published).
+live/src/guard.ts now backs off on this fault (2 min doubling to 30 min), caps İETT at 15 requests a
+minute, İETT answers are cached 30 s, and there is no İETT background sampling at all. The live log
+prints each source's hourly request count, to measure the real quota.
