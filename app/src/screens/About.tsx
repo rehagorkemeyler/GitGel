@@ -1,6 +1,7 @@
 import { PanelHeader } from '../components/PanelHeader'
 import { Icon } from '../components/Icon'
 import { REPO_URL } from '../lib/config'
+import { CITY, type City } from '../lib/city'
 import { t, type StringKey } from '../i18n'
 import './Info.css'
 
@@ -20,8 +21,13 @@ const SOURCES: { name: string; url: string; what: StringKey }[] = [
   { name: 'Photon', url: 'https://github.com/komoot/photon', what: 'aboutSearch' },
 ]
 
+// The bus-source sentence follows the city's live bus source: İETT in Istanbul, EGO in Ankara.
+// Bursa (BURULAŞ) has no sentence yet: its wording needs Görkem's approval.
+const BUS_HONESTY: Partial<Record<City['live'], StringKey>> = { iett: 'aboutHonesty', ego: 'aboutHonestyAnkara' }
+
 /** Data sources and licences, honesty notes, privacy, version. The footer opens Contact and Support on top of this panel. */
 export function About({ onBack, onContact, onSupport }: { onBack: () => void; onContact: () => void; onSupport: () => void }) {
+  const busHonesty = BUS_HONESTY[CITY.live]
   return (
     <div className="info-body">
       <PanelHeader title={t('about')} subtitle={`GitGel · ${t('version')} ${__APP_VERSION__}`} onClose={onBack} />
@@ -40,8 +46,8 @@ export function About({ onBack, onContact, onSupport }: { onBack: () => void; on
         ))}
       </ul>
       <p className="muted">{t('aboutLicense')}</p>
-      <p className="muted">{t('aboutHonesty')}</p>
-      <p className="muted">{t('aboutHonestyAnkara')}</p>
+      {busHonesty && <p className="muted">{t(busHonesty)}</p>}
+      <p className="muted">{t('aboutHonestyRail')}</p>
       <p className="muted">{t('aboutPrivacy')}</p>
       <p>
         <a href={REPO_URL} target="_blank" rel="noreferrer">

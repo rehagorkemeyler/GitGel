@@ -196,7 +196,8 @@ const tr = {
   aboutTiles: 'Harita görüntüsü',
   aboutRouting: 'Rota motoru (MIT lisansı)',
   aboutLicense: 'Veriler İBB Açık Veri Lisansı ve ODbL koşullarıyla, olduğu gibi kullanılır. Kaynaklar kesintiye uğrayabilir; o durumda son iyi veri gösterilir.',
-  aboutHonesty: 'Otobüs ve metrobüs noktaları İETT GPS verisinden gelir ve "canlı" yazar. Raylı sistem noktaları tarifeden hesaplanır, içi boş gösterilir ve "tarifeye göre" yazar.',
+  aboutHonesty: 'Otobüs ve metrobüs noktaları İETT GPS verisinden gelir ve "canlı" yazar.',
+  aboutHonestyRail: 'Raylı sistem noktaları tarifeden hesaplanır, içi boş gösterilir ve "tarifeye göre" yazar.',
   aboutPrivacy: 'Konumun sadece telefonunda kullanılır. Son aramalar sadece bu cihazda saklanır. İzleme, reklam ya da analiz aracı yoktur.',
 }
 
@@ -396,7 +397,8 @@ const en: Record<StringKey, string> = {
   aboutTiles: 'Map tiles',
   aboutRouting: 'Routing engine (MIT license)',
   aboutLicense: 'Data is used as is under the İBB Open Data License and the ODbL. Sources can go down; the last good data is shown then.',
-  aboutHonesty: 'Bus and Metrobüs dots come from İETT GPS and are labelled "live". Rail dots are computed from timetables, drawn hollow and labelled "scheduled".',
+  aboutHonesty: 'Bus and Metrobüs dots come from İETT GPS and are labelled "live".',
+  aboutHonestyRail: 'Rail dots are computed from timetables, drawn hollow and labelled "scheduled".',
   aboutPrivacy: 'Your location is only used on your phone. Recent searches stay on this device. No tracking, ads or analytics.',
 }
 
