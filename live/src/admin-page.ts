@@ -6,6 +6,7 @@ export const PAGE_HTML = `<!doctype html>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <title>GitGel Admin</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H" crossorigin="anonymous">
 <link rel="stylesheet" href="/app.css">
 </head>
 <body>
@@ -14,6 +15,7 @@ export const PAGE_HTML = `<!doctype html>
   <nav class="tabs" role="tablist">
     <button data-tab="overview" class="on">Genel</button>
     <button data-tab="visitors">Ziyaretçiler</button>
+    <button data-tab="map">Konum</button>
     <button data-tab="feed">Canlı akış</button>
     <button data-tab="alltime">Tüm zamanlar</button>
   </nav>
@@ -36,6 +38,10 @@ export const PAGE_HTML = `<!doctype html>
     <div class="card"><div class="scroll"><table id="vtable"></table></div></div>
     <div class="card" id="vdetail" hidden></div>
   </section>
+  <section id="map" class="tab">
+    <div class="card wide"><h2 id="mapTitle">Konum (100 m hücre, kişiyle eşleşmez)</h2><div id="mapbox"></div></div>
+    <div class="card"><div class="scroll"><table id="celltable"></table></div></div>
+  </section>
   <section id="feed" class="tab">
     <div class="toolbar"><span class="muted" id="feedNote"></span></div>
     <div class="card"><div class="scroll"><table id="ftable"></table></div></div>
@@ -47,6 +53,7 @@ export const PAGE_HTML = `<!doctype html>
 </main>
 <footer class="muted">Ham kayıtlar 90 gün tutulur, günlük toplamlar süresiz. Konum IP'den tahmindir: <a href="https://db-ip.com" rel="noreferrer">IP Geolocation by DB-IP</a>.</footer>
 <div class="tip" id="tip" hidden></div>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH" crossorigin="anonymous"></script>
 <script src="/app.js"></script>
 </body>
 </html>`
@@ -109,6 +116,7 @@ table.data td.num { text-align: right; font-variant-numeric: tabular-nums; }
 .facts { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 6px 16px; margin-bottom: 12px; }
 .facts div span { display: block; color: var(--muted); font-size: 11px; }
 .tip { position: fixed; z-index: 5; pointer-events: none; background: var(--text); color: var(--bg); padding: 6px 9px; border-radius: 6px; font-size: 12px; white-space: pre; }
+#mapbox { height: 520px; border-radius: 8px; overflow: hidden; }
 footer { padding: 8px 16px 24px; max-width: 1400px; margin: 0 auto; font-size: 12px; }
 @media (max-width: 640px) { .range { margin-left: 0; } .kpi b { font-size: 22px; } }
 `
@@ -288,7 +296,31 @@ async function loadAllTime() {
     d.days.slice().reverse().map((r) => el('tr', null, td(r.day), td(fmt.format(r.visitors), 'num'), td(fmt.format(r.sessions), 'num'), td(fmt.format(r.pageviews), 'num'), td(fmt.format(r.searches), 'num'), td(fmt.format(r.routes), 'num'))));
 }
 
-const loaders = { overview: loadOverview, visitors: loadVisitors, feed: loadFeed, alltime: loadAllTime };
+let lmap, layer;
+async function loadMap() {
+  const d = await api('/api/cells?' + q());
+  if (!lmap) {
+    lmap = L.map('mapbox').setView([41.03, 28.98], 10);
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(lmap);
+  }
+  lmap.invalidateSize();
+  if (layer) layer.remove();
+  layer = L.layerGroup().addTo(lmap);
+  const max = Math.max(1, ...d.cells.map((c) => c.n));
+  const total = d.cells.reduce((a, c) => a + c.n, 0);
+  $('mapTitle').textContent = 'Konum (100 m hücre, kişiyle eşleşmez) · ' + fmt.format(d.cells.length) + ' hücre · ' + fmt.format(total) + ' kayıt';
+  const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
+  for (const c of d.cells.slice().reverse()) {
+    L.circleMarker([c.lat, c.lon], { radius: 4 + 14 * Math.sqrt(c.n / max), stroke: false, fillColor: accent, fillOpacity: 0.25 + 0.5 * (c.n / max) })
+      .bindTooltip(fmt.format(c.n) + ' kayıt').addTo(layer);
+  }
+  if (d.cells.length) lmap.fitBounds(d.cells.slice(0, 500).map((c) => [c.lat, c.lon]), { maxZoom: 14, padding: [20, 20] });
+  table($('celltable'), ['Hücre', 'Kayıt', ''], d.cells.slice(0, 100).map((c) => el('tr', null,
+    td(c.lat.toFixed(3) + ', ' + c.lon.toFixed(3), 'mono'), td(fmt.format(c.n), 'num'),
+    el('td', null, el('a', { href: 'https://www.openstreetmap.org/?mlat=' + c.lat + '&mlon=' + c.lon + '#map=17/' + c.lat + '/' + c.lon, target: '_blank', rel: 'noreferrer', text: 'Haritada aç' })))));
+}
+
+const loaders = { overview: loadOverview, map: loadMap, visitors: loadVisitors, feed: loadFeed, alltime: loadAllTime };
 function load() {
   document.querySelector('.tab.on .err')?.remove();
   loaders[state.tab]().catch((e) => {

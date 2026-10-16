@@ -98,7 +98,12 @@ async function collect(req: IncomingMessage, res: ServerResponse) {
   if (body === undefined) return send(res, 413, null)
   if (!analytics || !intake.allow(ip)) return send(res, 204, null)
   try {
-    const row = toRow(JSON.parse(body) as Incoming, ip, String(req.headers['user-agent'] ?? ''), geo.lookup(ip), Date.now())
+    const e = JSON.parse(body) as Incoming & { la?: unknown; lo?: unknown }
+    if (e.t === 'cell') {
+      analytics.addCell(e.la, e.lo, Date.now())
+      return send(res, 204, null)
+    }
+    const row = toRow(e, ip, String(req.headers['user-agent'] ?? ''), geo.lookup(ip), Date.now())
     if (row) analytics.insert(row)
   } catch {
   }

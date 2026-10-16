@@ -167,6 +167,14 @@ const DIMENSIONS: Record<string, string> = {
 
 export type Count = { key: string; visitors: number; events: number }
 
+export function toCell(lat: unknown, lon: unknown): [number, number] | undefined {
+  const a = Number(lat)
+  const o = Number(lon)
+  if (typeof lat !== 'number' || typeof lon !== 'number' || !Number.isFinite(a) || !Number.isFinite(o)) return undefined
+  if (Math.abs(a) > 90 || Math.abs(o) > 180) return undefined
+  return [Math.round(a * 1000) / 1000, Math.round(o * 1000) / 1000]
+}
+
 export class Analytics {
   readonly db: DatabaseSync
 
@@ -189,7 +197,29 @@ export class Analytics {
         searches INTEGER NOT NULL,
         routes INTEGER NOT NULL
       );
+      CREATE TABLE IF NOT EXISTS cells (
+        day TEXT NOT NULL,
+        lat REAL NOT NULL,
+        lon REAL NOT NULL,
+        n INTEGER NOT NULL,
+        PRIMARY KEY (day, lat, lon)
+      );
     `)
+  }
+
+  addCell(lat: unknown, lon: unknown, now: number): boolean {
+    const c = toCell(lat, lon)
+    if (!c) return false
+    this.db
+      .prepare('INSERT INTO cells (day, lat, lon, n) VALUES (?, ?, ?, 1) ON CONFLICT (day, lat, lon) DO UPDATE SET n = n + 1')
+      .run(dayOf(now), c[0], c[1])
+    return true
+  }
+
+  cells(from: number, to: number) {
+    return this.db
+      .prepare('SELECT lat, lon, SUM(n) AS n FROM cells WHERE day >= ? AND day <= ? GROUP BY lat, lon ORDER BY n DESC LIMIT 20000')
+      .all(dayOf(from), dayOf(to)) as { lat: number; lon: number; n: number }[]
   }
 
   insert(r: Row) {

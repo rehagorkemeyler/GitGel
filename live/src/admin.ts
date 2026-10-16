@@ -24,7 +24,7 @@ export function authorized(req: IncomingMessage, logins: Set<string>): boolean {
 const SECURITY_HEADERS = {
   'Cache-Control': 'no-store',
   'Content-Security-Policy':
-    "default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
+    "default-src 'none'; script-src 'self' https://unpkg.com; style-src 'self' https://unpkg.com; connect-src 'self'; img-src 'self' data: https://tile.openstreetmap.org; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
   'X-Frame-Options': 'DENY',
   'X-Content-Type-Options': 'nosniff',
   'Referrer-Policy': 'no-referrer',
@@ -96,6 +96,10 @@ export function adminHandler(analytics: Analytics, logins = allowedLogins(), clo
         case '/api/recent': {
           const before = Number(url.searchParams.get('before')) || Number.MAX_SAFE_INTEGER
           return json(res, { events: analytics.recent(100, before) })
+        }
+        case '/api/cells': {
+          const [from, to] = rangeOf(url, now)
+          return json(res, { cells: analytics.cells(from, to) })
         }
         case '/api/alltime':
           return json(res, { days: analytics.allTime(now) })
