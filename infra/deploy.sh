@@ -18,16 +18,37 @@ check_sources() {
   docker compose -f infra/docker-compose.yml logs --tail 6 photon 2>&1 | cut -c1-300
 }
 
+setup_admin() {
+  local logins="$1"
+  if [ -n "$logins" ]; then
+    if ! [[ "$logins" =~ ^[A-Za-z0-9._%+@,-]+$ ]]; then echo "admin: ignoring malformed ADMIN_LOGINS"; return 0; fi
+    touch infra/.env
+    if grep -qs '^ADMIN_LOGINS=' infra/.env; then
+      sed -i "s|^ADMIN_LOGINS=.*|ADMIN_LOGINS=$logins|" infra/.env
+    else
+      echo "ADMIN_LOGINS=$logins" >> infra/.env
+    fi
+  fi
+  if command -v tailscale > /dev/null; then
+    sudo -n tailscale serve --bg --https=8443 http://127.0.0.1:8082 > /dev/null 2>&1 || echo "admin: tailscale serve failed"
+    echo "admin: $(tailscale serve status 2>&1 | grep -m1 ':8443' || echo 'not served')"
+  fi
+  echo "admin: $(grep -c '^ADMIN_LOGINS=.' infra/.env 2>/dev/null || echo 0) login line(s) set"
+}
+
 main() {
   cd /opt/gitgel
   # The deploy key may only run this script; SSH_ORIGINAL_COMMAND picks the action.
+  local admin_logins=""
   case "${SSH_ORIGINAL_COMMAND:-deploy}" in
     deploy) ;;
+    "deploy "*) admin_logins="${SSH_ORIGINAL_COMMAND#deploy }" ;;
     update-data) git pull --quiet --ff-only origin main; exec bash infra/motis/update-data.sh ;;
     *) echo "unknown command: $SSH_ORIGINAL_COMMAND" >&2; exit 2 ;;
   esac
   git fetch --quiet origin main
   git reset --quiet --hard origin/main
+  setup_admin "$admin_logins" || true
   # cloudflared joins once infra/.env (not in git) holds TUNNEL_TOKEN.
   if grep -qs '^TUNNEL_TOKEN=.' infra/.env; then export COMPOSE_PROFILES=tunnel; fi
   if [ -f infra/docker-compose.yml ]; then

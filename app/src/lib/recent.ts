@@ -2,8 +2,7 @@ import { CITY } from './city'
 import type { Station } from './network'
 import type { Place } from './search'
 
-// Recent searches, recently opened stops and use counts live only on this phone
-// (localStorage), never on a server. Kept per city: Istanbul places and line ids
+// Recent searches, recently opened stops and use counts are kept on this phone (localStorage). Kept per city: Istanbul places and line ids
 // mean nothing in Ankara or Bursa.
 const KEY = `gitgel.recent.${CITY.id}`
 const USAGE_KEY = `gitgel.usage.${CITY.id}`

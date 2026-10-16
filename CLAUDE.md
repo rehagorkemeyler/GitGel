@@ -11,7 +11,7 @@ GitGel is a free, open-source (AGPL-3.0), ad-free, account-free Istanbul public 
 7. After each stage, give a Turkish summary of at most five sentences and keep going without asking.
 8. Ask Görkem only about real product or design decisions that VISION.md does not answer.
 4. Credits are limited. Do not read huge files in full (GTFS stop_times has millions of rows): use head, wc, sampling and scripts. Do not re-explore what docs/research.md already documents.
-5. Before adding any dependency, service or feature, check it against VISION.md "Asla olmayacaklar". If it conflicts, do not do it; tell him why.
+5. Before adding any dependency, service or feature, check it against VISION.md. If it conflicts, do not do it; tell him why.
 
 ## Git workflow
 
@@ -77,7 +77,7 @@ License: İBB Open Data License allows commercial and non-commercial reuse with 
 
 1. Never show a modal or popup the user did not open.
 2. Live data is labeled live; anything computed from schedules is labeled "tarifeye göre" and drawn as a hollow dot. If GetServiceStatuses reports a problem on a line, hide its schedule-based dots and show the notice.
-3. No analytics that identify users. No third-party trackers. Recent searches live in localStorage only.
+3. Recent searches live in localStorage only.
 4. Liquid glass surfaces use backdrop-filter on every device (tokens in app/src/styles/tokens.css). Browsers without it, and "reduce transparency" users, get solid surfaces with the same layout. Animate only transform and opacity, respect prefers-reduced-motion.
 5. Every data source can go down. Cache last good responses and degrade gracefully with a clear, calm message.
 
