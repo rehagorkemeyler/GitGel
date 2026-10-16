@@ -15,10 +15,10 @@ Türkiye şehirlerinin (İstanbul ve Ankara ile başlayarak) zaten halka açık 
 | İlke | Anlamı |
 |---|---|
 | 5 saniye kuralı | Aç, "Nereye?" yaz, rotayı gör. Arada hiçbir engel yok |
-| Sıfır engel | Pop-up yok, hesap yok, paywall yok, reklam yok |
+| Sıfır engel | Pop-up yok, hesap yok |
 | Dürüstlük | Canlı veri "canlı", tahmin "tarifeye göre" diye işaretlenir |
-| Gizlilik | Konum telefonda kalır, kişisel veri toplanmaz ve satılmaz |
-| Açıklık | Kod açık, veri kaynakları ve atıflar uygulamada yazılı |
+| Gizlilik | Konum telefonda kalır |
+| Açıklık | Veri kaynakları ve atıflar uygulamada yazılı |
 | Az ama doğru | Her özellik "bir yerden bir yere gitmeye yardım ediyor mu?" sorusundan geçer |
 | Minimum bilişsel yük | Bir ekranda bir karar. Kullanıcı hiçbir zaman "şimdi ne yapacağım?" diye düşünmez |
 
@@ -37,17 +37,13 @@ Türkiye şehirlerinin (İstanbul ve Ankara ile başlayarak) zaten halka açık 
 | Hat ve sefer ara | Hat listesi, hat sayfası, istasyonlar, ilk ve son sefer |
 | Bize ulaşın | İletişim bilgisi, hata bildirme linki (GitHub Issues) |
 | Destek olun | Proje hakkında kısa metin, bağış linki (sonra bağlanacak), GitHub linki. Hiçbir özelliği kısıtlamaz, asla kendiliğinden açılmaz |
-| Son aramalar | Sadece telefonda saklanır |
+| Son aramalar | Liste telefonda saklanır |
 | Dil | Türkçe ve İngilizce |
 | Tema | Açık ve koyu mod, sistem ayarını izler |
 
 ## Sonraki sürümler
 
 Raylı sistemde gerçek canlı konum (Metro İstanbul'a resmi veri talebiyle), topluluktan "tren geldi" sinyali, ev ve iş kısayolları, sefer uyarıları, asansör ve yürüyen merdiven arıza bilgisi, mağaza sürümleri (Capacitor), Arapça.
-
-## Asla olmayacaklar
-
-Hesap ve üyelik. Abonelik, paywall, "premium". Reklam. Puan, kredi, hediye kutusu gibi oyunlaştırma. Yapay zeka asistanı. Hava durumu, eczane, gezi rehberi, uçak takibi gibi ulaşım dışı özellikler. Veri satışı. Sahte "canlı" etiketi. Moovit gibi özel, belgelenmemiş API'lere bağımlılık.
 
 ## Tasarım dili
 

@@ -25,9 +25,15 @@ import { getStopBoard, getVehiclesByLine, NotImplemented, type AnkaraStopBoard, 
 import { getBursaStopBoard, getBursaVehicles, type BursaStopBoard, type BursaVehicle } from './providers/burulas.ts'
 import { CITIES, search, type SearchResult } from './search.ts'
 import { LimitReached, NotConfigured, Places, RECTANGLES, type PlacesCity } from './places.ts'
+import { Analytics, IntakeLimit, toRow, type Incoming } from './analytics.ts'
+import { GeoIp } from './geo.ts'
+import { startAdmin } from './admin.ts'
 import { fetchAnnouncements, fetchStatus, type Announcement, type LineStatus } from './metro.ts'
 
 const PORT = Number(process.env.PORT ?? 8081)
+const ADMIN_PORT = Number(process.env.ADMIN_PORT ?? 8082)
+const ANALYTICS_FILE = process.env.ANALYTICS_FILE ?? '/data/analytics.db'
+const GEO_FILE = process.env.GEO_FILE ?? '/data/dbip-city-lite.mmdb'
 
 const CAL_FILE = process.env.CAL_FILE ?? '/data/calibration.json'
 const LINES_URL = process.env.LINES_URL ?? 'https://rehagorkemeyler.github.io/GitGel/data/lines.json'
@@ -71,6 +77,34 @@ function clientIp(req: IncomingMessage): string {
   return req.socket.remoteAddress ?? '?'
 }
 
+let analytics: Analytics | null = null
+const geo = new GeoIp(GEO_FILE)
+const intake = new IntakeLimit()
+
+async function readBody(req: IncomingMessage, max: number): Promise<string | undefined> {
+  let size = 0
+  const parts: Buffer[] = []
+  for await (const chunk of req) {
+    size += (chunk as Buffer).length
+    if (size > max) return undefined
+    parts.push(chunk as Buffer)
+  }
+  return Buffer.concat(parts).toString('utf8')
+}
+
+async function collect(req: IncomingMessage, res: ServerResponse) {
+  const ip = clientIp(req)
+  const body = await readBody(req, 4096)
+  if (body === undefined) return send(res, 413, null)
+  if (!analytics || !intake.allow(ip)) return send(res, 204, null)
+  try {
+    const row = toRow(JSON.parse(body) as Incoming, ip, String(req.headers['user-agent'] ?? ''), geo.lookup(ip), Date.now())
+    if (row) analytics.insert(row)
+  } catch {
+  }
+  return send(res, 204, null)
+}
+
 const SESSION = /^[A-Za-z0-9-]{8,64}$/
 const status = new Cache<{ lines: LineStatus[]; announcements: Announcement[] }>(60_000, 6 * 3600_000)
 
@@ -88,6 +122,7 @@ export async function handle(req: IncomingMessage, res: ServerResponse) {
   // Accept "/live/x" and "/x": a proxy may or may not strip the /live mount (Tailscale Funnel does).
   const path = '/live' + url.pathname.replace(/\/+$/, '').replace(/^\/live(?=\/|$)/, '')
   if (req.method === 'OPTIONS') return send(res, 204, null)
+  if (req.method === 'POST' && path === '/live/e') return collect(req, res)
   if (req.method !== 'GET') return send(res, 405, { error: 'method' })
   try {
     if (path === '/live/health') return send(res, 200, { ok: true })
@@ -240,5 +275,24 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   setInterval(() => {
     for (const u of [iettUpstream, egoUpstream, burulasUpstream]) console.log(u.report())
   }, 3600_000)
+  try {
+    analytics = new Analytics(ANALYTICS_FILE)
+    const maintain = () => {
+      try {
+        analytics?.maintain(Date.now())
+      } catch (e) {
+        console.error('analytics maintenance failed', e)
+      }
+    }
+    maintain()
+    setInterval(maintain, 3600_000)
+    startAdmin(analytics, ADMIN_PORT)
+  } catch (e) {
+    console.error('analytics off', e)
+  }
+  geo.load()
+  const refreshGeo = () => void geo.refresh().catch((e) => console.error('geo refresh failed', e))
+  refreshGeo()
+  setInterval(refreshGeo, 24 * 3600_000)
   createServer(handle).listen(PORT, () => console.log(`live listening on :${PORT}`))
 }

@@ -23,13 +23,13 @@ Free, ad-free, account-free and open-source public transit app for Istanbul.
 
 ## Türkçe
 
-Uygulamayı aç, "Nereye?" yaz, rotayı gör. Metro, Marmaray, tramvay, füniküler, teleferik, metrobüs, otobüs ve vapuru tek yerde toplar. İETT GPS'inden gelen otobüsler "canlı", tarifeden hesaplanan trenler içi boş halka ve "tarifeye göre" diye gösterilir. Aksama olan hatlarda sade bir uyarı bandı çıkar. Konumun telefonunda kalır, hesap yok, reklam yok, izleme yok.
+Uygulamayı aç, "Nereye?" yaz, rotayı gör. Metro, Marmaray, tramvay, füniküler, teleferik, metrobüs, otobüs ve vapuru tek yerde toplar. İETT GPS'inden gelen otobüsler "canlı", tarifeden hesaplanan trenler içi boş halka ve "tarifeye göre" diye gösterilir. Aksama olan hatlarda sade bir uyarı bandı çıkar. Konumun telefonunda kalır, hesap yok.
 
 Ürün vizyonu: [VISION.md](VISION.md). Yol haritası: [TASKS.md](TASKS.md). Veri kaynakları: [docs/research.md](docs/research.md).
 
 ## English
 
-Open the app, type "Where to?", see your route. GitGel covers metro, Marmaray, tram, funicular, cable car, Metrobüs, bus and ferry. Buses from İETT GPS are shown as "live"; trains computed from timetables are hollow rings labelled "scheduled". Disrupted lines get a calm notice. Your location stays on your phone; no account, no ads, no tracking.
+Open the app, type "Where to?", see your route. GitGel covers metro, Marmaray, tram, funicular, cable car, Metrobüs, bus and ferry. Buses from İETT GPS are shown as "live"; trains computed from timetables are hollow rings labelled "scheduled". Disrupted lines get a calm notice. Your location stays on your phone; no account.
 
 ## How it works
 
@@ -86,7 +86,7 @@ Tests: `cd etl && .venv/bin/python -m pytest`, `cd app && npm test && npm run li
 
 ## Contributing / Katkı
 
-1. Read [VISION.md](VISION.md) first, especially "Asla olmayacaklar": no accounts, ads, trackers, gamification or undocumented private APIs.
+1. Read [VISION.md](VISION.md) first.
 2. Open an issue for a wrong route, a missing stop or a bug. Screenshots and the exact from/to help a lot.
 3. Pull requests: keep them small, run the tests above, follow the design rules (8 px grid, one accent colour, transform/opacity-only animation, 44 px touch targets, honest "live"/"scheduled" labels).
 4. Timetables without an API (Marmaray, M11, T2, F2) live in `etl/other/manual/*.yaml`; a PR with a corrected timetable and its source link is very welcome.

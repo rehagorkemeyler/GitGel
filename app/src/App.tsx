@@ -21,6 +21,7 @@ import { CITY, CITY_CHOSEN, busShapes, cityAt, liveStop, rememberCity, switchCit
 import type { Place } from './lib/search'
 import type { Itinerary } from './lib/api'
 import { t } from './i18n'
+import { track as trackEvent } from './lib/analytics'
 import { rememberLine, rememberPlace, rememberStation, type RecentPlace } from './lib/recent'
 import { prepareAlerts, useTracking } from './lib/tracking'
 import { TrackingBanner } from './components/TrackingBanner'
@@ -124,10 +125,14 @@ export function App() {
   const track = useTracking(tracking, geo.position)
   // A stop card and a line page count as uses (frequent places and lines); the search counts places itself.
   useEffect(() => {
-    if (station) rememberStation(station)
+    if (!station) return
+    rememberStation(station)
+    trackEvent('station', { st: station.name })
   }, [station])
   useEffect(() => {
-    if (lineId) rememberLine(lineId)
+    if (!lineId) return
+    rememberLine(lineId)
+    trackEvent('line', { ln: lineId })
   }, [lineId])
   // Locate (native onLocate): a press bumps `recenter`, so the map flies to the user. The sheet reports
   // its height: the locate button rides on it, and the map's bottom padding follows it once it settles.

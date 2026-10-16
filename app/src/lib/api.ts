@@ -1,5 +1,6 @@
 import { CITY, inBounds } from './city'
 import { API_BASE } from './config'
+import { track } from './analytics'
 import type { Mode, Place } from './search'
 
 // MOTIS API client. Every call has a timeout; callers show a calm message on failure.
@@ -78,6 +79,7 @@ export type Itinerary = {
 }
 
 export async function plan(from: Place, to: Place, time: Date = new Date(), arriveBy = false): Promise<Itinerary[]> {
+  track('route', { f: from.name, to: to.name })
   const res = await get<{ itineraries: Itinerary[] }>(
     '/api/v5/plan',
     {

@@ -6,6 +6,7 @@ import { loadLines, loadSearchIndex, type Line } from '../lib/data'
 import { distanceM } from '../lib/geo'
 import { lineHits, searchesPlaces, stationIcon, stopSubline } from '../lib/placeRules'
 import { categoryOf, Fallback, formatDistance, freePlaces, googlePlace, googleSuggest, newSession, type Category, type Suggestion } from '../lib/places'
+import { track } from '../lib/analytics'
 import { clearRecent, frequentPlaces, recentPlaces, rememberPlace, samePlace, type RecentPlace } from '../lib/recent'
 import { fold, searchIndex, type IndexRow, type Mode, type Place } from '../lib/search'
 import { lang, t } from '../i18n'
@@ -132,11 +133,13 @@ export function SearchPanel({ title, onPick, onStop, onLine, onBack, myLocation,
 
   const pick = (p: Place) => {
     rememberPlace(p)
+    track('search', { q: query, pl: p.name })
     onPick(p)
   }
   // A stop that has a card: remembered, then its card opens (native onStop).
   const pickStop = (p: Place) => {
     rememberPlace(p)
+    track('search', { q: query, pl: p.name })
     onStop(p)
   }
   // Native pickRecent: a station opens its card again, except as the origin, which is always a place.
