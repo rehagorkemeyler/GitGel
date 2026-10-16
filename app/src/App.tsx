@@ -21,7 +21,7 @@ import { CITY, CITY_CHOSEN, busShapes, cityAt, liveStop, rememberCity, switchCit
 import type { Place } from './lib/search'
 import type { Itinerary } from './lib/api'
 import { t } from './i18n'
-import { track as trackEvent } from './lib/analytics'
+import { track as trackEvent, trackCell } from './lib/analytics'
 import { rememberLine, rememberPlace, rememberStation, type RecentPlace } from './lib/recent'
 import { prepareAlerts, useTracking } from './lib/tracking'
 import { TrackingBanner } from './components/TrackingBanner'
@@ -176,6 +176,9 @@ export function App() {
   }, [])
 
   // Route searches use a position that only changes after a real move (GPS jitters every second).
+  useEffect(() => {
+    if (geo.position) trackCell(geo.position[1], geo.position[0])
+  }, [geo.position])
   const stablePos = useStablePosition(geo.position)
   const me = useMemo<Place | null>(
     () => (stablePos ? { name: t('myLocation'), kind: 'me', lon: stablePos[0], lat: stablePos[1] } : null),

@@ -2,7 +2,7 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { createServer, type RequestListener, type Server } from 'node:http'
 import type { AddressInfo } from 'node:net'
-import { Analytics, IntakeLimit, RETENTION_DAYS, dayOf, parseUa, toRow } from '../src/analytics.ts'
+import { Analytics, IntakeLimit, RETENTION_DAYS, dayOf, parseUa, toCell, toRow } from '../src/analytics.ts'
 import { adminHandler, allowedLogins, rangeOf } from '../src/admin.ts'
 import { MmdbReader, ipv6Bytes } from '../src/geo.ts'
 
@@ -143,4 +143,18 @@ test('MaxMind DB reader', () => {
   assert.equal(r.lookup('not an ip'), undefined)
   assert.deepEqual(ipv6Bytes('::ffff:1.2.3.4').slice(10), [255, 255, 1, 2, 3, 4])
   assert.equal(ipv6Bytes('2001:db8::1').length, 16)
+})
+
+test('location cells: rounded to 100 m, counted per day, no visitor', () => {
+  const a = new Analytics(':memory:')
+  const now = Date.parse('2026-10-16T12:00:00Z')
+  assert.deepEqual(toCell(40.99123, 29.02987), [40.991, 29.03])
+  assert.equal(toCell('40.9', 29), undefined)
+  assert.equal(toCell(95, 29), undefined)
+  assert.ok(a.addCell(40.99123, 29.02987, now))
+  assert.ok(a.addCell(40.99104, 29.03011, now))
+  assert.equal(a.addCell(NaN, 29, now), false)
+  assert.deepEqual(a.cells(now - 86400_000, now).map((c) => ({ ...c })), [{ lat: 40.991, lon: 29.03, n: 2 }])
+  const cols = (a.db.prepare("SELECT name FROM pragma_table_info('cells')").all() as { name: string }[]).map((c) => c.name)
+  assert.deepEqual(cols, ['day', 'lat', 'lon', 'n'])
 })
