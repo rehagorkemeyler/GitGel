@@ -6,7 +6,7 @@ export const PAGE_HTML = `<!doctype html>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <title>GitGel Admin</title>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H" crossorigin="anonymous">
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" integrity="sha384-MinO0mNliZ3vwppuPOUnGa+iq619pfMhLVUXfC4LHwSCvF9H+6P/KO4Q7qBOYV5V" crossorigin="anonymous">
 <link rel="stylesheet" href="/app.css">
 </head>
 <body>
@@ -53,7 +53,7 @@ export const PAGE_HTML = `<!doctype html>
 </main>
 <footer class="muted">Ham kayıtlar 90 gün tutulur, günlük toplamlar süresiz. Konum IP'den tahmindir: <a href="https://db-ip.com" rel="noreferrer">IP Geolocation by DB-IP</a>.</footer>
 <div class="tip" id="tip" hidden></div>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js" integrity="sha384-SYKAG6cglRMN0RVvhNeBY0r3FYKNOJtznwA0v7B5Vp9tr31xAHsZC0DqkQ/pZDmj" crossorigin="anonymous"></script>
 <script src="/app.js"></script>
 </body>
 </html>`
@@ -296,25 +296,41 @@ async function loadAllTime() {
     d.days.slice().reverse().map((r) => el('tr', null, td(r.day), td(fmt.format(r.visitors), 'num'), td(fmt.format(r.sessions), 'num'), td(fmt.format(r.pageviews), 'num'), td(fmt.format(r.searches), 'num'), td(fmt.format(r.routes), 'num'))));
 }
 
-let lmap, layer;
+let lmap;
 async function loadMap() {
   const d = await api('/api/cells?' + q());
-  if (!lmap) {
-    lmap = L.map('mapbox').setView([41.03, 28.98], 10);
-    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(lmap);
-  }
-  lmap.invalidateSize();
-  if (layer) layer.remove();
-  layer = L.layerGroup().addTo(lmap);
   const max = Math.max(1, ...d.cells.map((c) => c.n));
   const total = d.cells.reduce((a, c) => a + c.n, 0);
   $('mapTitle').textContent = 'Konum (100 m hücre, kişiyle eşleşmez) · ' + fmt.format(d.cells.length) + ' hücre · ' + fmt.format(total) + ' kayıt';
+  const data = { type: 'FeatureCollection', features: d.cells.map((c) => ({ type: 'Feature', geometry: { type: 'Point', coordinates: [c.lon, c.lat] }, properties: { n: c.n } })) };
   const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
-  for (const c of d.cells.slice().reverse()) {
-    L.circleMarker([c.lat, c.lon], { radius: 4 + 14 * Math.sqrt(c.n / max), stroke: false, fillColor: accent, fillOpacity: 0.25 + 0.5 * (c.n / max) })
-      .bindTooltip(fmt.format(c.n) + ' kayıt').addTo(layer);
+  if (!lmap) {
+    const dark = matchMedia('(prefers-color-scheme: dark)').matches;
+    lmap = new maplibregl.Map({ container: 'mapbox', style: 'https://tiles.openfreemap.org/styles/' + (dark ? 'dark' : 'positron'), center: [28.98, 41.03], zoom: 9.5 });
+    lmap.addControl(new maplibregl.NavigationControl({ showCompass: false }));
+    await new Promise((r) => lmap.once('load', r));
+    lmap.addSource('cells', { type: 'geojson', data });
+    lmap.addLayer({ id: 'heat', type: 'heatmap', source: 'cells', maxzoom: 15, paint: {
+      'heatmap-weight': ['interpolate', ['linear'], ['get', 'n'], 0, 0, max, 1],
+      'heatmap-radius': ['interpolate', ['linear'], ['zoom'], 8, 10, 14, 30],
+      'heatmap-opacity': ['interpolate', ['linear'], ['zoom'], 13, 0.85, 15, 0] } });
+    lmap.addLayer({ id: 'dots', type: 'circle', source: 'cells', minzoom: 13, paint: {
+      'circle-color': accent, 'circle-opacity': 0.7, 'circle-stroke-width': 2, 'circle-stroke-color': '#fff',
+      'circle-radius': ['interpolate', ['linear'], ['get', 'n'], 1, 6, max, 18] } });
+    const popup = new maplibregl.Popup({ closeButton: false, closeOnClick: false });
+    lmap.on('mousemove', 'dots', (e) => { popup.setLngLat(e.lngLat).setText(fmt.format(e.features[0].properties.n) + ' kayıt').addTo(lmap); });
+    lmap.on('mouseleave', 'dots', () => popup.remove());
+  } else {
+    lmap.getSource('cells').setData(data);
+    lmap.setPaintProperty('heat', 'heatmap-weight', ['interpolate', ['linear'], ['get', 'n'], 0, 0, max, 1]);
+    lmap.setPaintProperty('dots', 'circle-radius', ['interpolate', ['linear'], ['get', 'n'], 1, 6, max, 18]);
   }
-  if (d.cells.length) lmap.fitBounds(d.cells.slice(0, 500).map((c) => [c.lat, c.lon]), { maxZoom: 14, padding: [20, 20] });
+  lmap.resize();
+  if (d.cells.length) {
+    const b = new maplibregl.LngLatBounds();
+    for (const c of d.cells.slice(0, 500)) b.extend([c.lon, c.lat]);
+    lmap.fitBounds(b, { maxZoom: 14, padding: 30, duration: 0 });
+  }
   table($('celltable'), ['Hücre', 'Kayıt', ''], d.cells.slice(0, 100).map((c) => el('tr', null,
     td(c.lat.toFixed(3) + ', ' + c.lon.toFixed(3), 'mono'), td(fmt.format(c.n), 'num'),
     el('td', null, el('a', { href: 'https://www.openstreetmap.org/?mlat=' + c.lat + '&mlon=' + c.lon + '#map=17/' + c.lat + '/' + c.lon, target: '_blank', rel: 'noreferrer', text: 'Haritada aç' })))));

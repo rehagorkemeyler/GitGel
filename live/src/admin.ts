@@ -24,7 +24,7 @@ export function authorized(req: IncomingMessage, logins: Set<string>): boolean {
 const SECURITY_HEADERS = {
   'Cache-Control': 'no-store',
   'Content-Security-Policy':
-    "default-src 'none'; script-src 'self' https://unpkg.com; style-src 'self' https://unpkg.com; connect-src 'self'; img-src 'self' data: https://tile.openstreetmap.org; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
+    "default-src 'none'; script-src 'self' https://unpkg.com; style-src 'self' https://unpkg.com; connect-src 'self' https://tiles.openfreemap.org; img-src 'self' data: blob:; worker-src blob:; child-src blob:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
   'X-Frame-Options': 'DENY',
   'X-Content-Type-Options': 'nosniff',
   'Referrer-Policy': 'no-referrer',
