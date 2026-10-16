@@ -47,7 +47,7 @@ Raylı sistemde gerçek canlı konum (Metro İstanbul'a resmi veri talebiyle), t
 
 ## Asla olmayacaklar
 
-Hesap ve üyelik. Abonelik, paywall, "premium". Reklam. Puan, kredi, hediye kutusu gibi oyunlaştırma. Yapay zeka asistanı. Hava durumu, eczane, gezi rehberi, uçak takibi gibi ulaşım dışı özellikler. Kullanıcı takibi, veri satışı. Sahte "canlı" etiketi. Moovit gibi özel, belgelenmemiş API'lere bağımlılık.
+Hesap ve üyelik. Abonelik, paywall, "premium". Reklam. Puan, kredi, hediye kutusu gibi oyunlaştırma. Yapay zeka asistanı. Hava durumu, eczane, gezi rehberi, uçak takibi gibi ulaşım dışı özellikler. Veri satışı. Sahte "canlı" etiketi. Moovit gibi özel, belgelenmemiş API'lere bağımlılık.
 
 ## Tasarım dili
 
