@@ -68,7 +68,21 @@ const COLUMNS: (keyof Row)[] = [
 
 const str = (v: unknown, max = 200): string => (typeof v === 'string' ? v.replace(/[\u0000-\u001f]/g, ' ').trim().slice(0, max) : '')
 
+// The native app's HTTP stack has no browser user agent: okhttp on Android, CFNetwork/Darwin on iOS,
+// or an explicit "GitGel/<version>" / Expo product token. Without this it read as a desktop "Diğer".
+const NATIVE = /^okhttp\/|CFNetwork\/|\bGitGel\/|\bExpo\b|\bExponent\//
+
+function nativeOs(ua: string): string {
+  const m = ua.match(/Android[ /](\d+(?:\.\d+)?)/) ?? ua.match(/(?:iOS|iPhone OS)[ /](\d+(?:[._]\d+)?)/)
+  const ios = /CFNetwork|Darwin|iOS|iPhone|iPad/.test(ua)
+  if (ios) return m ? `iOS ${m[1].replace('_', '.')}` : 'iOS'
+  return m ? `Android ${m[1]}` : 'Android'
+}
+
 export function parseUa(ua: string): Device {
+  if (NATIVE.test(ua) && !/Mozilla\//.test(ua)) {
+    return { device: /iPad|Tablet/.test(ua) ? 'Tablet' : 'Telefon', model: '', os: nativeOs(ua), browser: 'GitGel uygulaması' }
+  }
   let os = 'Diğer'
   let model = ''
   let m: RegExpMatchArray | null
@@ -102,6 +116,7 @@ export function parseUa(ua: string): Device {
     [/Edg[AiA]?\/(\d+)/, 'Edge'],
     [/OPR\/(\d+)|Opera/, 'Opera'],
     [/Firefox\/(\d+)|FxiOS/, 'Firefox'],
+    [/\bGitGel\//, 'GitGel uygulaması'],
     [/CriOS\/(\d+)|Chrome\/(\d+)/, 'Chrome'],
     [/Version\/[\d.]+.*Safari/, 'Safari'],
   ]
