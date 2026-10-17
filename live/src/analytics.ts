@@ -81,7 +81,9 @@ function nativeOs(ua: string): string {
 
 export function parseUa(ua: string): Device {
   if (NATIVE.test(ua) && !/Mozilla\//.test(ua)) {
-    return { device: /iPad|Tablet/.test(ua) ? 'Tablet' : 'Telefon', model: '', os: nativeOs(ua), browser: 'GitGel uygulaması' }
+    // The app names its model itself: "GitGel/0.1.0 (Android 14; SM-S918B)".
+    const model = ua.match(/\bGitGel\/\S* \([^;)]*; ([^)]+)\)/)?.[1].trim() ?? ''
+    return { device: /iPad|Tablet/.test(ua) ? 'Tablet' : 'Telefon', model, os: nativeOs(ua), browser: 'GitGel uygulaması' }
   }
   let os = 'Diğer'
   let model = ''
