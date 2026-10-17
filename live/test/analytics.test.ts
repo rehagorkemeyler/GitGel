@@ -19,6 +19,13 @@ test('user agents: device, model, OS, browser', () => {
   assert.equal(parseUa('Googlebot/2.1 (+http://www.google.com/bot.html)').device, 'Bot')
 })
 
+test('user agents: the native app is a phone, not a desktop', () => {
+  assert.deepEqual(parseUa('okhttp/4.12.0'), { device: 'Telefon', model: '', os: 'Android', browser: 'GitGel uygulaması' })
+  assert.deepEqual(parseUa('GitGel/12 CFNetwork/1568.100.1 Darwin/24.0.0'), { device: 'Telefon', model: '', os: 'iOS', browser: 'GitGel uygulaması' })
+  assert.equal(parseUa('GitGel/1.0 (Android 14)').os, 'Android 14')
+  assert.equal(parseUa(`${SAMSUNG} GitGel/1.0`).browser, 'GitGel uygulaması')
+})
+
 const ev = (over: Record<string, unknown> = {}) => ({ v: 'visitor-0001', s: 'session-0001', t: 'pageview', p: '/GitGel/', ...over })
 
 test('incoming events are validated and trimmed', () => {
