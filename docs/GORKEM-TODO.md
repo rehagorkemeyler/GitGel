@@ -136,3 +136,11 @@ Komutları `gitgel-latest` klasöründe çalıştır.
 3. https://vercel.com/account/tokens → "Create Token", adı `gitgel-github-actions`, kendi hesabın. Çıkan token'ı kopyala.
 4. `gh secret set VERCEL_TOKEN --repo rehagorkemeyler/gitgel` → token'ı yapıştır, Enter. Beklenen: `✓ Set Actions secret VERCEL_TOKEN`.
 5. Claude'a "tamam" yaz: proje kimliklerini secret olarak ekler, ilk deploy'u başlatır, adresleri Vercel'e çevirir.
+
+## 8. Sunucu private repo'dan çeksin (repo private olduktan sonra)
+
+Repo private olunca sunucu `git pull` yapamıyor. Mac'te tek komut: sunucuda salt-okunur bir anahtar üretir, GitHub'a deploy key olarak ekler, sunucuyu SSH ile çekmeye geçirir ve çeker.
+
+1. `ssh gitgel 'test -f ~/.ssh/gitgel_repo || ssh-keygen -t ed25519 -N "" -f ~/.ssh/gitgel_repo -C gitgel-server-pull -q; cat ~/.ssh/gitgel_repo.pub' | gh repo deploy-key add - --repo rehagorkemeyler/gitgel --title gitgel-server-pull` → Beklenen: `✓ Deploy key added to rehagorkemeyler/gitgel`.
+2. `ssh gitgel 'grep -q gitgel_repo ~/.ssh/config 2>/dev/null || printf "Host github.com\n  IdentityFile ~/.ssh/gitgel_repo\n  IdentitiesOnly yes\n" >> ~/.ssh/config; ssh-keyscan -t ed25519 github.com >> ~/.ssh/known_hosts 2>/dev/null; cd /opt/gitgel && git remote set-url origin git@github.com:rehagorkemeyler/GitGel.git && git pull --ff-only'` → Beklenen: `Fast-forward` ve değişen dosyaların listesi.
+3. Claude'a "sunucu tamam" yaz: deploy workflow'unu yeniden çalıştırıp doğrular.
