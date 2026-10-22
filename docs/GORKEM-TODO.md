@@ -126,3 +126,13 @@ Taslak: [docs/metro-istanbul-talep.md](metro-istanbul-talep.md). E-posta adresin
 ## 6. Duyuru (Aşama 5, en son)
 
 Tailscale/alan adı ve Pages adımları bitip uygulama telefonda çalışınca: README'deki ekran görüntüleriyle kısa bir tanıtım (Ekşi, Reddit r/istanbul, X, LinkedIn). Hata bildirimleri için GitHub Issues bağlantısını ekle.
+
+## 7. Vercel'e geçiş (site ve veri)
+
+Komutları `gitgel-latest` klasöründe çalıştır.
+
+1. `npx --yes vercel@62.1.0 login` → "Continue with GitHub" seç, tarayıcıda onayla. Beklenen: `Success!` ile giriş mesajı.
+2. `npx --yes vercel@62.1.0 link --yes --project gitgel` → Beklenen: `Linked to .../gitgel`. `.vercel/` klasörü oluşur (git'e girmez).
+3. https://vercel.com/account/tokens → "Create Token", adı `gitgel-github-actions`, kendi hesabın. Çıkan token'ı kopyala.
+4. `gh secret set VERCEL_TOKEN --repo rehagorkemeyler/gitgel` → token'ı yapıştır, Enter. Beklenen: `✓ Set Actions secret VERCEL_TOKEN`.
+5. Claude'a "tamam" yaz: proje kimliklerini secret olarak ekler, ilk deploy'u başlatır, adresleri Vercel'e çevirir.
