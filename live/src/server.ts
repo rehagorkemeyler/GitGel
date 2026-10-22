@@ -29,6 +29,7 @@ import { Analytics, IntakeLimit, toRow, type Incoming } from './analytics.ts'
 import { GeoIp } from './geo.ts'
 import { startAdmin } from './admin.ts'
 import { fetchAnnouncements, fetchStatus, type Announcement, type LineStatus } from './metro.ts'
+import { ClientBudget, CloudBlock, allowedOrigins, clientIp, isLocal } from './shield.ts'
 
 const PORT = Number(process.env.PORT ?? 8081)
 const ADMIN_PORT = Number(process.env.ADMIN_PORT ?? 8082)
@@ -68,14 +69,11 @@ const bursaArrivals = new Cache<BursaStopBoard>(10_000, 2 * 60_000)
 const searches = new Cache<SearchResult[]>(5 * 60_000, 60 * 60_000)
 const places = new Places({ key: process.env.PLACES_API_KEY ?? '', file: process.env.PLACES_FILE ?? '/data/places.json' })
 
-/** The client's address: Cloudflare, then the first proxy hop, then the socket. */
-function clientIp(req: IncomingMessage): string {
-  const cf = req.headers['cf-connecting-ip']
-  if (typeof cf === 'string' && cf) return cf
-  const xff = req.headers['x-forwarded-for']
-  if (typeof xff === 'string' && xff) return xff.split(',')[0].trim()
-  return req.socket.remoteAddress ?? '?'
-}
+// Who may use the live API, and how much (shield.ts).
+const origins = allowedOrigins()
+const budget = new ClientBudget()
+const clouds = new CloudBlock()
+let warnedLocal = false
 
 let analytics: Analytics | null = null
 const geo = new GeoIp(GEO_FILE)
@@ -116,7 +114,6 @@ const status = new Cache<{ lines: LineStatus[]; announcements: Announcement[] }>
 function send(res: ServerResponse, code: number, body: unknown, maxAge = 0) {
   res.writeHead(code, {
     'Content-Type': 'application/json; charset=utf-8',
-    'Access-Control-Allow-Origin': '*',
     'Cache-Control': maxAge ? `public, max-age=${maxAge}` : 'no-store',
   })
   res.end(JSON.stringify(body))
@@ -126,6 +123,23 @@ export async function handle(req: IncomingMessage, res: ServerResponse) {
   const url = new URL(req.url ?? '/', 'http://x')
   // Accept "/live/x" and "/x": a proxy may or may not strip the /live mount (Tailscale Funnel does).
   const path = '/live' + url.pathname.replace(/\/+$/, '').replace(/^\/live(?=\/|$)/, '')
+  if (path !== '/live/health') {
+    // Browsers only from our own sites; the native app and the nightly ETL send no Origin.
+    const origin = req.headers?.origin
+    if (typeof origin === 'string' && origin) {
+      if (!origins.has(origin)) return send(res, 403, { error: 'origin' })
+      res.setHeader('Access-Control-Allow-Origin', origin)
+      res.setHeader('Vary', 'Origin')
+    }
+    const ip = clientIp(req)
+    if (isLocal(ip)) {
+      if (!warnedLocal) console.warn(`shield: request without a client address (${ip}); is the proxy setting X-Forwarded-For?`)
+      warnedLocal = true
+    } else {
+      if (clouds.blocked(ip)) return send(res, 403, { error: 'forbidden' })
+      if (!budget.allow(ip)) return send(res, 429, { error: 'slow down' })
+    }
+  }
   if (req.method === 'OPTIONS') return send(res, 204, null)
   if (req.method === 'POST' && path === '/live/e') return collect(req, res)
   if (req.method !== 'GET') return send(res, 405, { error: 'method' })
@@ -299,5 +313,6 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const refreshGeo = () => void geo.refresh().catch((e) => console.error('geo refresh failed', e))
   refreshGeo()
   setInterval(refreshGeo, 24 * 3600_000)
+  clouds.start()
   createServer(handle).listen(PORT, () => console.log(`live listening on :${PORT}`))
 }
