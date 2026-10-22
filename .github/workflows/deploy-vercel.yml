@@ -1,0 +1,80 @@
+name: Deploy app to Vercel
+
+# Same build as deploy-pages.yml (PWA + newest nightly data under /data), served at the site root on
+# Vercel. Vercel does not build anything itself: the finished files go up through its Build Output API,
+# so the nightly data release never has to be reachable from Vercel. Skips until the secrets exist.
+
+on:
+  push:
+    branches: [main]
+    paths: ["app/**", ".github/workflows/deploy-vercel.yml"]
+  workflow_run:
+    workflows: ["Nightly ETL"]
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vercel
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+    steps:
+      - name: Skip until secrets are configured
+        if: env.VERCEL_TOKEN == ''
+        run: echo "VERCEL_TOKEN secret not set; skipping deploy."
+      - uses: actions/checkout@v4
+        if: env.VERCEL_TOKEN != ''
+      - uses: actions/setup-node@v4
+        if: env.VERCEL_TOKEN != ''
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      - name: Build
+        if: env.VERCEL_TOKEN != ''
+        working-directory: app
+        env:
+          VITE_API_BASE: ${{ vars.API_BASE }}
+          VITE_LIVE_BASE: ${{ vars.LIVE_BASE }}
+          VITE_CONTACT_EMAIL: ${{ vars.CONTACT_EMAIL }}
+          VITE_DONATE_URL: ${{ vars.DONATE_URL }}
+          VITE_BASE: /
+        run: npm ci && npm run lint && npm test && npm run build
+      - name: Add nightly data
+        if: env.VERCEL_TOKEN != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p app/dist/data
+          if gh release download data-latest -p static.tar.gz -D /tmp --repo "$GITHUB_REPOSITORY"; then
+            tar -xzf /tmp/static.tar.gz -C /tmp && cp -r /tmp/static/. app/dist/data/
+          else
+            echo "::warning::No nightly data yet; the app will show a calm 'data unavailable' message."
+          fi
+      - name: Deploy
+        if: env.VERCEL_TOKEN != ''
+        run: |
+          mkdir -p .vercel/output/static
+          cp -r app/dist/. .vercel/output/static/
+          # Files first, then the app shell for client-side routes. Data and the app may be read by any
+          # browser; the live API on the server decides who may use it (live/src/shield.ts).
+          cat > .vercel/output/config.json <<'JSON'
+          {
+            "version": 3,
+            "routes": [
+              { "src": "/(.*)", "headers": { "X-Content-Type-Options": "nosniff", "Referrer-Policy": "strict-origin-when-cross-origin", "X-Frame-Options": "DENY" }, "continue": true },
+              { "handle": "filesystem" },
+              { "src": "/.*", "dest": "/index.html" }
+            ]
+          }
+          JSON
+          npx --yes vercel@62.1.0 deploy --prebuilt --prod --token "$VERCEL_TOKEN"
