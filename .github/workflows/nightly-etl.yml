@@ -126,10 +126,6 @@ jobs:
             gh release create data-latest --title "Latest data" --notes "Nightly GTFS and static JSON built by the ETL." --latest=false
           gh release upload data-latest out/istanbul-gtfs.zip out/static.tar.gz cache/rail/timetables.json $(ls cache/iett/calibration.json out/ankara-lines.json out/ankara-gtfs.zip out/ankara-calibration.json out/bursa-gtfs.zip 2>/dev/null) --clobber
           gh release edit data-latest --notes "Built $(date -u +%FT%TZ) from ${GITHUB_SHA::7}."
-      - name: Rebuild the site with fresh data
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: gh workflow run deploy-pages.yml --ref main || echo "deploy-pages.yml not present yet"
       - name: Server pulls the new GTFS and reloads MOTIS
         if: env.DEPLOY_HOST != ''
         env:

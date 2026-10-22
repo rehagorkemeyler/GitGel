@@ -23,7 +23,7 @@ test('origin allowlist from env, trailing slashes ignored', () => {
   const o = allowedOrigins('https://gitgel.vercel.app/, http://localhost:5173')
   assert.ok(o.has('https://gitgel.vercel.app'))
   assert.ok(!o.has('https://rayist-509917.web.app'))
-  assert.ok(allowedOrigins(undefined).has('https://rehagorkemeyler.github.io'))
+  assert.ok(!allowedOrigins(undefined).has('https://rehagorkemeyler.github.io'))
   assert.ok(allowedOrigins(undefined).has('https://gitgel.vercel.app'))
 })
 
@@ -67,8 +67,8 @@ test('server refuses other sites and serves our own', async () => {
     return out
   }
   assert.equal((await call('https://rayist-509917.web.app')).code, 403)
-  const ours = await call('https://rehagorkemeyler.github.io')
+  const ours = await call('https://gitgel.vercel.app')
   assert.equal(ours.code, 400)
-  assert.equal(ours.headers['Access-Control-Allow-Origin'], 'https://rehagorkemeyler.github.io')
+  assert.equal(ours.headers['Access-Control-Allow-Origin'], 'https://gitgel.vercel.app')
   assert.equal((await call()).code, 400)
 })

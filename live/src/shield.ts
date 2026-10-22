@@ -41,7 +41,7 @@ function normalize(ip: string): string {
   return ip.startsWith('::ffff:') && isIP(ip.slice(7)) === 4 ? ip.slice(7) : ip
 }
 
-const DEFAULT_ORIGINS = ['https://gitgel.vercel.app', 'https://rehagorkemeyler.github.io', 'http://localhost:5173', 'http://localhost:4173']
+const DEFAULT_ORIGINS = ['https://gitgel.vercel.app', 'http://localhost:5173', 'http://localhost:4173']
 
 export function allowedOrigins(env = process.env.ALLOWED_ORIGINS): Set<string> {
   const list = env ? env.split(',').map((o) => o.trim().replace(/\/+$/, '')).filter(Boolean) : DEFAULT_ORIGINS
