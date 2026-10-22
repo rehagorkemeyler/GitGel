@@ -1,6 +1,5 @@
 import { PanelHeader } from '../components/PanelHeader'
 import { Icon } from '../components/Icon'
-import { REPO_URL } from '../lib/config'
 import { CITY, type City } from '../lib/city'
 import { t, type StringKey } from '../i18n'
 import './Info.css'
@@ -48,11 +47,6 @@ export function About({ onBack, onContact, onSupport }: { onBack: () => void; on
       {busHonesty && <p className="muted">{t(busHonesty)}</p>}
       <p className="muted">{t('aboutHonestyRail')}</p>
       <p className="muted">{t('aboutPrivacy')}</p>
-      <p>
-        <a href={REPO_URL} target="_blank" rel="noreferrer">
-          {t('sourceCode')} (AGPL-3.0)
-        </a>
-      </p>
       <div className="about-links">
         <button onClick={onContact}>
           <Icon name="mail" size={16} />
