@@ -16,3 +16,4 @@ app/public/data/
 
 # Vercel CLI link (vercel link); ids go to repo secrets, never in git
 .vercel/
+.env*.local

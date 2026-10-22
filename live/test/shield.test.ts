@@ -24,6 +24,7 @@ test('origin allowlist from env, trailing slashes ignored', () => {
   assert.ok(o.has('https://gitgel.vercel.app'))
   assert.ok(!o.has('https://rayist-509917.web.app'))
   assert.ok(allowedOrigins(undefined).has('https://rehagorkemeyler.github.io'))
+  assert.ok(allowedOrigins(undefined).has('https://gitgel.vercel.app'))
 })
 
 test('per-IP budget refills over a minute', () => {

@@ -37,9 +37,9 @@ const ANALYTICS_FILE = process.env.ANALYTICS_FILE ?? '/data/analytics.db'
 const GEO_FILE = process.env.GEO_FILE ?? '/data/dbip-city-lite.mmdb'
 
 const CAL_FILE = process.env.CAL_FILE ?? '/data/calibration.json'
-const LINES_URL = process.env.LINES_URL ?? 'https://rehagorkemeyler.github.io/GitGel/data/lines.json'
+const LINES_URL = process.env.LINES_URL ?? 'https://gitgel.vercel.app/data/lines.json'
 const ANKARA_CAL_FILE = process.env.ANKARA_CAL_FILE ?? '/data/calibration-ankara.json'
-const ANKARA_LINES_URL = process.env.ANKARA_LINES_URL ?? 'https://rehagorkemeyler.github.io/GitGel/data/ankara/lines.json'
+const ANKARA_LINES_URL = process.env.ANKARA_LINES_URL ?? 'https://gitgel.vercel.app/data/ankara/lines.json'
 
 // 30 s fresh: the İBB gateway quota on İETT is tight (guard.ts), and one answer serves every user of the line.
 const vehicles = new Cache<Vehicle[]>(30_000, 10 * 60_000)
