@@ -145,20 +145,6 @@ export async function handle(req: IncomingMessage, res: ServerResponse) {
   if (req.method !== 'GET') return send(res, 405, { error: 'method' })
   try {
     if (path === '/live/health') return send(res, 200, { ok: true })
-    // TEMPORARY: shows the caller how the proxy forwards their address (shield.ts tuning). Remove after.
-    if (path === '/live/whoami') {
-      const h = req.headers ?? {}
-      const pick = (k: string) => (typeof h[k] === 'string' ? h[k] : undefined)
-      return send(res, 200, {
-        seen: clientIp(req),
-        socket: req.socket?.remoteAddress,
-        xff: pick('x-forwarded-for'),
-        xRealIp: pick('x-real-ip'),
-        forwarded: pick('forwarded'),
-        tsFunnel: pick('tailscale-funnel-request'),
-        cf: pick('cf-connecting-ip'),
-      })
-    }
     if (path === '/live/vehicles') {
       const line = (url.searchParams.get('line') ?? '').trim().toUpperCase()
       if (!/^[0-9A-ZÇĞİÖŞÜ-]{1,10}$/.test(line)) return send(res, 400, { error: 'line' })
