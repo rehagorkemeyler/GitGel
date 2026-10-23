@@ -47,7 +47,9 @@ jobs:
           VITE_LIVE_BASE: ${{ vars.LIVE_BASE }}
           VITE_CONTACT_EMAIL: ${{ vars.CONTACT_EMAIL }}
           VITE_DONATE_URL: ${{ vars.DONATE_URL }}
-          VITE_BASE: /
+          # Served at gitgel.vercel.app/map: the landing site (gitgel-site) owns the domain and rewrites
+          # /map and /data to this project.
+          VITE_BASE: /map/
         run: npm ci && npm run lint && npm test && npm run build
       - name: Add nightly data
         if: env.VERCEL_TOKEN != ''
@@ -63,17 +65,21 @@ jobs:
       - name: Deploy
         if: env.VERCEL_TOKEN != ''
         run: |
-          mkdir -p .vercel/output/static
-          cp -r app/dist/. .vercel/output/static/
-          # Files first, then the app shell for client-side routes. Data and the app may be read by any
-          # browser; the live API on the server decides who may use it (live/src/shield.ts).
+          mkdir -p .vercel/output/static/map
+          cp -r app/dist/. .vercel/output/static/map/
+          # Files first, then the app shell for client-side routes. /data stays an alias of /map/data for
+          # clients built before the move (native app, live server's LINES_URL). Data and the app may be
+          # read by any browser; the live API on the server decides who may use it (live/src/shield.ts).
           cat > .vercel/output/config.json <<'JSON'
           {
             "version": 3,
             "routes": [
               { "src": "/(.*)", "headers": { "X-Content-Type-Options": "nosniff", "Referrer-Policy": "strict-origin-when-cross-origin", "X-Frame-Options": "DENY" }, "continue": true },
+              { "src": "^/$", "status": 308, "headers": { "Location": "/map/" } },
+              { "src": "^/map$", "status": 308, "headers": { "Location": "/map/" } },
+              { "src": "^/data/(.*)$", "dest": "/map/data/$1" },
               { "handle": "filesystem" },
-              { "src": "/.*", "dest": "/index.html" }
+              { "src": "^/map/.*$", "dest": "/map/index.html" }
             ]
           }
           JSON
