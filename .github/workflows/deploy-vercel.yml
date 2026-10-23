@@ -67,6 +67,8 @@ jobs:
         run: |
           mkdir -p .vercel/output/static/map
           cp -r app/dist/. .vercel/output/static/map/
+          # "/map" serves the app instead of redirecting: the landing site's rewrite drops the trailing slash,
+          # so a redirect back to "/map/" would loop.
           # Files first, then the app shell for client-side routes. /data stays an alias of /map/data for
           # clients built before the move (native app, live server's LINES_URL). Data and the app may be
           # read by any browser; the live API on the server decides who may use it (live/src/shield.ts).
@@ -76,7 +78,7 @@ jobs:
             "routes": [
               { "src": "/(.*)", "headers": { "X-Content-Type-Options": "nosniff", "Referrer-Policy": "strict-origin-when-cross-origin", "X-Frame-Options": "DENY" }, "continue": true },
               { "src": "^/$", "status": 308, "headers": { "Location": "/map/" } },
-              { "src": "^/map$", "status": 308, "headers": { "Location": "/map/" } },
+              { "src": "^/map/?$", "dest": "/map/index.html" },
               { "src": "^/data/(.*)$", "dest": "/map/data/$1" },
               { "handle": "filesystem" },
               { "src": "^/map/.*$", "dest": "/map/index.html" }
