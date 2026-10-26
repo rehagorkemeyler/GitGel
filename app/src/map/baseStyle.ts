@@ -1,8 +1,8 @@
 import type { StyleSpecification } from 'maplibre-gl'
 
-// Base map: OpenFreeMap "liberty", recoloured to the native map styles (native src/map/styles/light.json and
-// dark.json). Flat land, park, water, road and label colours in both themes; no POI, transit or shield icons,
-// no 3D buildings, no road casings in dark, and neighbourhood names only when zoomed in.
+// Base map: OpenFreeMap "liberty", recoloured to a flat light and dark palette. Flat land, park, water, road and
+// label colours in both themes; buildings blend into the land; no POI, transit or shield icons, no 3D buildings,
+// no road casings in dark, and neighbourhood names only when zoomed in.
 
 const LIBERTY = 'https://tiles.openfreemap.org/styles/liberty'
 
@@ -16,41 +16,41 @@ function loadLiberty(): Promise<StyleSpecification> {
   return cached
 }
 
-/** Colour roles of the map: each one is a native colour in one theme. */
+/** Colour roles of the map: each one is one colour per theme. */
 export type Role = 'land' | 'park' | 'water' | 'road' | 'arterial' | 'highway' | 'rail' | 'casing' | 'boundary' | 'text' | 'waterText'
 
 type Palette = Record<Role, string | null> & { halo: string }
 
-/** Native light.json values. */
+/** Light: warm grey land, bright green parks, sky-blue water, white roads with a faint casing, dark names. */
 export const LIGHT: Palette = {
-  land: '#f1f1f3',
-  park: '#dcebd9',
-  water: '#b9d3ec',
+  land: '#eee6e6',
+  park: '#a6e29e',
+  water: '#9ad8f8',
   road: '#ffffff',
   arterial: '#ffffff',
-  highway: '#fbfbfc',
-  rail: '#c9cbd1',
-  casing: '#e2e3e7',
-  boundary: '#c9cbd1',
-  text: '#8b8d94',
-  waterText: '#8b8d94',
+  highway: '#ffffff',
+  rail: '#cfc8c8',
+  casing: '#ddd5d5',
+  boundary: '#c9c1c1',
+  text: '#1c1c1c',
+  waterText: '#3a78b5',
   halo: '#ffffff',
 }
 
-/** Native dark.json values. Dark roads have no casing (native geometry.stroke is off). */
+/** Dark: slate blue land, deep teal parks, navy water, light slate roads without casings, pale names. */
 export const DARK: Palette = {
-  land: '#17191d',
-  park: '#1a211c',
-  water: '#0d1c2e',
-  road: '#202328',
-  arterial: '#2a2e34',
-  highway: '#343941',
-  rail: '#2a2d33',
+  land: '#36465a',
+  park: '#0a5656',
+  water: '#1c3478',
+  road: '#526276',
+  arterial: '#56667a',
+  highway: '#5e6a7a',
+  rail: '#4a5a6e',
   casing: null,
-  boundary: '#2a2d33',
-  text: '#6b6f78',
-  waterText: '#6b6f78',
-  halo: '#17191d',
+  boundary: '#4a5a6e',
+  text: '#d6dae2',
+  waterText: '#9fb4e0',
+  halo: '#36465a',
 }
 
 /**
@@ -79,7 +79,7 @@ export function roleOf(id: string, type: string, sourceLayer = ''): Role {
   if (type === 'fill') {
     if (sourceLayer === 'water') return 'water'
     if (sourceLayer === 'park' || (sourceLayer === 'landcover' && /wood|grass|wetland/.test(id))) return 'park'
-    if (sourceLayer === 'building') return 'road'
+    if (sourceLayer === 'building') return 'land'
     return 'land'
   }
   // Lines
@@ -128,9 +128,12 @@ function restyle(layer: AnyLayer, pal: Palette): AnyLayer[] {
         layout.visibility = 'none'
         return [layer]
       }
-      const color = pal[roleOf(layer.id, 'fill', src)] ?? pal.land
+      const role = roleOf(layer.id, 'fill', src)
+      const color = pal[role] ?? pal.land
       paint['fill-color'] = color
       paint['fill-outline-color'] = color
+      // Parks are solid (liberty fades them).
+      if (role === 'park') paint['fill-opacity'] = 1
       return [layer]
     }
     case 'line': {
@@ -182,6 +185,6 @@ export function blankStyle(scheme: 'light' | 'dark'): StyleSpecification {
     version: 8,
     glyphs: 'https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf',
     sources: {},
-    layers: [{ id: 'bg', type: 'background', paint: { 'background-color': scheme === 'dark' ? '#0c0d10' : '#f2f3f5' } }],
+    layers: [{ id: 'bg', type: 'background', paint: { 'background-color': (scheme === 'dark' ? DARK : LIGHT).land as string } }],
   }
 }
