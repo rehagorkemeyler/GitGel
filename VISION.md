@@ -4,22 +4,19 @@
 
 ## Vizyon
 
-İstanbul'da yaşayan herkes, nereden nereye gideceğini telefonu açtıktan sonra 5 saniye içinde, para ödemeden, reklam izlemeden ve üye olmadan öğrenebilmeli.
+İstanbul'da yaşayan herkes, nereden nereye gideceğini telefonu açtıktan sonra 5 saniye içinde öğrenebilmeli.
 
 ## Misyon
 
-Türkiye şehirlerinin (İstanbul ve Ankara ile başlayarak) zaten halka açık olan ulaşım verisini, sade, hızlı ve dürüst bir araçla halka geri vermek. Kod açık kaynak (AGPL-3.0), veri kaynakları açık, sunucu maliyeti sıfır.
+Türkiye şehirlerinin (İstanbul ve Ankara ile başlayarak) ulaşım verisini, sade, hızlı ve dürüst bir araçla halka geri vermek. 
 
 ## İlkeler
 
 | İlke | Anlamı |
 |---|---|
 | 5 saniye kuralı | Aç, "Nereye?" yaz, rotayı gör. Arada hiçbir engel yok |
-| Sıfır engel | Pop-up yok, hesap yok |
-| Dürüstlük | Canlı veri "canlı", tahmin "tarifeye göre" diye işaretlenir |
-| Gizlilik | Konum telefonda kalır |
-| Açıklık | Veri kaynakları ve atıflar uygulamada yazılı |
-| Az ama doğru | Her özellik "bir yerden bir yere gitmeye yardım ediyor mu?" sorusundan geçer |
+| Sıfır engel | |
+
 | Minimum bilişsel yük | Bir ekranda bir karar. Kullanıcı hiçbir zaman "şimdi ne yapacağım?" diye düşünmez |
 
 ## İlk sürüm (MVP)
@@ -31,13 +28,13 @@ Türkiye şehirlerinin (İstanbul ve Ankara ile başlayarak) zaten halka açık 
 | Rota | Tüm toplu taşıma: metro, Marmaray, tramvay, füniküler, teleferik, metrobüs, otobüs, vapur. 2 ila 3 seçenek, süre, aktarma sayısı, yürüme |
 | Rota detayı | Hat renkleri, durak sayısı, aktarma istasyonu, sonraki kalkış |
 | Canlı otobüs ve metrobüs | İETT GPS verisi. İçi dolu nokta, "canlı" etiketi |
-| Raylı sistem noktaları | Tarifeye göre hesaplanan tren konumu. İçi boş nokta, "tarifeye göre" etiketi. Hatta aksama varsa gizlenir |
+| Raylı sistem noktaları | canlı tren konumu. 
 | Hat durumu | Aksama olan hatlarda sade bir uyarı bandı |
 | Yakın duraklar | En yakın istasyon ve duraklar, yürüme mesafesiyle |
 | Hat ve sefer ara | Hat listesi, hat sayfası, istasyonlar, ilk ve son sefer |
-| Bize ulaşın | İletişim bilgisi, hata bildirme linki (GitHub Issues) |
-| Destek olun | Proje hakkında kısa metin, bağış linki (sonra bağlanacak), GitHub linki. Hiçbir özelliği kısıtlamaz, asla kendiliğinden açılmaz |
-| Son aramalar | Liste telefonda saklanır |
+| Bize ulaşın | İletişim bilgisi
+| Destek olun | Proje hakkında kısa metin
+| Son aramalar
 | Dil | Türkçe ve İngilizce |
 | Tema | Açık ve koyu mod, sistem ayarını izler |
 
@@ -47,7 +44,7 @@ Raylı sistemde gerçek canlı konum (Metro İstanbul'a resmi veri talebiyle), t
 
 ## Tasarım dili
 
-Apple benzeri, sade ve profesyonel. Her telefonda akıcı çalışır.
+Apple benzeri, sade ve profesyonel. akıcı çalışır.
 
 | Konu | Kural |
 |---|---|
