@@ -150,7 +150,13 @@ def build(gtfs: Path, out: Path, bus_network: bool = False, stop_codes: bool = F
         mode = by_id[lids[0]]["mode"]
         name = title_tr(s["stop_name"])
         lat, lon = round(float(s["stop_lat"]), 6), round(float(s["stop_lon"]), 6)
-        stops_out.append({"id": s["stop_id"], "name": name, "lat": lat, "lon": lon, "mode": mode, "lines": lids})
+        row = {"id": s["stop_id"], "name": name, "lat": lat, "lon": lon, "mode": mode, "lines": lids}
+        # The operator's own stop number when it differs from the id (Istanbul: İETT's durak kodu, which its
+        # live stop board asks for).
+        stop_code = str(s.get("stop_code", "") or "").strip()
+        if stop_code and stop_code != s["stop_id"]:
+            row["code"] = stop_code
+        stops_out.append(row)
         # Search: one entry per place; merge same-name stops within ~400 m
         # (bus stops on both sides of a road, station entrances). With stop codes
         # (Ankara: people know stops by number) every numbered stop stays its own row.

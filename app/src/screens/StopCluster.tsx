@@ -72,7 +72,7 @@ function StopRow({
   position: [number, number] | null
   onPress: () => void
 }) {
-  const code = rowCode(stop.id)
+  const code = rowCode(stop)
   const ids = sortedLines(stop.lines)
   const shown = ids.length > MAX_CHIPS ? ids.slice(0, MAX_CHIPS - 1) : ids
   const more = ids.length - shown.length

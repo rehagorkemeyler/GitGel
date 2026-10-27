@@ -4,15 +4,12 @@ import { liveStop, stopCode } from './city'
 // "Otobüs Durakları": the bus stops under one cluster bubble on the map, grouped by name
 // (Kızılay x 3, Meşrutiyet Caddesi x 2), nearest group to the bubble first.
 
-export type ClusterStop = { id: string; name: string; lat: number; lon: number; lines: string[] }
+export type ClusterStop = { id: string; name: string; lat: number; lon: number; lines: string[]; code?: string }
 export type ClusterGroup<T extends ClusterStop = ClusterStop> = { name: string; stops: T[] }
 
-/**
- * The number a rider can read on the stop: the Ankara stop number, an Istanbul İETT stop code, or the
- * Bursa stop number; null when the stop has none.
- */
-export function rowCode(id: string): string | null {
-  return stopCode(id) ?? (/^\d{3,7}$/.test(id) ? id : null) ?? liveStop(id)
+/** The number a rider can read on the stop: Ankara's stop number, Istanbul's İETT stop number, Bursa's; else null. */
+export function rowCode(stop: { id: string; code?: string }): string | null {
+  return stopCode(stop) ?? liveStop(stop)
 }
 
 const byNumber = (a: string, b: string) => a.localeCompare(b, 'tr', { numeric: true, sensitivity: 'base' })
@@ -35,6 +32,6 @@ export function groupClusterStops<T extends ClusterStop>(stops: T[], center: { l
     } else groups.set(key, { group: { name: s.name.trim(), stops: [s] }, dist: d })
   }
   const out = [...groups.values()].sort((a, b) => a.dist - b.dist || byNumber(a.group.name, b.group.name))
-  for (const { group } of out) group.stops.sort((a, b) => byNumber(rowCode(a.id) ?? a.id, rowCode(b.id) ?? b.id))
+  for (const { group } of out) group.stops.sort((a, b) => byNumber(rowCode(a) ?? a.id, rowCode(b) ?? b.id))
   return out.map((g) => g.group)
 }

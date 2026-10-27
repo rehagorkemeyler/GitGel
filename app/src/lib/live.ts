@@ -61,7 +61,7 @@ async function get<T>(path: string): Promise<T> {
 const POLL_MS = 15_000
 
 /** Live server path per city, e.g. "/live/bursa/". */
-const cityPath = () => (CITY.live === 'burulas' ? '/live/bursa/' : '/live/ankara/')
+const cityPath = () => (CITY.live === 'burulas' ? '/live/bursa/' : CITY.live === 'iett' ? '/live/istanbul/' : '/live/ankara/')
 
 /** Live vehicles of one line: İETT in Istanbul, EGO in Ankara, BURULAŞ in Bursa. */
 function lineVehicles(line: string): Promise<Vehicle[]> {
@@ -205,11 +205,11 @@ function watchArrivals(stop: string, fn: (s: ArrivalsState) => void): () => void
   }
 }
 
-/** Ankara and Bursa: live buses coming to one stop (see liveStop), refreshed every 15 s. */
+/** Live buses coming to one stop (see liveStop): İETT's, EGO's or BURULAŞ's board, refreshed every 15 s. */
 export function useLiveArrivals(stop: string | null): ArrivalsState | null {
   const [state, setState] = useState<ArrivalsState | null>(() => (stop ? arrivalsFeeds.get(stop)?.state ?? null : null))
   useEffect(() => {
-    if (!LIVE_BASE || !stop || CITY.live === 'iett') return
+    if (!LIVE_BASE || !stop) return
     return watchArrivals(stop, setState)
   }, [stop])
   return state && state.stop === stop ? state : null

@@ -79,15 +79,16 @@ export function App() {
   const railModes = ['metro', 'rail', 'tram', 'funicular', 'cablecar']
   // Live buses (native App.tsx): the open route's bus lines (Bursa: trams too), the open bus line (İETT,
   // EGO and BURULAŞ all publish positions per line; Istanbul metrobüs and Bursa trams too), and the buses
-  // coming to the open stop (its live board, matched by plate). Istanbul has no stop board, and asking İETT
-  // for every line of a stop would break its tight rate limit, so an Istanbul stop shows none.
+  // coming to the open stop (its live board, matched by plate). İETT's board names no plates, so an Istanbul
+  // stop lists its buses on the card only.
   const liveTram = CITY.live === 'burulas'
   const openMode = lineData.line?.mode
   const openBusLine =
     lineData.line && (openMode === 'bus' || (CITY.live === 'iett' && openMode === 'metrobus') || (liveTram && openMode === 'tram'))
       ? lineData.line.name
       : null
-  const boardStop = station ? liveStop(station.id) : null
+  const boardStop = station ? liveStop(station) : null
+  const boardPlates = CITY.live !== 'iett'
   const coming = useLiveArrivals(boardStop)?.arrivals
   const comingLines = useMemo(() => [...new Set((coming ?? []).map((a) => a.line))].sort().join(','), [coming])
   const comingPlates = useMemo(() => new Set((coming ?? []).map((a) => plateKey(a.plate)).filter(Boolean)), [coming])
@@ -97,14 +98,14 @@ export function App() {
         .filter((l) => (l.mode === 'BUS' || (liveTram && l.mode === 'TRAM')) && l.routeShortName)
         .map((l) => l.routeShortName!),
       ...(openBusLine ? [openBusLine] : []),
-      ...(comingLines ? comingLines.split(',') : []),
+      ...(comingLines && boardPlates ? comingLines.split(',') : []),
     ],
-    [openRoute, openBusLine, comingLines, liveTram],
+    [openRoute, openBusLine, comingLines, liveTram, boardPlates],
   )
   const lineVehicles = useLiveVehicles(busLines)
   const vehicles = useMemo(
-    () => (boardStop ? lineVehicles.filter((v) => comingPlates.has(plateKey(v.plate))) : lineVehicles),
-    [boardStop, lineVehicles, comingPlates],
+    () => (boardStop && boardPlates ? lineVehicles.filter((v) => comingPlates.has(plateKey(v.plate))) : lineVehicles),
+    [boardStop, boardPlates, lineVehicles, comingPlates],
   )
   // The tapped live bus (native bubbleId): a bubble over the map, not a panel, so the panel stack and the
   // station or train card stay as they are. It is kept by id and read from the live list on every render,

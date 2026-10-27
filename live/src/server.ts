@@ -5,6 +5,7 @@
 //   GET /live/calibration         Bus stop-to-stop times measured from GPS (for the nightly ETL)
 //   GET /live/ankara/vehicles?line=185-7  Ankara buses on one line
 //   GET /live/ankara/arrivals?stop=11654  upcoming buses at one Ankara stop + other lines' next trips
+//   GET /live/istanbul/arrivals?stop=225791  İETT's estimate of the buses coming to one Istanbul stop (İETT stop code)
 //   GET /live/ankara/calibration  Ankara bus stop-to-stop times measured from EGO positions (nightly ETL)
 //   GET /live/ankara/eta-audit   how far EGO's ETA is off on a few watched lines (?raw=1: every record)
 //   GET /live/bursa/vehicles?line=38      Bursa buses and trams on one line (with boardings this trip)
@@ -23,6 +24,7 @@ import { Calibration, Sampler } from './calibration.ts'
 import { fetchLineVehicles, type Vehicle } from './iett.ts'
 import { RateLimited, burulasUpstream, egoUpstream, iettUpstream } from './guard.ts'
 import { EtaAudit, auditStops } from './etaAudit.ts'
+import { getIstanbulBoard } from './providers/iettBoard.ts'
 import { getLineEta, getLineStops, getStopBoard, getVehiclesByLine, NotImplemented, type AnkaraStopBoard, type AnkaraVehicle } from './providers/ego.ts'
 import { getBursaStopBoard, getBursaVehicles, type BursaStopBoard, type BursaVehicle } from './providers/burulas.ts'
 import { CITIES, search, type SearchResult } from './search.ts'
@@ -70,6 +72,7 @@ const loadAnkaraVehicles = (line: string) => () =>
   })
 const etaAudit = new EtaAudit()
 const ankaraArrivals = new Cache<AnkaraStopBoard>(10_000, 2 * 60_000)
+const istanbulArrivals = new Cache<AnkaraStopBoard>(20_000, 2 * 60_000)
 const bursaVehicles = new Cache<BursaVehicle[]>(10_000, 2 * 60_000)
 const bursaArrivals = new Cache<BursaStopBoard>(10_000, 2 * 60_000)
 const searches = new Cache<SearchResult[]>(5 * 60_000, 60 * 60_000)
@@ -168,6 +171,13 @@ export async function handle(req: IncomingMessage, res: ServerResponse) {
       if (!/^[0-9]{3,6}$/.test(stop)) return send(res, 400, { error: 'stop' })
       const c = await ankaraArrivals.get(stop, () => getStopBoard(stop))
       return send(res, 200, { stop, ...c.value, fetchedAt: new Date(c.fetchedAt).toISOString(), stale: c.stale }, 5)
+    }
+    if (path === '/live/istanbul/arrivals') {
+      // İETT's stop number (the nightly data's "code" of a stop).
+      const stop = (url.searchParams.get('stop') ?? '').trim()
+      if (!/^[0-9]{3,7}$/.test(stop)) return send(res, 400, { error: 'stop' })
+      const c = await istanbulArrivals.get(stop, () => getIstanbulBoard(stop))
+      return send(res, 200, { stop, ...c.value, fetchedAt: new Date(c.fetchedAt).toISOString(), stale: c.stale }, 10)
     }
     if (path === '/live/bursa/vehicles') {
       // Bursa line codes keep their case ("19İ") and may carry "/" or a space ("Bursaray Gece 1").

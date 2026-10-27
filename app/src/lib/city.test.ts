@@ -30,6 +30,10 @@ describe('city', () => {
     expect(liveStop('eg_11654', CITIES.bursa)).toBeNull()
     expect(stopCode('br_564', CITIES.bursa)).toBeNull()
     expect(liveStop('br_564', CITIES.istanbul)).toBeNull()
+    // Istanbul: İETT's stop number from the data, never the GTFS id.
+    expect(liveStop({ id: '355', code: '225791' }, CITIES.istanbul)).toBe('225791')
+    expect(liveStop({ id: '355' }, CITIES.istanbul)).toBeNull()
+    expect(stopCode({ id: '355', code: '225791' }, CITIES.istanbul)).toBe('225791')
   })
 })
 

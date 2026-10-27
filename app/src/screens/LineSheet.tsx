@@ -112,7 +112,7 @@ export function LineStops({ line, stops, dir, status }: Props) {
                 <span className="stop-node" />
               </span>
               <span className={first || last ? 'stop-name end' : 'stop-name'}>{stops.get(s)?.name ?? '…'}</span>
-              <StopCode code={stopCode(s)} />
+              <StopCode code={stopCode(stops.get(s) ?? s)} />
               {!problem && d.offsets?.[i] != null && i > 0 && (
                 <span className="stop-offset">
                   +{d.offsets[i]} {t('min')}

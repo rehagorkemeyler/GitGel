@@ -12,7 +12,8 @@ export type Line = {
   agency: string
 }
 
-export type StopRow = { id: string; name: string; lat: number; lon: number; mode: Mode; lines: string[] }
+/** `code`: the operator's own stop number when it differs from the id (Istanbul: İETT's durak kodu). */
+export type StopRow = { id: string; name: string; lat: number; lon: number; mode: Mode; lines: string[]; code?: string }
 
 const cache = new Map<string, Promise<unknown>>()
 

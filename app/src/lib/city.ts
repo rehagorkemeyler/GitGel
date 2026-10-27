@@ -147,14 +147,32 @@ export function cityAt(p: [number, number] | null): CityId | null {
   return null
 }
 
-/** The number shown at an Ankara stop ("eg_11654" -> "11654"); rail codes (M33), Istanbul and Bursa ids: null. */
-export function stopCode(id: string | undefined, city: City = CITY): string | null {
+/** A stop as the data has it: its id and, in Istanbul, İETT's stop number ("code"). */
+export type StopRef = string | { id: string; code?: string } | undefined
+
+const idOf = (s: StopRef) => (typeof s === 'string' ? s : s?.id)
+
+/**
+ * The number written at the stop, which riders know it by: Ankara's from the id ("eg_11654" -> "11654"),
+ * Istanbul's İETT stop number from the data's "code"; rail codes (M33) and Bursa: null.
+ */
+export function stopCode(stop: StopRef, city: City = CITY): string | null {
+  if (city.live === 'iett') {
+    const code = typeof stop === 'object' ? stop.code : undefined
+    return code && /^\d{3,7}$/.test(code) ? code : null
+  }
+  const id = idOf(stop)
   if (city.live !== 'ego' || !id) return null
   return /^eg_(\d{3,6})$/.exec(id)?.[1] ?? null
 }
 
-/** The stop id the live board takes: "eg_11654" -> "11654" (Ankara), "br_564" -> "564" (Bursa); else null. */
-export function liveStop(id: string | undefined, city: City = CITY): string | null {
+/**
+ * The stop number the city's live board takes: Istanbul the İETT stop number (the data's "code"),
+ * "eg_11654" -> "11654" (Ankara), "br_564" -> "564" (Bursa); else null.
+ */
+export function liveStop(stop: StopRef, city: City = CITY): string | null {
+  if (city.live === 'iett') return stopCode(stop, city)
+  const id = idOf(stop)
   const p = city.liveStopPrefix
   if (!p || !id?.startsWith(p)) return null
   const n = id.slice(p.length)

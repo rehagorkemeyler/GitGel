@@ -14,8 +14,8 @@ import { Skeleton } from './Skeleton'
 import './LiveArrivals.css'
 
 /**
- * Stop card in Ankara and Bursa: live buses heading to this stop, soonest first, then the other lines.
- * `stop` is the live board's stop number, `stopId` the stop's id in the data ("eg_11654", "br_564").
+ * Stop card: live buses heading to this stop, soonest first (İETT, EGO or BURULAŞ board), then the other lines.
+ * `stop` is the live board's stop number, `stopId` the stop's id in the data ("eg_11654", "br_564", "355").
  */
 export function LiveArrivals({ stop, stopId, lines, onLine }: { stop: string; stopId: string; lines: Map<string, Line>; onLine?: (id: string) => void }) {
   const state = useLiveArrivals(stop)

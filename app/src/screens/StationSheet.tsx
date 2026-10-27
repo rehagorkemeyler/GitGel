@@ -8,7 +8,7 @@ import { Skeleton } from '../components/Skeleton'
 import { StopCode } from '../components/StopCode'
 import { stopTimes } from '../lib/api'
 import { CITY, liveStop, stopCode } from '../lib/city'
-import { loadLines, type Line } from '../lib/data'
+import { loadLines, loadStops, type Line } from '../lib/data'
 import { groupDepartures, type DepartureGroup } from '../lib/departures'
 import { distanceLabel, distanceM } from '../lib/geo'
 import { hhmm } from '../lib/itinerary'
@@ -52,8 +52,20 @@ export function StationSheet({ station, status, position, onDirections, onGoFrom
     loadLines().then((ls) => setLines(new Map(ls.map((l) => [l.id, l]))), () => {})
   }, [])
 
-  // Ankara and Bursa bus stops have a live board (EGO, BURULAŞ); it comes first and the timetable follows.
-  const boardStop = liveStop(station.id)
+  // Bus stops have a live board (İETT, EGO, BURULAŞ); it comes first and the timetable follows. A stop kept
+  // from before the data carried İETT's stop numbers (recent stops) gets its number from the stop list.
+  const [lookedUp, setLookedUp] = useState<{ id: string; code?: string } | null>(null)
+  const needsCode = CITY.live === 'iett' && station.mode === 'bus' && !station.code
+  useEffect(() => {
+    if (!needsCode) return
+    let alive = true
+    loadStops().then((all) => alive && setLookedUp({ id: station.id, code: all.find((x) => x.id === station.id)?.code }), () => {})
+    return () => {
+      alive = false
+    }
+  }, [needsCode, station.id])
+  const stopRef = needsCode && lookedUp?.id === station.id ? { id: station.id, code: lookedUp.code } : station
+  const boardStop = liveStop(stopRef)
   const timetable = CITY.routing
 
   useEffect(() => {
@@ -81,7 +93,7 @@ export function StationSheet({ station, status, position, onDirections, onGoFrom
 
   return (
     <div className="station">
-      <PanelHeader title={station.name} subtitle={subtitle || undefined} trailing={<StopCode code={stopCode(station.id)} />} onClose={onClose} />
+      <PanelHeader title={station.name} subtitle={subtitle || undefined} trailing={<StopCode code={stopCode(stopRef)} />} onClose={onClose} />
       <div className="station-chips">
         {station.lines.map((id) => {
           const l = lines.get(id)

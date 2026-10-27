@@ -20,6 +20,8 @@ export type Station = {
   lines: string[]
   /** More than one rail line: drawn 50% bigger. */
   transfer?: boolean
+  /** Istanbul bus stops: İETT's stop number, which its live stop board takes. */
+  code?: string
 }
 
 const NET = 'net-lines'
