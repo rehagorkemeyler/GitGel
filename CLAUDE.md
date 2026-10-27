@@ -19,8 +19,8 @@ GitGel is a free, open-source (AGPL-3.0), ad-free, account-free Istanbul public 
 2. If a push to `main` is rejected, push to your own branch, open a PR and merge it yourself (gh CLI, GitHub MCP tools or the REST API).
 3. Never push with failing build or tests.
 4. Never put session links (Claude-Session or any claude.ai URL) in commit messages, PR descriptions or GitHub comments. Görkem did not allow it.
-5. Every commit message is exactly `update`: no body, no description, no Co-Authored-By or other trailers. Author and committer are `GitGel <250702576+rehagorkemeyler@users.noreply.github.com>`: Görkem's GitHub noreply address, so Vercel (Hobby plan) sees his account and deploys, while no real email is published. Vercel blocks commits by any other author. Pass `-c user.name=GitGel -c user.email=250702576+rehagorkemeyler@users.noreply.github.com` if the repo's local git config lacks it.
-6. The repo is public. Never commit personal data (emails, logins, names), access or admin details, IPs, keys or tokens, in files or messages. Such steps go only in the chat.
+5. Every commit message is exactly `update`: no body, no description, no Co-Authored-By or other trailers. Author and committer are `Reha Görkem Eyler <gorkemeyler2@gmail.com>` (Görkem's own account, so Vercel deploys; Vercel blocks commits by any other author). Pass `-c user.name="Reha Görkem Eyler" -c user.email=gorkemeyler2@gmail.com` if the repo's local git config lacks it.
+6. The repo is private. Never commit personal data (emails, logins, names), access or admin details, IPs, keys or tokens, in files or messages. Such steps go only in the chat.
 
 ## Server access
 
