@@ -77,12 +77,16 @@ export function App() {
   const lineData = useLineDetail(lineId)
   const view = useMemo(() => lineView(lineData.line, lineData.stops, lineDir), [lineData, lineDir])
   const railModes = ['metro', 'rail', 'tram', 'funicular', 'cablecar']
-  // Live buses (native App.tsx): the open route's bus lines (Bursa: trams too), the open bus line (Ankara
-  // and Bursa: EGO and BURULAŞ publish bus positions per line; Bursa trams too), and the buses coming to the
-  // open stop (its live board, matched by plate). Istanbul has no stop board, so only the route counts there.
+  // Live buses (native App.tsx): the open route's bus lines (Bursa: trams too), the open bus line (İETT,
+  // EGO and BURULAŞ all publish positions per line; Istanbul metrobüs and Bursa trams too), and the buses
+  // coming to the open stop (its live board, matched by plate). Istanbul has no stop board, and asking İETT
+  // for every line of a stop would break its tight rate limit, so an Istanbul stop shows none.
   const liveTram = CITY.live === 'burulas'
+  const openMode = lineData.line?.mode
   const openBusLine =
-    busShapes() && (lineData.line?.mode === 'bus' || (liveTram && lineData.line?.mode === 'tram')) ? lineData.line.name : null
+    lineData.line && (openMode === 'bus' || (CITY.live === 'iett' && openMode === 'metrobus') || (liveTram && openMode === 'tram'))
+      ? lineData.line.name
+      : null
   const boardStop = station ? liveStop(station.id) : null
   const coming = useLiveArrivals(boardStop)?.arrivals
   const comingLines = useMemo(() => [...new Set((coming ?? []).map((a) => a.line))].sort().join(','), [coming])
