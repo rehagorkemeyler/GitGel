@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { LIVE_BASE } from './config'
+import { directLineVehicles, directStatus } from './ibbDirect'
 import { CITY } from './city'
 import { lang } from '../i18n'
 
@@ -80,8 +81,18 @@ function lineVehicles(line: string): Promise<Vehicle[]> {
         tripBoardings: v.tripBoardings ?? null,
       })),
     )
-  return get<{ vehicles: Vehicle[] }>(`/live/vehicles?line=${q}`).then((r) => r.vehicles)
+  // Our server reaches İBB through a relay in Turkey; when that fails, the device (in Turkey) asks İBB itself,
+  // and keeps doing so for a minute instead of waiting on the server at every refresh (native live.ts).
+  if (Date.now() < serverDownUntil) return directLineVehicles(line)
+  return get<{ vehicles: Vehicle[] }>(`/live/vehicles?line=${q}`).then(
+    (r) => r.vehicles,
+    () => {
+      serverDownUntil = Date.now() + 60_000
+      return directLineVehicles(line)
+    },
+  )
 }
+let serverDownUntil = 0
 
 /** Live vehicles of the given lines, refreshed every 15 s while the app is in front. */
 export function useLiveVehicles(lines: string[]): Vehicle[] {
@@ -128,7 +139,9 @@ export function useLineStatus(): Status | null {
       statusLang = lang
       statusPromise = null
     }
-    statusPromise ??= get<Status>(`/live/status?lang=${lang}`)
+    statusPromise ??= get<Status>(`/live/status?lang=${lang}`).catch(() =>
+      directStatus(lang).then((d) => ({ ...d, stale: false })),
+    )
     statusPromise.then(setStatus, () => {
       statusPromise = null
     })
