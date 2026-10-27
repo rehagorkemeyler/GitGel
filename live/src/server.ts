@@ -6,6 +6,7 @@
 //   GET /live/ankara/vehicles?line=185-7  Ankara buses on one line
 //   GET /live/ankara/arrivals?stop=11654  upcoming buses at one Ankara stop + other lines' next trips
 //   GET /live/ankara/calibration  Ankara bus stop-to-stop times measured from EGO positions (nightly ETL)
+//   GET /live/ankara/eta-audit   how far EGO's ETA is off on a few watched lines (?raw=1: every record)
 //   GET /live/bursa/vehicles?line=38      Bursa buses and trams on one line (with boardings this trip)
 //   GET /live/bursa/arrivals?stop=4702    upcoming buses at one Bursa stop + the stop's other lines
 //   GET /live/places/autocomplete?q=moda&session=<uuid>&lat=&lon=&city=istanbul|ankara|bursa  Google Places (capped, see places.ts)
@@ -21,7 +22,8 @@ import { Cache } from './cache.ts'
 import { Calibration, Sampler } from './calibration.ts'
 import { fetchLineVehicles, type Vehicle } from './iett.ts'
 import { RateLimited, burulasUpstream, egoUpstream, iettUpstream } from './guard.ts'
-import { getStopBoard, getVehiclesByLine, NotImplemented, type AnkaraStopBoard, type AnkaraVehicle } from './providers/ego.ts'
+import { EtaAudit, auditStops } from './etaAudit.ts'
+import { getLineEta, getLineStops, getStopBoard, getVehiclesByLine, NotImplemented, type AnkaraStopBoard, type AnkaraVehicle } from './providers/ego.ts'
 import { getBursaStopBoard, getBursaVehicles, type BursaStopBoard, type BursaVehicle } from './providers/burulas.ts'
 import { CITIES, search, type SearchResult } from './search.ts'
 import { LimitReached, NotConfigured, Places, RECTANGLES, type PlacesCity } from './places.ts'
@@ -39,6 +41,9 @@ const GEO_FILE = process.env.GEO_FILE ?? '/data/dbip-city-lite.mmdb'
 const CAL_FILE = process.env.CAL_FILE ?? '/data/calibration.json'
 const LINES_URL = process.env.LINES_URL ?? 'https://gitgel.vercel.app/data/lines.json'
 const ANKARA_CAL_FILE = process.env.ANKARA_CAL_FILE ?? '/data/calibration-ankara.json'
+const ETA_AUDIT_FILE = process.env.ETA_AUDIT_FILE ?? '/data/eta-audit-ankara.json'
+// Lines whose EGO ETA is audited (etaAudit.ts). Empty: audit off.
+const ETA_AUDIT_LINES = (process.env.ETA_AUDIT_LINES ?? '185-7,340,339-5,183-1,183-2').split(',').map((l) => l.trim()).filter(Boolean)
 const ANKARA_LINES_URL = process.env.ANKARA_LINES_URL ?? 'https://gitgel.vercel.app/data/ankara/lines.json'
 
 // 30 s fresh: the İBB gateway quota on İETT is tight (guard.ts), and one answer serves every user of the line.
@@ -63,6 +68,7 @@ const loadAnkaraVehicles = (line: string) => () =>
     )
     return v
   })
+const etaAudit = new EtaAudit()
 const ankaraArrivals = new Cache<AnkaraStopBoard>(10_000, 2 * 60_000)
 const bursaVehicles = new Cache<BursaVehicle[]>(10_000, 2 * 60_000)
 const bursaArrivals = new Cache<BursaStopBoard>(10_000, 2 * 60_000)
@@ -229,6 +235,10 @@ export async function handle(req: IncomingMessage, res: ServerResponse) {
     if (path === '/live/ankara/calibration') {
       return send(res, 200, { generatedAt: new Date().toISOString(), rows: ankaraCalibration.summary() }, 600)
     }
+    if (path === '/live/ankara/eta-audit') {
+      const body = url.searchParams.get('raw') === '1' ? { records: etaAudit.records } : etaAudit.summary()
+      return send(res, 200, { generatedAt: new Date().toISOString(), lines: ETA_AUDIT_LINES, ...body }, 60)
+    }
     return send(res, 404, { error: 'not found' })
   } catch (e) {
     if (e instanceof NotImplemented) return send(res, 501, { error: 'not implemented' }, 60)
@@ -273,10 +283,12 @@ function startCalibration() {
   refresh()
   setInterval(refresh, 24 * 3600_000)
   sample(ankaraSampler, (line) => void ankaraVehicles.get(line, loadAnkaraVehicles(line)).catch(() => {}), 30_000, () => !egoUpstream.spare())
+  startEtaAudit()
   const save = () => {
     try {
       calibration.save(CAL_FILE)
       ankaraCalibration.save(ANKARA_CAL_FILE)
+      etaAudit.save(ETA_AUDIT_FILE)
     } catch (e) {
       console.error('calibration save failed', e)
     }
@@ -286,6 +298,45 @@ function startCalibration() {
     save()
     process.exit(0)
   })
+}
+
+/**
+ * EGO ETA audit: each watched line and audited stop is polled once a minute, all day
+ * (5 lines x 2 stops = 10 of EGO's 40 requests a minute). It yields to users when they
+ * use three quarters of the budget. Positions also feed the Ankara calibration.
+ */
+function startEtaAudit() {
+  if (!ETA_AUDIT_LINES.length) return
+  etaAudit.load(ETA_AUDIT_FILE)
+  let targets: { line: string; stop: string }[] = []
+  const refresh = async () => {
+    const next: typeof targets = []
+    for (const line of ETA_AUDIT_LINES) {
+      try {
+        for (const stop of auditStops(await getLineStops(line))) next.push({ line, stop })
+      } catch (e) {
+        console.error(`eta audit: stops of ${line} failed`, (e as Error).message)
+        next.push(...targets.filter((t) => t.line === line))
+      }
+    }
+    targets = next
+    console.log(`eta audit: ${targets.map((t) => `${t.line}@${t.stop}`).join(' ')}`)
+  }
+  void refresh()
+  setInterval(() => void refresh(), 24 * 3600_000)
+  let i = 0
+  setInterval(() => {
+    if (!targets.length || egoUpstream.blocked() || egoUpstream.used() >= 30) return
+    const { line, stop } = targets[i++ % targets.length]
+    getLineEta(line, stop)
+      .then(({ fixes, vehicles }) => {
+        etaAudit.observe(line, stop, fixes)
+        ankaraCalibration.observe(
+          vehicles.filter((x) => x.stop).map((x) => ({ id: x.id, line: x.line, pattern: x.line, nearStop: x.stop!, at: x.updatedAt })),
+        )
+      })
+      .catch(() => {})
+  }, 6_000)
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {

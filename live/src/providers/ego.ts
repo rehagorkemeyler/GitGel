@@ -59,6 +59,7 @@ const mock = () => process.env.EGO_MOCK === '1'
 
 const BASE = process.env.EGO_BASE ?? 'https://egocptsrvand.ego.gov.tr/mblSrv14/service.asp'
 // The service answers any client; we send the official app's User-Agent like EGO Mac does.
+const HIBRIT = process.env.EGO_HIBRIT ?? 'https://egocptsrvand.ego.gov.tr/hibrit/act.asp'
 const UA = 'EGO Cepte/8 CFNetwork/1568.300.101 Darwin/24.0.0'
 
 export const MAX_AGE_MS = 5 * 60 * 1000
@@ -76,10 +77,21 @@ export async function getStopBoard(stopNo: string, now = Date.now()): Promise<An
   return { arrivals, lines: parseLineStatus(json, new Set(arrivals.map((a) => a.line))) }
 }
 
-async function call(params: Record<string, string>): Promise<string> {
-  const q = new URLSearchParams({ VER: '3.1.0', LAN: 'tr', ...params })
+/** One poll for the ETA audit (etaAudit.ts): every bus on the line with EGO's ETA to one stop. */
+export async function getLineEta(line: string, stop: string, now = Date.now()): Promise<{ fixes: EtaFix[]; vehicles: AnkaraVehicle[] }> {
+  const json = await call({ FNC: 'Otobus', HAT: line, DURAK: stop })
+  return { fixes: parseEtaFixes(json, now), vehicles: parseVehicles(json, line, now) }
+}
+
+/** The line's stop codes in order (EGO Cepte's "HatBilgileri"). */
+export async function getLineStops(line: string): Promise<string[]> {
+  return parseLineStops(await call({ FNC: 'HatBilgileri', KOD: line }, HIBRIT, '4.0.7'))
+}
+
+async function call(params: Record<string, string>, base = BASE, ver = '3.1.0'): Promise<string> {
+  const q = new URLSearchParams({ VER: ver, LAN: 'tr', ...params })
   egoUpstream.take()
-  const r = await fetch(`${BASE}?${q}`, {
+  const r = await fetch(`${base}?${q}`, {
     headers: { 'User-Agent': UA, Accept: 'application/json' },
     signal: AbortSignal.timeout(8000),
   })
@@ -172,6 +184,32 @@ export function parseVehicles(json: string, line: string, now: number): AnkaraVe
     })
   }
   return out
+}
+
+/** Where a bus is on the line and EGO's ETA to the asked stop (null once it has passed). */
+export type EtaFix = { id: string; seq: number; target: number; eta: number | null; at: number }
+
+export function parseEtaFixes(json: string, now: number): EtaFix[] {
+  const out: EtaFix[] = []
+  for (const r of rows(json)) {
+    if (!isLive(r)) continue
+    const at = fresh(r, now)
+    const seq = num(r.durak_sira_no)
+    const target = num(r.secili_durak_sira_no)
+    if (!at || seq === null || target === null) continue
+    const eta = num(r.saniye)
+    out.push({ id: str(r.arac_no), seq, target, eta: eta === null || eta >= PASSED ? null : eta, at: Date.parse(at) })
+  }
+  return out
+}
+
+export function parseLineStops(json: string): string[] {
+  const d = JSON.parse(json) as { table_durak?: Row[] }
+  return (d.table_durak ?? [])
+    .map((r) => ({ seq: num(r.sira) ?? 0, code: str(r.kod) }))
+    .filter((s) => s.code)
+    .sort((a, b) => a.seq - b.seq)
+    .map((s) => s.code)
 }
 
 export function parseArrivals(json: string, now: number): AnkaraArrival[] {
