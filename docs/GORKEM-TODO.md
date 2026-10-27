@@ -160,3 +160,10 @@ Kod tarafı hazır (`@vercel/analytics`, `app/src/main.tsx`). Panelden açılmad
 2. `cd ~/gitgel-relay && docker run -d --name ibb-relay --restart unless-stopped -p 8888:8888 -v "$PWD/ibb-relay.mjs:/relay.mjs:ro" node:24-alpine node /relay.mjs`
 3. Deneme: `curl -s localhost:8888/MetroIstanbul/api/MetroMobile/V2/GetServiceStatuses | head -c 120` → `{"Success":true` ile başlamalı.
 4. Mac'in Tailscale'deki adı `mac-macbook-pro` olmalı (sunucu adresini bu adla buluyor). Docker Desktop oturum açılınca başlamalı (Immich için zaten öyle).
+
+## Gece veri işi için Tailscale anahtarı (27 Ekim)
+
+Gece veri işi (GitHub Actions) Metro İstanbul verisini evdeki Mac üzerinden alır; bunun için Tailscale'e katılır.
+1. https://login.tailscale.com/admin/settings/keys → Generate auth key → Reusable ve Ephemeral açık, süre 90 gün.
+2. GitGel → Settings → Secrets and variables → Actions → `TS_AUTHKEY` adıyla kaydet.
+3. Anahtar 90 günde bir yenilenmeli (aynı adımlar, secret'ı güncelle).
