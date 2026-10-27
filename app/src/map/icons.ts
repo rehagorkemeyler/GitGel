@@ -67,7 +67,8 @@ export function addTransitIcons(map: MlMap, dark: boolean): void {
     map.addImage('gg-busstop-sel', draw('bus', ACCENT, '#ffffff', '#ffffff', 26, ratio), { pixelRatio: ratio })
   }
   for (const [name, size] of CLUSTER_SIZES) {
-    if (!map.hasImage(name)) map.addImage(name, drawCluster(size, dark, ratio), { pixelRatio: ratio })
+    if (!map.hasImage(name)) map.addImage(name, drawCluster(size, dark, ratio, false), { pixelRatio: ratio })
+    if (!map.hasImage(`${name}-sel`)) map.addImage(`${name}-sel`, drawCluster(size, dark, ratio, true), { pixelRatio: ratio })
   }
 }
 
@@ -78,8 +79,11 @@ export const CLUSTER_SIZES: [string, number][] = [
   ['gg-cluster-l', 36],
 ]
 
-/** A cluster bubble: a paper disc in an accent ring, with a soft shadow; the count is the layer's text. */
-function drawCluster(size: number, dark: boolean, ratio: number): ImageData {
+/**
+ * A cluster bubble: a paper disc in an accent ring, with a soft shadow; the count is the layer's text.
+ * Open (its stops list on screen): an accent disc in a white ring.
+ */
+function drawCluster(size: number, dark: boolean, ratio: number, open: boolean): ImageData {
   const pad = 3
   const full = size + pad * 2
   const c = document.createElement('canvas')
@@ -92,12 +96,12 @@ function drawCluster(size: number, dark: boolean, ratio: number): ImageData {
   ctx.shadowOffsetY = 1
   ctx.beginPath()
   ctx.arc(mid, mid, size / 2, 0, Math.PI * 2)
-  ctx.fillStyle = ACCENT
+  ctx.fillStyle = open ? '#ffffff' : ACCENT
   ctx.fill()
   ctx.shadowColor = 'transparent'
   ctx.beginPath()
   ctx.arc(mid, mid, size / 2 - 2.5, 0, Math.PI * 2)
-  ctx.fillStyle = dark ? '#1c1e24' : '#ffffff'
+  ctx.fillStyle = open ? ACCENT : dark ? '#1c1e24' : '#ffffff'
   ctx.fill()
   return ctx.getImageData(0, 0, full * ratio, full * ratio)
 }

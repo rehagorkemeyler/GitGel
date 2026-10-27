@@ -476,7 +476,7 @@ export function App() {
       case 'lines':
         return <Lines onBack={pop} onOpen={openLine} />
       case 'stops':
-        return <StopCluster stops={panel.stops} at={panel.at} onStation={(st) => openStation(st, true)} onClose={pop} />
+        return <StopCluster stops={panel.stops} at={panel.at} position={geo.position} onStation={(st) => openStation(st, true)} onClose={pop} />
       case 'nearby':
         return (
           <Nearby
@@ -537,6 +537,7 @@ export function App() {
           focusLines={lineId ? [lineId] : station ? station.lines : null}
           focusBus={station ? station.lines : []}
           selectedStop={station?.id ?? null}
+          openCluster={panel.kind === 'stops' ? { ...panel.at, count: panel.stops.length } : null}
           lineView={view}
           pathInNetwork={!!lineData.line && (railModes.includes(lineData.line.mode) || (busShapes() && lineData.line.mode === 'bus'))}
         />

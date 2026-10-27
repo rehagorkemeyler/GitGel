@@ -1,17 +1,43 @@
-/* Bus stops under a map cluster: a card per stop name (native list card: fill, 20 px radius), hairline-split
-   rows inside, stop number on the left, line chips on the right. Rows are 52 px high (44 px touch minimum). */
+/* Bus stops under a map cluster. A card per stop name (native list card: fill, 20 px radius) with
+   hairline-split rows: a small bus tile, the stop number and the walk on top, the lines as chips below. */
 .cluster-groups {
   display: flex;
   flex-direction: column;
-  gap: var(--s-4);
+  gap: var(--s-5, 20px);
+  padding-top: var(--s-1);
+}
+
+.cluster-head {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  margin: 0 0 var(--s-2) var(--s-1);
 }
 
 .cluster-name {
-  margin: var(--s-2) 0 var(--s-2) var(--s-1);
-  font-size: 13px;
+  overflow: hidden;
+  margin: 0;
+  font-size: 17px;
   font-weight: var(--fw-bold);
-  letter-spacing: 0.6px;
-  text-transform: uppercase;
+  letter-spacing: -0.3px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* How many stops share the name: a small round count. */
+.cluster-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 11px;
+  background: var(--fill);
+  font-size: 12.5px;
+  font-weight: var(--fw-bold);
+  font-variant-numeric: tabular-nums;
   color: var(--text-2);
 }
 
@@ -30,11 +56,10 @@
 
 .cluster-row {
   display: flex;
-  align-items: center;
-  gap: var(--s-3);
+  flex-direction: column;
+  gap: 10px;
   width: 100%;
-  min-height: 52px;
-  padding: 0 var(--s-4);
+  padding: 14px var(--s-4);
   text-align: left;
   transition: background-color 120ms ease;
 }
@@ -43,32 +68,40 @@
   background: var(--hairline);
 }
 
-.cluster-code {
+.cluster-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 26px;
+}
+
+/* The map's bus stop tile, small: ties the row to the icon on the map. */
+.cluster-tile {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
-  min-width: 56px;
-  font-size: 16.5px;
-  font-weight: var(--fw-bold);
-  font-variant-numeric: tabular-nums;
-  letter-spacing: -0.2px;
+  width: 24px;
+  height: 24px;
+  border: 1.5px solid var(--text-2);
+  border-radius: 7px;
   color: var(--text);
 }
 
-/* One line of chips; anything past the edge fades out instead of wrapping. */
-.cluster-chips {
-  display: flex;
+.cluster-code {
   flex: 1;
-  align-items: center;
-  gap: 4px;
-  min-width: 0;
   overflow: hidden;
-  mask-image: linear-gradient(to right, #000 calc(100% - 16px), transparent);
+  font-size: 17px;
+  font-weight: var(--fw-bold);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.2px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.cluster-more {
+.cluster-walk {
   flex-shrink: 0;
-  padding-left: 2px;
   font-size: var(--fs-s);
-  font-weight: var(--fw-bold);
   font-variant-numeric: tabular-nums;
   color: var(--text-2);
 }
@@ -77,6 +110,18 @@
   flex-shrink: 0;
   color: var(--text-2);
   opacity: 0.6;
+}
+
+/* Every line through the stop; at most two rows, the rest as "+N". */
+.cluster-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding-left: 34px;
+}
+
+.cluster-more {
+  color: var(--text-2);
 }
 
 @media (prefers-reduced-motion: reduce) {

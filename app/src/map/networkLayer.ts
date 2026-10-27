@@ -34,12 +34,16 @@ const ST = 'net-stations'
 const BUS = 'net-bus-stops'
 const BUS_SEL = BUS + '-sel'
 const BUS_CLUSTER = BUS + '-cluster'
+/** The cluster whose stops list is open: the same bubble, filled with the accent. */
+const BUS_CLUSTER_OPEN = BUS_CLUSTER + '-open'
+const CLUSTER_ICON: ExpressionSpecification = ['step', ['get', 'point_count'], 'gg-cluster-s', 10, 'gg-cluster-m', 50, 'gg-cluster-l']
+const CLUSTER_TEXT_SIZE: ExpressionSpecification = ['step', ['get', 'point_count'], 13, 10, 13.5, 50, 14]
 /**
- * Bus stops closer than this (px) merge into one bubble with their count; zooming in splits them. At least
- * the largest bubble (36 px) plus a clear gap, so bubbles never crowd each other either. Stops at the very same pole stay
- * merged up to CLUSTER_MAX_ZOOM, where they could not be told apart anyway.
+ * Bus stops closer than this (px) merge into one bubble with their count; zooming in splits them. Wide on
+ * purpose (owner: clusters should take in more stops), so a busy square shows a few bubbles. Stops at the
+ * very same pole stay merged up to CLUSTER_MAX_ZOOM, where they could not be told apart anyway.
  */
-const CLUSTER_RADIUS = 48
+const CLUSTER_RADIUS = 80
 const CLUSTER_MAX_ZOOM = 20
 
 /** Lines under a focus or a route: native 0x33 alpha (0.2). */
@@ -81,6 +85,7 @@ export class NetworkLayer {
   private focus: string[] | null = null
   private dim = false
   private selected: string | null = null
+  private openCluster: { lat: number; lon: number; count: number } | null = null
   private busPaths: [number, number][][] = []
   private busLoaded = false
   onStation?: (s: Station) => void
@@ -135,7 +140,7 @@ export class NetworkLayer {
     const paper = dark ? '#1c1e24' : '#ffffff'
     this.ink = ink
     addTransitIcons(m, dark)
-    for (const id of [NET, ST, FOCUS, BUS_SEL]) m.addSource(id, { type: 'geojson', data: EMPTY })
+    for (const id of [NET, ST, FOCUS, BUS_SEL, BUS_CLUSTER_OPEN]) m.addSource(id, { type: 'geojson', data: EMPTY })
     m.addSource(BUS, { type: 'geojson', data: EMPTY, cluster: true, clusterRadius: CLUSTER_RADIUS, clusterMaxZoom: CLUSTER_MAX_ZOOM, maxzoom: CLUSTER_MAX_ZOOM + 1 })
     const round = { 'line-cap': 'round', 'line-join': 'round' } as const
     if (busShapes()) {
@@ -177,17 +182,34 @@ export class NetworkLayer {
       minzoom: BUS_MIN_ZOOM,
       filter: ['has', 'point_count'],
       layout: {
-        'icon-image': ['step', ['get', 'point_count'], 'gg-cluster-s', 10, 'gg-cluster-m', 50, 'gg-cluster-l'],
+        'icon-image': CLUSTER_ICON,
         'icon-allow-overlap': true,
         'icon-ignore-placement': true,
         'text-field': ['to-string', ['get', 'point_count']],
         'text-font': ['Noto Sans Bold'],
-        'text-size': ['step', ['get', 'point_count'], 13, 10, 13.5, 50, 14],
+        'text-size': CLUSTER_TEXT_SIZE,
         'text-allow-overlap': true,
         'text-ignore-placement': true,
         'symbol-sort-key': ['get', 'point_count'],
       },
       paint: { 'text-color': dark ? '#f5f5f7' : '#1c1c1e' },
+    })
+    m.addLayer({
+      id: BUS_CLUSTER_OPEN,
+      type: 'symbol',
+      source: BUS_CLUSTER_OPEN,
+      minzoom: BUS_MIN_ZOOM,
+      layout: {
+        'icon-image': ['concat', CLUSTER_ICON, '-sel'],
+        'icon-allow-overlap': true,
+        'icon-ignore-placement': true,
+        'text-field': ['to-string', ['get', 'point_count']],
+        'text-font': ['Noto Sans Bold'],
+        'text-size': CLUSTER_TEXT_SIZE,
+        'text-allow-overlap': true,
+        'text-ignore-placement': true,
+      },
+      paint: { 'text-color': '#ffffff' },
     })
     // The selected bus stop (26 px accent tile), above the other bus stops and clusters: its own source, so a
     // cluster never swallows the stop of the open card.
@@ -230,6 +252,7 @@ export class NetworkLayer {
     await this.load()
     this.applyFocus()
     this.applySelected()
+    this.applyOpenCluster()
     this.applyBusPaths()
     this.busLoaded = false
     this.maybeLoadBusStops()
@@ -315,6 +338,20 @@ export class NetworkLayer {
   setSelected(id: string | null) {
     this.selected = id
     this.applySelected()
+  }
+
+  /** The cluster whose stops list is open (accent bubble at the tapped point), or null. */
+  setOpenCluster(c: { lat: number; lon: number; count: number } | null) {
+    this.openCluster = c
+    this.applyOpenCluster()
+  }
+
+  private applyOpenCluster() {
+    const c = this.openCluster
+    ;(this.map.getSource(BUS_CLUSTER_OPEN) as GeoJSONSource | undefined)?.setData({
+      type: 'FeatureCollection',
+      features: c ? [{ type: 'Feature', properties: { point_count: c.count }, geometry: { type: 'Point', coordinates: [c.lon, c.lat] } }] : [],
+    })
   }
 
   /** Stop-to-stop paths of the tapped stop's bus and ferry lines (Istanbul). */

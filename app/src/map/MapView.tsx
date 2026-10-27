@@ -66,6 +66,8 @@ type Props = {
   onStation?: (s: Station) => void
   /** Tap on a bus stop cluster: its stops and the bubble's point. */
   onCluster?: (stops: Station[], at: { lat: number; lon: number }) => void
+  /** The cluster whose stops list is open: drawn filled. */
+  openCluster?: { lat: number; lon: number; count: number } | null
   /** Tap on a scheduled train ring. */
   onTrain?: (t: TrainInfo) => void
   /** Tap on a live vehicle dot. */
@@ -205,6 +207,7 @@ export function MapView({
   onRailCount,
   onStation,
   onCluster,
+  openCluster = null,
   onTrain,
   onVehicle,
   bubble = null,
@@ -393,6 +396,12 @@ export function MapView({
   useEffect(() => {
     net.current?.setSelected(selectedStop)
   }, [selectedStop])
+
+  const clusterKey = openCluster ? `${openCluster.lat},${openCluster.lon},${openCluster.count}` : ''
+  useEffect(() => {
+    net.current?.setOpenCluster(openCluster)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clusterKey])
 
   const lineViewRef = useRef<{ v: LineView | null; inNet: boolean }>({ v: null, inNet: false })
   // The open line: drawn at once, framed 450 ms later (native). Closing it leaves the camera where it is.
