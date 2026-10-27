@@ -152,7 +152,7 @@ Kod tarafı hazır (`@vercel/analytics`, `app/src/main.tsx`). Panelden açılmad
 1. https://vercel.com → gitgel projesi → üstte "Analytics" sekmesi → "Enable" (Web Analytics, ücretsiz plan).
 2. Bir sonraki deploy'dan sonra https://gitgel-pwa.vercel.app adresini aç, birkaç dakika bekle. Beklenen: Analytics sekmesinde ilk ziyaretçi görünür.
 
-## İBB aracısı (27 Ekim)
+## İBB aracısı (27 Ekim, Mac'te kuruldu ve çalışıyor)
 
 İBB'nin API'si sadece Türkiye'den gelen istekleri cevaplıyor. İstanbul canlı otobüsleri ve metro durumu evdeki Mac'ten geçiyor (`infra/ibb-relay.mjs`, Docker'da).
 
