@@ -159,4 +159,4 @@ Kod tarafı hazır (`@vercel/analytics`, `app/src/main.tsx`). Panelden açılmad
 1. Mac'te Terminal'i aç, repodaki `infra/ibb-relay.mjs` dosyasını `~/gitgel-relay/ibb-relay.mjs` olarak kaydet (sohbetteki komut bunu yapar).
 2. `cd ~/gitgel-relay && docker run -d --name ibb-relay --restart unless-stopped -p 8888:8888 -v "$PWD/ibb-relay.mjs:/relay.mjs:ro" node:24-alpine node /relay.mjs`
 3. Deneme: `curl -s localhost:8888/MetroIstanbul/api/MetroMobile/V2/GetServiceStatuses | head -c 120` → `{"Success":true` ile başlamalı.
-4. Mac'in Tailscale'deki adı `macbookpro` olmalı (sunucu adresini bu adla buluyor). Docker Desktop oturum açılınca başlamalı (Immich için zaten öyle).
+4. Mac'in Tailscale'deki adı `mac-macbook-pro` olmalı (sunucu adresini bu adla buluyor). Docker Desktop oturum açılınca başlamalı (Immich için zaten öyle).

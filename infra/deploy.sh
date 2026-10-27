@@ -39,7 +39,7 @@ setup_admin() {
 # İBB answers Turkish addresses only: its requests go through a relay on Görkem's always-on Mac in the tailnet
 # (infra/ibb-relay.mjs). The Mac's tailnet address is looked up by its device name, so no address lives in git.
 setup_ibb_relay() {
-  local name="${IBB_RELAY_DEVICE:-macbookpro}" ip=""
+  local name="${IBB_RELAY_DEVICE:-mac-macbook-pro}" ip=""
   command -v tailscale > /dev/null || return 0
   ip=$(tailscale ip -4 "$name" 2>/dev/null || sudo -n tailscale ip -4 "$name" 2>/dev/null || true)
   ip=$(printf '%s' "$ip" | head -n1 | tr -d '[:space:]')
