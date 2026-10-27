@@ -47,20 +47,28 @@
   color: var(--text-2);
 }
 
+/* Native: live green, heading size; the soonest bus in title size. */
 .arrival-eta {
   flex-shrink: 0;
   font-variant-numeric: tabular-nums;
-  color: var(--text-2);
+  color: var(--live);
+  font-size: 16.5px;
+  line-height: 22px;
+  font-weight: var(--fw-bold);
+  letter-spacing: -0.2px;
 }
 
 .arrival-eta.first {
-  color: var(--text);
-  font-weight: var(--fw-bold);
+  font-size: 22px;
+  line-height: 28px;
+  font-weight: 700;
+  letter-spacing: -0.4px;
 }
 
-/* Live label inside a section heading: keeps its own case and tracking (native chip variant). */
+/* Live label inside a section heading: keeps its own case and tracking, in the live colour (native chip variant). */
 .live-tag {
-  font-weight: normal;
+  color: var(--live);
+  font-weight: var(--fw-bold);
   text-transform: none;
   letter-spacing: normal;
 }

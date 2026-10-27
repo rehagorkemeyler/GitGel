@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
+import { Countdown } from './Countdown'
 import { Icon } from './Icon'
 import { LineChip } from './LineChip'
 import { loadJson, type Line } from '../lib/data'
 import { directionsAt } from '../lib/direction'
-import { eta, inTime } from '../lib/eta'
+import { inTime } from '../lib/eta'
 import { nextFirstArrival } from '../lib/firstTrip'
 import { hhmm } from '../lib/itinerary'
 import type { LineDetail } from '../lib/lineDetail'
@@ -19,7 +20,8 @@ import './LiveArrivals.css'
  */
 export function LiveArrivals({ stop, stopId, lines, onLine }: { stop: string; stopId: string; lines: Map<string, Line>; onLine?: (id: string) => void }) {
   const state = useLiveArrivals(stop)
-  const now = useNow(1000)
+  // The seconds tick inside each Countdown; the rest of the board only needs minutes.
+  const now = useNow(15_000)
   const byName = new Map([...lines.values()].map((l) => [l.name, l]))
   const dirs = useDirections(stopId, lines, [...(state?.arrivals ?? []).map((a) => a.line), ...(state?.lines ?? []).map((l) => l.line)])
 
@@ -52,7 +54,7 @@ export function LiveArrivals({ stop, stopId, lines, onLine }: { stop: string; st
                       .join(' · ')}
                   </span>
                 </span>
-                <span className={i === 0 ? 'arrival-eta first' : 'arrival-eta'}>{eta(a.etaSeconds - (now - state.at) / 1000)}</span>
+                <Countdown seconds={a.etaSeconds} at={state.at} className={i === 0 ? 'arrival-eta first' : 'arrival-eta'} />
               </button>
             </li>
           )

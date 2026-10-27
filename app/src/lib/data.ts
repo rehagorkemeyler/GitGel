@@ -1,4 +1,5 @@
 import { DATA_BASE } from './config'
+import { busColor } from './busColor'
 import { CITY } from './city'
 import type { IndexRow, Mode } from './search'
 
@@ -49,7 +50,19 @@ export async function networkUp(timeoutMs = 8000): Promise<boolean> {
 }
 
 export const loadSearchIndex = () => loadJson<IndexRow[]>('search.json')
-export const loadLines = () => loadJson<Line[]>('lines.json')
+let linesPromise: Promise<Line[]> | null = null
+/** All lines; buses without a colour in the data get their city's official bus colour (native loadLines). */
+export function loadLines(): Promise<Line[]> {
+  linesPromise ??= loadJson<Line[]>('lines.json').then((lines) =>
+    lines.map((l) => {
+      if (l.mode !== 'bus' || l.color) return l
+      const c = busColor(CITY.id, l.name, l.long_name)
+      return { ...l, color: c.color, text_color: c.text }
+    }),
+  )
+  linesPromise.catch(() => (linesPromise = null))
+  return linesPromise
+}
 export const loadStops = () => loadJson<StopRow[]>('stops.json')
 
 /** Line colour by short name, for chips. Rail colours are official (Metro İstanbul API). */

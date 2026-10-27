@@ -41,6 +41,8 @@ type Props = {
 }
 
 const VELOCITY = 0.4 // px/ms that counts as a flick
+// A little longer than the sheet's CSS move (--dur), so the content stays whole until it has landed.
+const SETTLE_MS = 320
 
 type Dims = { sheetH: number; gripH: number; contentH: number; vh: number }
 
@@ -80,6 +82,21 @@ export const BottomSheet = forwardRef<SheetHandle, Props>(function BottomSheet(
   const lastPx = useRef(0) // last height the sheet settled at
   // Height to return to when the text field that extended the sheet is left (null when none did).
   const restoreAfterFocus = useRef<number | null>(null)
+  // True while the sheet glides to a new height: the content then fills the whole sheet.
+  const [settling, setSettling] = useState(false)
+  const settleTimer = useRef(0)
+
+  // Puts the sheet at rest at `px`; a change of height first glides there with all content drawn.
+  const rest = useCallback((px: number) => {
+    if (px !== lastPx.current) {
+      setSettling(true)
+      clearTimeout(settleTimer.current)
+      settleTimer.current = window.setTimeout(() => setSettling(false), SETTLE_MS)
+    }
+    lastPx.current = px
+    setVisible(px)
+  }, [])
+  useEffect(() => () => clearTimeout(settleTimer.current), [])
 
   const { sheetH, gripH, contentH, vh } = dims
   const heights = snapHeights(gripH + contentH, vh, sheetH)
@@ -101,11 +118,9 @@ export const BottomSheet = forwardRef<SheetHandle, Props>(function BottomSheet(
     const hs = snapHeights(next.gripH + next.contentH, next.vh, next.sheetH)
     const p = pending.current
     const want = p ? (p.px ?? hs[p.snap]) : lastPx.current
-    const px = hs[nearestSnap(hs, want)]
-    lastPx.current = px
     setDims((d) => (sameDims(d, next) ? d : next))
-    setVisible(px)
-  }, [])
+    rest(hs[nearestSnap(hs, want)])
+  }, [rest])
 
   useLayoutEffect(() => {
     const ro = new ResizeObserver(place)
@@ -145,11 +160,13 @@ export const BottomSheet = forwardRef<SheetHandle, Props>(function BottomSheet(
   }, [visibleNow, drag, onVisible])
 
   // Every move the user or the app makes ends a pending target.
-  const moveTo = useCallback((px: number) => {
-    pending.current = null
-    lastPx.current = px
-    setVisible(px)
-  }, [])
+  const moveTo = useCallback(
+    (px: number) => {
+      pending.current = null
+      rest(px)
+    },
+    [rest],
+  )
 
   useImperativeHandle(
     ref,
@@ -313,8 +330,16 @@ export const BottomSheet = forwardRef<SheetHandle, Props>(function BottomSheet(
           }}
         />
       </div>
-      {/* Height follows the snap (not during a drag), so everything below the fold can scroll into view. */}
-      <div ref={scroller} className="sheet-scroll" style={{ height: Math.max(0, shown - gripH) }}>
+      {/*
+        At rest the height follows the snap, so everything below the fold can scroll into view. While
+        the sheet moves (a drag, then the glide to its height) the content fills the whole sheet, so
+        the part a move uncovers is already drawn instead of appearing once the sheet stops.
+      */}
+      <div
+        ref={scroller}
+        className="sheet-scroll"
+        style={{ height: Math.max(0, (drag !== null || settling ? sheetH : shown) - gripH) }}
+      >
         <div ref={inner}>
           <div className="sheet-peek">{peek}</div>
           {children && <div className="sheet-body">{children}</div>}
