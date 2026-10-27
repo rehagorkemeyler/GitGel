@@ -289,6 +289,15 @@ export function App() {
     setTracking(null)
     resetTo((x) => !isTrip(x), null)
   }
+  // The trip is gone from the stack (back button, back gesture) and nothing still needs it: forget it, so
+  // its pin and route leave the map with it (native tripOpen).
+  const tripOpen = stack.some(isTrip)
+  useEffect(() => {
+    if (tripOpen || tracking || picking) return
+    setTo(null)
+    setFromChoice(null)
+    setOptions(null)
+  }, [tripOpen, tracking, picking])
   /** "Başla" follows the trip and drops the sheet to the peek; the same button stops it (native toggleTracking). */
   const toggleTracking = (it: Itinerary) => {
     if (tracking) {
