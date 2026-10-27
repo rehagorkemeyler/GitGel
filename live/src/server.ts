@@ -31,7 +31,7 @@ import { Analytics, IntakeLimit, toRow, type Incoming } from './analytics.ts'
 import { GeoIp } from './geo.ts'
 import { startAdmin } from './admin.ts'
 import { fetchAnnouncements, fetchStatus, type Announcement, type LineStatus } from './metro.ts'
-import { ClientBudget, CloudBlock, allowedOrigins, clientIp, isLocal } from './shield.ts'
+import { ClientBudget, CloudBlock, allowedOrigins, clientIp, isLocal, originAllowed } from './shield.ts'
 
 const PORT = Number(process.env.PORT ?? 8081)
 const ADMIN_PORT = Number(process.env.ADMIN_PORT ?? 8082)
@@ -133,7 +133,7 @@ export async function handle(req: IncomingMessage, res: ServerResponse) {
     // Browsers only from our own sites; the native app and the nightly ETL send no Origin.
     const origin = req.headers?.origin
     if (typeof origin === 'string' && origin) {
-      if (!origins.has(origin)) return send(res, 403, { error: 'origin' })
+      if (!originAllowed(origins, origin)) return send(res, 403, { error: 'origin' })
       res.setHeader('Access-Control-Allow-Origin', origin)
       res.setHeader('Vary', 'Origin')
     }

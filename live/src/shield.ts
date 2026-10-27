@@ -41,7 +41,14 @@ function normalize(ip: string): string {
   return ip.startsWith('::ffff:') && isIP(ip.slice(7)) === 4 ? ip.slice(7) : ip
 }
 
-const DEFAULT_ORIGINS = ['https://gitgel.vercel.app', 'http://localhost:5173', 'http://localhost:4173']
+const DEFAULT_ORIGINS = ['https://gitgel.vercel.app', 'https://gitgel-pwa.vercel.app', 'http://localhost:5173', 'http://localhost:4173']
+/** Vercel's per-deployment addresses of our own project (gitgel-<hash>-gorkem6.vercel.app), for trying a build. */
+const OWN_PREVIEW = /^https:\/\/gitgel(-pwa)?-[a-z0-9-]+-gorkem6\.vercel\.app$/
+
+/** A browser origin that may call the live API: one of `origins`, or a preview of our own Vercel project. */
+export function originAllowed(origins: Set<string>, origin: string): boolean {
+  return origins.has(origin) || OWN_PREVIEW.test(origin)
+}
 
 export function allowedOrigins(env = process.env.ALLOWED_ORIGINS): Set<string> {
   const list = env ? env.split(',').map((o) => o.trim().replace(/\/+$/, '')).filter(Boolean) : DEFAULT_ORIGINS

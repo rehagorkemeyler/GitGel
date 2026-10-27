@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { ClientBudget, CloudBlock, allowedOrigins, clientIp, isLocal, parseAws, parseGcp } from '../src/shield.ts'
+import { ClientBudget, CloudBlock, allowedOrigins, clientIp, isLocal, originAllowed, parseAws, parseGcp } from '../src/shield.ts'
 
 test('proxy hops and missing addresses are not budgeted as one client', () => {
   assert.ok(isLocal('127.0.0.1'))
@@ -71,4 +71,12 @@ test('server refuses other sites and serves our own', async () => {
   assert.equal(ours.code, 400)
   assert.equal(ours.headers['Access-Control-Allow-Origin'], 'https://gitgel.vercel.app')
   assert.equal((await call()).code, 400)
+})
+
+test('the PWA, its Vercel previews and nothing else may call from a browser', () => {
+  const o = allowedOrigins(undefined)
+  assert.ok(originAllowed(o, 'https://gitgel-pwa.vercel.app'))
+  assert.ok(originAllowed(o, 'https://gitgel-hvbfoyhv1-gorkem6.vercel.app'))
+  assert.ok(!originAllowed(o, 'https://gitgel-hvbfoyhv1-someoneelse.vercel.app'))
+  assert.ok(!originAllowed(o, 'https://evil.example'))
 })
