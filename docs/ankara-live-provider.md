@@ -66,9 +66,11 @@ per line that has no live bus coming, soonest `nextStartInMin` first.
 2. Every upstream request has a timeout (use `AbortSignal.timeout(8000)`).
 3. On any upstream failure, throw. The cache in `server.ts` then serves the last
    good value marked `stale`, and the app shows a calm message.
-4. Do not poll on a timer. The server calls the functions only when a client asks,
-   and the cache limits upstream calls to one per line or stop every 10 seconds.
-   Do not lower those TTLs.
+4. Do not poll on a timer, except the two background jobs in `server.ts`: the
+   calibration sampler and the ETA audit (`etaAudit.ts`, a few watched lines, 10
+   requests a minute), both of which yield to users. Otherwise the server calls the
+   functions only when a client asks, and the cache limits upstream calls to one per
+   line or stop every 10 seconds. Do not lower those TTLs.
 5. No secrets, keys, IPs or tokens in the repo. If configuration is needed, read it
    from environment variables and document them in `live/README.md`.
 6. Parsing code must be pure functions (input text or JSON in, typed arrays out)
