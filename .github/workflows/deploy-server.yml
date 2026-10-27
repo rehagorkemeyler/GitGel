@@ -3,6 +3,8 @@ name: Deploy server
 on:
   push:
     branches: [main]
+    # Only what runs on the server: app changes go out through Vercel and cost no Actions minutes here.
+    paths: ["live/**", "infra/**", ".github/workflows/deploy-server.yml"]
   workflow_dispatch:
 
 concurrency:
