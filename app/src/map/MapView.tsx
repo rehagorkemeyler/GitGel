@@ -28,10 +28,21 @@ maplibregl.setWorkerUrl(workerUrl)
 
 /** Taps that belong to a bus, station or train layer (their own handlers): the rest of the map is "empty map". */
 const TAP_LAYERS = [...LIVE_TAP_LAYERS, ...NET_TAP_LAYERS, ...RAIL_TAP_LAYERS]
-/** Native long press: a still press of this length picks the point under the finger. */
-const LONG_PRESS_MS = 500
+/**
+ * Long press: a still press of this length picks the point under the finger (about Android's text-selection
+ * hold), so a resting finger or a slow pan does not open directions by accident.
+ */
+const LONG_PRESS_MS = 1000
+/** The hold shows itself (ring, first buzz) only after this, so ordinary taps and pans stay quiet. */
+const HOLD_HINT_MS = 180
 /** A finger that moves this far (px) is panning, not pressing. */
 const LONG_PRESS_SLOP = 10
+/**
+ * Buzzes from HOLD_HINT_MS that grow longer and closer together (stronger, faster), then a pause, so the
+ * final click at LONG_PRESS_MS stands out. On, off, on, ... in ms (navigator.vibrate pattern).
+ */
+const HOLD_RAMP = [5, 110, 6, 95, 7, 80, 9, 66, 11, 54, 13, 44, 16, 34, 19, 26, 23]
+const HOLD_CLICK = 28
 /** Native destination pin: red (#ff3b30), tip at the point. */
 const DEST_PIN =
   '<svg width="28" height="36" viewBox="0 0 28 36" aria-hidden="true" focusable="false"><path d="M14 0C6.3 0 0 6.3 0 14c0 9.6 14 22 14 22s14-12.4 14-22C28 6.3 21.7 0 14 0Z" fill="#ff3b30"/><circle cx="14" cy="14" r="5" fill="#ffffff"/></svg>'
@@ -53,6 +64,8 @@ type Props = {
   onRailCount?: (n: number) => void
   /** Tap on a station or stop marker. */
   onStation?: (s: Station) => void
+  /** Tap on a bus stop cluster: its stops and the bubble's point. */
+  onCluster?: (stops: Station[], at: { lat: number; lon: number }) => void
   /** Tap on a scheduled train ring. */
   onTrain?: (t: TrainInfo) => void
   /** Tap on a live vehicle dot. */
@@ -87,16 +100,45 @@ function routesOf(route: Itinerary | null, alternatives: Itinerary[] | null): It
 }
 
 /**
- * Long press on the map: a still press of LONG_PRESS_MS calls `fire` with the point under the
- * finger. Moving, a second finger, a camera move or a control press cancels it. Returns the cleanup.
+ * Long press on the map: a still press of LONG_PRESS_MS calls `fire` with the point under the finger.
+ * From HOLD_HINT_MS a ring under the finger fills up and the phone buzzes harder and faster; the pick lands
+ * with a click and the ring pops. Moving, a second finger, a camera move or a control press cancels it
+ * (the ring fades, the buzz stops). Returns the cleanup.
  */
 function watchLongPress(m: MlMap, el: HTMLElement, fire: (lat: number, lon: number) => void): () => void {
+  let hint: ReturnType<typeof setTimeout> | null = null
   let timer: ReturnType<typeof setTimeout> | null = null
+  let ring: HTMLDivElement | null = null
   let start = { x: 0, y: 0 }
   let pointers = 0
+  const buzz = (p: number | number[]) => {
+    try {
+      navigator.vibrate?.(p)
+    } catch {
+      // Not allowed before a user gesture on some browsers: the ring still shows the hold.
+    }
+  }
+  const dropRing = (done: boolean) => {
+    const r = ring
+    ring = null
+    if (!r) return
+    r.classList.add(done ? 'done' : 'gone')
+    setTimeout(() => r.remove(), done ? 320 : 180)
+  }
   const cancel = () => {
-    if (timer !== null) clearTimeout(timer)
-    timer = null
+    if (hint !== null) clearTimeout(hint)
+    if (timer !== null) {
+      clearTimeout(timer)
+      buzz(0)
+    }
+    hint = timer = null
+    dropRing(false)
+  }
+  // The click that follows a completed hold must not also open the stop or close a bubble under the finger.
+  const swallowClick = () => {
+    const eat = (e: Event) => e.stopPropagation()
+    el.addEventListener('click', eat, { capture: true, once: true })
+    setTimeout(() => el.removeEventListener('click', eat, { capture: true }), 400)
   }
   const down = (e: PointerEvent) => {
     pointers++
@@ -105,23 +147,40 @@ function watchLongPress(m: MlMap, el: HTMLElement, fire: (lat: number, lon: numb
     if ((e.target as Element | null)?.closest?.('.maplibregl-ctrl, .bus-bubble')) return
     start = { x: e.clientX, y: e.clientY }
     const box = el.getBoundingClientRect()
+    hint = setTimeout(() => {
+      hint = null
+      ring = document.createElement('div')
+      ring.className = 'hold-ring'
+      ring.setAttribute('aria-hidden', 'true')
+      ring.style.transform = `translate3d(${start.x}px, ${start.y}px, 0)`
+      ring.style.setProperty('--hold-ms', `${LONG_PRESS_MS - HOLD_HINT_MS}ms`)
+      ring.innerHTML = '<i class="hold-track"></i><i class="hold-fill"></i>'
+      document.body.appendChild(ring)
+      buzz(HOLD_RAMP)
+    }, HOLD_HINT_MS)
     timer = setTimeout(() => {
       timer = null
+      buzz(HOLD_CLICK)
+      dropRing(true)
+      swallowClick()
       const ll = m.unproject([start.x - box.left, start.y - box.top])
       fire(ll.lat, ll.lng)
     }, LONG_PRESS_MS)
   }
   const move = (e: PointerEvent) => {
-    if (timer !== null && Math.hypot(e.clientX - start.x, e.clientY - start.y) > LONG_PRESS_SLOP) cancel()
+    if ((hint !== null || timer !== null) && Math.hypot(e.clientX - start.x, e.clientY - start.y) > LONG_PRESS_SLOP) cancel()
   }
   const up = () => {
     pointers = Math.max(0, pointers - 1)
     cancel()
   }
+  // The browser's own long-press menu would cover the ring.
+  const menu = (e: Event) => e.preventDefault()
   el.addEventListener('pointerdown', down)
   el.addEventListener('pointermove', move)
   el.addEventListener('pointerup', up)
   el.addEventListener('pointercancel', up)
+  el.addEventListener('contextmenu', menu)
   m.on('movestart', cancel)
   return () => {
     cancel()
@@ -129,6 +188,7 @@ function watchLongPress(m: MlMap, el: HTMLElement, fire: (lat: number, lon: numb
     el.removeEventListener('pointermove', move)
     el.removeEventListener('pointerup', up)
     el.removeEventListener('pointercancel', up)
+    el.removeEventListener('contextmenu', menu)
     m.off('movestart', cancel)
   }
 }
@@ -144,6 +204,7 @@ export function MapView({
   hiddenLines,
   onRailCount,
   onStation,
+  onCluster,
   onTrain,
   onVehicle,
   bubble = null,
@@ -174,6 +235,8 @@ export function MapView({
   const styleReady = useRef(false)
   const onStationRef = useRef(onStation)
   onStationRef.current = onStation
+  const onClusterRef = useRef(onCluster)
+  onClusterRef.current = onCluster
   const onTrainRef = useRef(onTrain)
   onTrainRef.current = onTrain
   const schemeRef = useRef(scheme)
@@ -238,6 +301,7 @@ export function MapView({
     live.current.onVehicle = (v) => onVehicleRef.current?.(v)
     net.current = new NetworkLayer(m)
     net.current.onStation = (st) => onStationRef.current?.(st)
+    net.current.onCluster = (stops, at) => onClusterRef.current?.(stops, at)
     rail.current = new RailLayer(m)
     rail.current.onCount = (n) => onRailCount?.(n)
     rail.current.onTrain = (tr) => onTrainRef.current?.(tr)

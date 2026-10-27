@@ -33,6 +33,14 @@ const FOCUS_CASING = FOCUS + '-casing'
 const ST = 'net-stations'
 const BUS = 'net-bus-stops'
 const BUS_SEL = BUS + '-sel'
+const BUS_CLUSTER = BUS + '-cluster'
+/**
+ * Bus stops closer than this (px) merge into one bubble with their count; zooming in splits them. At least
+ * the largest bubble (36 px) plus a clear gap, so bubbles never crowd each other either. Stops at the very same pole stay
+ * merged up to CLUSTER_MAX_ZOOM, where they could not be told apart anyway.
+ */
+const CLUSTER_RADIUS = 48
+const CLUSTER_MAX_ZOOM = 20
 
 /** Lines under a focus or a route: native 0x33 alpha (0.2). */
 const FADED = 0.2
@@ -46,9 +54,6 @@ const CASING_W = 7
  */
 const FERRY_DASH = 8 / FOCUS_W
 const NOT_FERRY: ExpressionSpecification = ['!=', ['get', 'mode'], 'ferry']
-/** A filter that matches nothing. */
-// The literal wrapper makes this an expression filter; a bare ['==', 1, 0] is read as the legacy form, which wants a string key.
-const NONE: ExpressionSpecification = ['==', ['literal', 1], 0]
 /** Native StopMarkers: stations as dots from zoom 10 and as tiles from 12.5; bus stops from 16 (data from 15.5). */
 const ST_DOT_MIN = 9
 const ST_DOT_MAX = 11.5
@@ -57,8 +62,10 @@ const ST_ICON_MIN = 11.5
 const ST_TILE_STEP = 14
 const BUS_MIN_ZOOM = 15
 const MAX_MARKERS = 150
+/** Bus stops: more, as clusters keep a dense centre readable. */
+const MAX_BUS_MARKERS = 300
 /** Layers that take a tap on a station or a bus stop (MapView keeps empty-map taps apart from them). */
-export const NET_TAP_LAYERS = [ST + '-dot', ST + '-far', BUS + '-dot', BUS_SEL]
+export const NET_TAP_LAYERS = [ST + '-dot', ST + '-far', BUS + '-dot', BUS_SEL, BUS_CLUSTER]
 
 type Placed = { lat: number; lon: number; feature: GeoJSON.Feature }
 
@@ -77,6 +84,8 @@ export class NetworkLayer {
   private busPaths: [number, number][][] = []
   private busLoaded = false
   onStation?: (s: Station) => void
+  /** Tap on a bus stop cluster: its stops, and the bubble's point. */
+  onCluster?: (stops: Station[], at: { lat: number; lon: number }) => void
   private stations = new Map<string, Station>()
   private stationRows: Placed[] = []
   private busRows: Placed[] = []
@@ -93,7 +102,21 @@ export class NetworkLayer {
     map.on('click', ST + '-far', click)
     map.on('click', BUS + '-dot', click)
     map.on('click', BUS_SEL, click)
-    for (const id of [ST + '-dot', BUS + '-dot', BUS_SEL]) {
+    map.on('click', BUS_CLUSTER, (e) => {
+      const f = e.features?.[0]
+      const id = f?.properties?.cluster_id
+      const src = map.getSource(BUS) as GeoJSONSource | undefined
+      if (!src || !f || typeof id !== 'number' || f.geometry.type !== 'Point') return
+      const [lon, lat] = f.geometry.coordinates
+      src.getClusterLeaves(id, Infinity, 0).then(
+        (leaves) => {
+          const stops = leaves.map((l) => this.stations.get(String(l.properties?.id))).filter((x): x is Station => !!x)
+          if (stops.length) this.onCluster?.(stops, { lat, lon })
+        },
+        () => {},
+      )
+    })
+    for (const id of [ST + '-dot', BUS + '-dot', BUS_SEL, BUS_CLUSTER]) {
       map.on('mouseenter', id, () => (map.getCanvas().style.cursor = 'pointer'))
       map.on('mouseleave', id, () => (map.getCanvas().style.cursor = ''))
     }
@@ -112,7 +135,8 @@ export class NetworkLayer {
     const paper = dark ? '#1c1e24' : '#ffffff'
     this.ink = ink
     addTransitIcons(m, dark)
-    for (const id of [NET, ST, BUS, FOCUS]) m.addSource(id, { type: 'geojson', data: EMPTY })
+    for (const id of [NET, ST, FOCUS, BUS_SEL]) m.addSource(id, { type: 'geojson', data: EMPTY })
+    m.addSource(BUS, { type: 'geojson', data: EMPTY, cluster: true, clusterRadius: CLUSTER_RADIUS, clusterMaxZoom: CLUSTER_MAX_ZOOM, maxzoom: CLUSTER_MAX_ZOOM + 1 })
     const round = { 'line-cap': 'round', 'line-join': 'round' } as const
     if (busShapes()) {
       m.addSource(BUSNET, { type: 'geojson', data: EMPTY })
@@ -141,16 +165,38 @@ export class NetworkLayer {
       type: 'symbol',
       source: BUS,
       minzoom: BUS_MIN_ZOOM,
+      filter: ['!', ['has', 'point_count']],
       layout: { 'icon-image': 'gg-busstop', 'icon-size': 1, 'icon-allow-overlap': true },
     })
-    // The selected bus stop (native: 24 dp accent tile), above the other bus stops.
+    // Stops that would touch: one bubble with their count. A symbol (not a circle), so it fades in and out
+    // with the stops as the clusters split and merge.
     m.addLayer({
-      id: BUS_SEL,
+      id: BUS_CLUSTER,
       type: 'symbol',
       source: BUS,
       minzoom: BUS_MIN_ZOOM,
-      filter: NONE,
-      layout: { 'icon-image': 'gg-busstop-sel', 'icon-size': 1, 'icon-allow-overlap': true },
+      filter: ['has', 'point_count'],
+      layout: {
+        'icon-image': ['step', ['get', 'point_count'], 'gg-cluster-s', 10, 'gg-cluster-m', 50, 'gg-cluster-l'],
+        'icon-allow-overlap': true,
+        'icon-ignore-placement': true,
+        'text-field': ['to-string', ['get', 'point_count']],
+        'text-font': ['Noto Sans Bold'],
+        'text-size': ['step', ['get', 'point_count'], 13, 10, 13.5, 50, 14],
+        'text-allow-overlap': true,
+        'text-ignore-placement': true,
+        'symbol-sort-key': ['get', 'point_count'],
+      },
+      paint: { 'text-color': dark ? '#f5f5f7' : '#1c1c1e' },
+    })
+    // The selected bus stop (26 px accent tile), above the other bus stops and clusters: its own source, so a
+    // cluster never swallows the stop of the open card.
+    m.addLayer({
+      id: BUS_SEL,
+      type: 'symbol',
+      source: BUS_SEL,
+      minzoom: BUS_MIN_ZOOM,
+      layout: { 'icon-image': 'gg-busstop-sel', 'icon-size': 1, 'icon-allow-overlap': true, 'icon-ignore-placement': true },
     })
     // Far away: small dots on the line (native: 8 px, transfer 12 px, outer size; the stroke sits outside the radius).
     // Closer: mode icons (train, tram, ferry...).
@@ -228,6 +274,7 @@ export class NetworkLayer {
     const stops = await loadStops().catch(() => [] as StopRow[])
     const bus = stops.filter((s) => s.mode === 'bus')
     for (const s of bus) this.stations.set(s.id, { ...s, ids: [s.id] })
+    this.applySelected()
     this.busRows = bus.map((s) => ({
       lat: s.lat,
       lon: s.lon,
@@ -245,7 +292,7 @@ export class NetworkLayer {
     const put = (id: string, rows: Placed[]) =>
       (m.getSource(id) as GeoJSONSource | undefined)?.setData({
         type: 'FeatureCollection',
-        features: visibleNearest(rows, view, MAX_MARKERS).map((r) => r.feature),
+        features: visibleNearest(rows, view, id === BUS ? MAX_BUS_MARKERS : MAX_MARKERS).map((r) => r.feature),
       })
     put(ST, this.stationRows)
     put(BUS, this.busRows)
@@ -264,7 +311,7 @@ export class NetworkLayer {
     this.applyBusPaths()
   }
 
-  /** The bus stop of the open station card: drawn as a 24 dp accent tile. */
+  /** The bus stop of the open station card: drawn as a 26 px accent tile. */
   setSelected(id: string | null) {
     this.selected = id
     this.applySelected()
@@ -292,8 +339,12 @@ export class NetworkLayer {
   }
 
   private applySelected() {
-    if (!this.map.getLayer(BUS_SEL)) return
-    this.map.setFilter(BUS_SEL, this.selected ? ['==', ['get', 'id'], this.selected] : NONE)
+    const src = this.map.getSource(BUS_SEL) as GeoJSONSource | undefined
+    const s = this.selected ? this.stations.get(this.selected) : undefined
+    src?.setData({
+      type: 'FeatureCollection',
+      features: s && s.mode === 'bus' ? [{ type: 'Feature', properties: { id: s.id }, geometry: { type: 'Point', coordinates: [s.lon, s.lat] } }] : [],
+    })
   }
 
   private applyBusPaths() {

@@ -56,15 +56,50 @@ export function addTransitIcons(map: MlMap, dark: boolean): void {
     if (map.hasImage(name)) continue
     map.addImage(name, draw(g, stationBg, stationFg, null, 22, ratio), { pixelRatio: ratio })
   }
+  // Bus stops: 20 px light tiles (10% over the native 18 dp, owner request 27 Oct).
   if (!map.hasImage('gg-busstop')) {
-    map.addImage('gg-busstop', draw('bus', dark ? '#2c2c2e' : '#ffffff', dark ? '#e5e5ea' : '#3a3a3c', dark ? '#636366' : '#8e8e93', 18, ratio), {
+    map.addImage('gg-busstop', draw('bus', dark ? '#2c2c2e' : '#ffffff', dark ? '#e5e5ea' : '#3a3a3c', dark ? '#636366' : '#8e8e93', 20, ratio), {
       pixelRatio: ratio,
     })
   }
-  // The bus stop of the open station card: 24 dp, accent fill, white glyph and border (native StopMarkers).
+  // The bus stop of the open station card: 26 px, accent fill, white glyph and border.
   if (!map.hasImage('gg-busstop-sel')) {
-    map.addImage('gg-busstop-sel', draw('bus', ACCENT, '#ffffff', '#ffffff', 24, ratio), { pixelRatio: ratio })
+    map.addImage('gg-busstop-sel', draw('bus', ACCENT, '#ffffff', '#ffffff', 26, ratio), { pixelRatio: ratio })
   }
+  for (const [name, size] of CLUSTER_SIZES) {
+    if (!map.hasImage(name)) map.addImage(name, drawCluster(size, dark, ratio), { pixelRatio: ratio })
+  }
+}
+
+/** Bus stop cluster bubbles by stop count: 2-9, 10-49, 50 and more (px across). */
+export const CLUSTER_SIZES: [string, number][] = [
+  ['gg-cluster-s', 28],
+  ['gg-cluster-m', 32],
+  ['gg-cluster-l', 36],
+]
+
+/** A cluster bubble: a paper disc in an accent ring, with a soft shadow; the count is the layer's text. */
+function drawCluster(size: number, dark: boolean, ratio: number): ImageData {
+  const pad = 3
+  const full = size + pad * 2
+  const c = document.createElement('canvas')
+  c.width = c.height = full * ratio
+  const ctx = c.getContext('2d')!
+  ctx.scale(ratio, ratio)
+  const mid = full / 2
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.25)'
+  ctx.shadowBlur = 3
+  ctx.shadowOffsetY = 1
+  ctx.beginPath()
+  ctx.arc(mid, mid, size / 2, 0, Math.PI * 2)
+  ctx.fillStyle = ACCENT
+  ctx.fill()
+  ctx.shadowColor = 'transparent'
+  ctx.beginPath()
+  ctx.arc(mid, mid, size / 2 - 2.5, 0, Math.PI * 2)
+  ctx.fillStyle = dark ? '#1c1e24' : '#ffffff'
+  ctx.fill()
+  return ctx.getImageData(0, 0, full * ratio, full * ratio)
 }
 
 /** The bus glyph path (24 box), for the live bus markers. */

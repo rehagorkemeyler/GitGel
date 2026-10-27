@@ -6,6 +6,7 @@ import { SearchPanel } from './screens/SearchPanel'
 import { Results } from './screens/Results'
 import { RouteDetail } from './screens/RouteDetail'
 import { Nearby } from './screens/Nearby'
+import { StopCluster } from './screens/StopCluster'
 import { Lines } from './screens/Lines'
 import { Contact, Support } from './screens/Info'
 import { About } from './screens/About'
@@ -397,6 +398,8 @@ export function App() {
         ? panel.id
         : panel.kind === 'route'
           ? panel.it.startTime
+          : panel.kind === 'stops'
+            ? `${panel.at.lat},${panel.at.lon}`
           : panel.kind === 'train'
             ? panel.train.id
             : panel.kind === 'search'
@@ -472,6 +475,8 @@ export function App() {
         return <TrainSheet train={panel.train} onClose={pop} />
       case 'lines':
         return <Lines onBack={pop} onOpen={openLine} />
+      case 'stops':
+        return <StopCluster stops={panel.stops} at={panel.at} onStation={(st) => openStation(st, true)} onClose={pop} />
       case 'nearby':
         return (
           <Nearby
@@ -512,6 +517,14 @@ export function App() {
             if (busShown.current) return closeBus()
             if (shownRoute?.length) return // a route is on screen: keep it
             openStation(st)
+          }}
+          onCluster={(stops, at) => {
+            if (busShown.current) return closeBus()
+            if (shownRoute?.length) return
+            // Another cluster replaces the list on top, as a stop card does for another stop.
+            const p: Panel = { kind: 'stops', stops, at }
+            if (top().kind === 'stops') replaceTop(p)
+            else push(p)
           }}
           onTrain={(tr) => {
             if (busShown.current) return closeBus()

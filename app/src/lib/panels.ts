@@ -12,6 +12,7 @@ export type Panel = (
   | { kind: 'results' }
   | { kind: 'route'; it: Itinerary }
   | { kind: 'station'; station: Station }
+  | { kind: 'stops'; stops: Station[]; at: { lat: number; lon: number } }
   | { kind: 'line'; id: string; dir: number }
   | { kind: 'train'; train: TrainInfo }
   | { kind: 'lines' }
@@ -39,6 +40,7 @@ export function defaultSnapOf(p: Panel): number {
       return SNAP.full
     case 'lines':
     case 'nearby':
+    case 'stops':
     case 'contact':
     case 'support':
       return SNAP.mid
