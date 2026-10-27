@@ -40,6 +40,8 @@ services:
       - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-}
       - BLOCK_CLOUDS=${BLOCK_CLOUDS:-}
       - CLIENT_PER_MINUTE=${CLIENT_PER_MINUTE:-300}
+      # Relay for İBB's API, which answers Turkish addresses only (infra/ibb-relay.mjs), e.g. http://<tailnet IP>:8888.
+      - IBB_RELAY=${IBB_RELAY:-}
     volumes:
       - live-data:/data
     restart: unless-stopped

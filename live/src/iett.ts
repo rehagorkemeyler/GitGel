@@ -2,8 +2,9 @@
 // inside the SOAP envelope.
 
 import { iettUpstream } from './guard.ts'
+import { ibbFetch } from './ibb.ts'
 
-const URL_FILO = 'https://api.ibb.gov.tr/iett/FiloDurum/SeferGerceklesme.asmx'
+const PATH_FILO = '/iett/FiloDurum/SeferGerceklesme.asmx'
 
 export type Vehicle = {
   id: string
@@ -72,11 +73,10 @@ export async function fetchLineVehicles(line: string, now = Date.now()): Promise
   iettUpstream.take()
   const op = 'GetHatOtoKonum_json'
   const safe = line.replace(/[^0-9A-Za-zÇĞİÖŞÜçğıöşü-]/g, '')
-  const r = await fetch(URL_FILO, {
+  const r = await ibbFetch(PATH_FILO, {
     method: 'POST',
     headers: { 'Content-Type': 'text/xml; charset=utf-8', SOAPAction: `"http://tempuri.org/${op}"` },
     body: envelope(op, `<HatKodu>${safe}</HatKodu>`),
-    signal: AbortSignal.timeout(10_000),
   })
   const text = await r.text()
   iettUpstream.answer(r.status, text)

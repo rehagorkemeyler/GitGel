@@ -1,6 +1,8 @@
 // Metro İstanbul service status and announcements (REST, no key).
 
-const BASE = 'https://api.ibb.gov.tr/MetroIstanbul/api/MetroMobile/V2/'
+import { ibbFetch } from './ibb.ts'
+
+const PATH = '/MetroIstanbul/api/MetroMobile/V2/'
 
 export type LineStatus = { line: string; message: string; updated: string }
 export type Announcement = { title: string; text: string; lines: string[]; start: string }
@@ -8,9 +10,9 @@ export type Announcement = { title: string; text: string; lines: string[]; start
 async function call<T>(endpoint: string): Promise<T> {
   // The gateway fails about half of the requests: retry a few times.
   let last: unknown
-  for (let i = 0; i < 4; i++) {
+  for (let i = 0; i < 3; i++) {
     try {
-      const r = await fetch(BASE + endpoint, { signal: AbortSignal.timeout(10_000), headers: { Accept: 'application/json' } })
+      const r = await ibbFetch(PATH + endpoint, { headers: { Accept: 'application/json' } })
       if (r.ok) {
         const d = (await r.json()) as { Success: boolean; Data: T; Error?: { Message?: string } }
         if (d.Success) return d.Data

@@ -111,3 +111,10 @@ test('upstream never sends more than its budget per minute; the sampler only use
   u.take(60_000)
   assert.equal(u.used(60_003), 1)
 })
+
+test('İBB requests go through the relay first, then directly', async () => {
+  const { ibbBases, IBB } = await import('../src/ibb.ts')
+  assert.deepEqual(ibbBases(undefined), [IBB])
+  assert.deepEqual(ibbBases(' '), [IBB])
+  assert.deepEqual(ibbBases('http://100.64.0.9:8888/'), ['http://100.64.0.9:8888', IBB])
+})

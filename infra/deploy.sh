@@ -36,6 +36,23 @@ setup_admin() {
   echo "admin: $(grep -c '^ADMIN_LOGINS=.' infra/.env 2>/dev/null || echo 0) login line(s) set"
 }
 
+# İBB answers Turkish addresses only: its requests go through a relay on Görkem's always-on Mac in the tailnet
+# (infra/ibb-relay.mjs). The Mac's tailnet address is looked up by its device name, so no address lives in git.
+setup_ibb_relay() {
+  local name="${IBB_RELAY_DEVICE:-macbookpro}" ip=""
+  command -v tailscale > /dev/null || return 0
+  ip=$(tailscale ip -4 "$name" 2>/dev/null || sudo -n tailscale ip -4 "$name" 2>/dev/null || true)
+  ip=$(printf '%s' "$ip" | head -n1 | tr -d '[:space:]')
+  if ! [[ "$ip" =~ ^100\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then echo "ibb relay: device '$name' not found in the tailnet"; return 0; fi
+  touch infra/.env
+  if grep -qs '^IBB_RELAY=' infra/.env; then
+    sed -i "s|^IBB_RELAY=.*|IBB_RELAY=http://$ip:8888|" infra/.env
+  else
+    echo "IBB_RELAY=http://$ip:8888" >> infra/.env
+  fi
+  echo "ibb relay: $(curl -sS -m 5 "http://$ip:8888/health" 2>&1 | head -c 80)"
+}
+
 main() {
   cd /opt/gitgel
   # The deploy key may only run this script; SSH_ORIGINAL_COMMAND picks the action.
@@ -49,6 +66,7 @@ main() {
   git fetch --quiet origin main
   git reset --quiet --hard origin/main
   setup_admin "$admin_logins" || true
+  setup_ibb_relay || true
   # cloudflared joins once infra/.env (not in git) holds TUNNEL_TOKEN.
   if grep -qs '^TUNNEL_TOKEN=.' infra/.env; then export COMPOSE_PROFILES=tunnel; fi
   if [ -f infra/docker-compose.yml ]; then
