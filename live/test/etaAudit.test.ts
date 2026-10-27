@@ -63,3 +63,14 @@ test('ETA audit survives a restart and uses Ankara time', () => {
   assert.deepEqual(b.records, a.records)
   assert.deepEqual(ankaraHour(T0), { hour: 8, day: 2 })
 })
+
+test('correction factors need enough records and stay between 1 and 1.4', () => {
+  const a = new EtaAudit()
+  const now = T0 + 3600_000
+  for (let i = 0; i < 300; i++) a.records.push([T0 / 1000, '340', 'S', 5, 600, 720])
+  for (let i = 0; i < 300; i++) a.records.push([T0 / 1000, '183-1', 'S', 5, 600, 1200])
+  for (let i = 0; i < 50; i++) a.records.push([T0 / 1000, '185-7', 'S', 5, 600, 600])
+  a.records.push([T0 / 1000 - 8 * 86400, '340', 'S', 5, 600, 6000]) // older than a week
+  assert.deepEqual(a.factors(now), { all: 1.2, lines: { '340': 1.2, '183-1': 1.4 } })
+  assert.deepEqual(new EtaAudit().factors(now), { all: null, lines: {} })
+})
