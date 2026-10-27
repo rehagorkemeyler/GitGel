@@ -277,3 +277,14 @@
 .train-eta {
   margin: var(--s-3) 0;
 }
+
+/* A departure row is a button: full width, no button chrome, a press dims it. */
+.station-dep-btn {
+  width: 100%;
+  text-align: left;
+  color: inherit;
+}
+
+.station-dep-btn:active:not(:disabled) {
+  opacity: 0.6;
+}

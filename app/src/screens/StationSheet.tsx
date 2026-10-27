@@ -121,7 +121,7 @@ export function StationSheet({ station, status, position, onDirections, onGoFrom
                 <span className="station-dep-problem">{t('lineProblem')}</span>
               </div>
             ) : (
-              <DepartureRow key={g.line + g.headsign} g={g} at={current.at} lineOf={byName} />
+              <DepartureRow key={g.line + g.headsign} g={g} at={current.at} lineOf={byName} onLine={onLine} />
             ),
           )}
         </div>
@@ -165,15 +165,27 @@ export function StationSheet({ station, status, position, onDirections, onGoFrom
 }
 
 /** One line and direction: the headsign, its live or scheduled state, and the times (native DepartureRow). */
-function DepartureRow({ g, at, lineOf }: { g: DepartureGroup; at: number; lineOf: (name: string) => Line | undefined }) {
+function DepartureRow({
+  g,
+  at,
+  lineOf,
+  onLine,
+}: {
+  g: DepartureGroup
+  at: number
+  lineOf: (name: string) => Line | undefined
+  onLine: (id: string) => void
+}) {
   const live = !!g.times[0]?.live
   const mins = g.times.map((x) => Math.round((x.at.getTime() - at) / 60000))
   const first = mins[0]
   const rest = g.times.slice(1).map((x, i) => (mins[i + 1] <= 60 ? String(mins[i + 1]) : hhmm(x.at)))
+  // A tap opens the line page, as a row of the live board does (LiveArrivals).
+  const line = lineOf(g.line)
   return (
-    <div className="station-dep">
+    <button className="station-dep station-dep-btn" onClick={() => line && onLine(line.id)} disabled={!line} aria-label={`${g.line} ${g.headsign}`}>
       <LineChip name={g.line} color={g.color} textColor={g.textColor} line={g.color ? undefined : lineOf(g.line)} />
-      <div className="station-dep-text">
+      <span className="station-dep-text">
         <span className="station-dep-head">{g.headsign}</span>
         <span className={live ? 'station-dep-label live' : 'station-dep-label'}>
           {live && (
@@ -183,8 +195,8 @@ function DepartureRow({ g, at, lineOf }: { g: DepartureGroup; at: number; lineOf
           )}
           {live ? t('live') : t('scheduled')}
         </span>
-      </div>
-      <div className="station-dep-when">
+      </span>
+      <span className="station-dep-when">
         {first <= 0 ? (
           <span className={live ? 'station-dep-now live' : 'station-dep-now'}>{t('now')}</span>
         ) : first <= 60 ? (
@@ -196,7 +208,7 @@ function DepartureRow({ g, at, lineOf }: { g: DepartureGroup; at: number; lineOf
           <span className="station-dep-clock">{hhmm(g.times[0].at)}</span>
         )}
         {rest.length > 0 && <span className="station-dep-rest">{rest.join(' · ')}</span>}
-      </div>
-    </div>
+      </span>
+    </button>
   )
 }
