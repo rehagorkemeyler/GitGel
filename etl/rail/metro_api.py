@@ -7,12 +7,15 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import time
 from pathlib import Path
 
 import requests
 
-BASE = "https://api.ibb.gov.tr/MetroIstanbul/api/MetroMobile/V2/"
+# İBB's API answers Turkish addresses only: the nightly job reaches it through the relay on Görkem's Mac
+# (infra/ibb-relay.mjs) when IBB_BASE points there (set by the workflow after joining the tailnet).
+BASE = os.environ.get("IBB_BASE", "https://api.ibb.gov.tr").rstrip("/") + "/MetroIstanbul/api/MetroMobile/V2/"
 HEADERS = {"User-Agent": "GitGel-ETL (+https://github.com/rehagorkemeyler/GitGel)",
            "Accept": "application/json"}
 

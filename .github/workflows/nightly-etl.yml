@@ -27,6 +27,7 @@ jobs:
     timeout-minutes: 90
     env:
       DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+      TS_AUTHKEY: ${{ secrets.TS_AUTHKEY }}
     defaults:
       run:
         working-directory: etl
@@ -79,6 +80,26 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh release download data-latest -p timetables.json -D cache/rail --repo "$GITHUB_REPOSITORY" || echo "none yet"
+      # İBB's API answers Turkish addresses only. With a Tailscale key the job joins the tailnet and sends its
+      # Metro İstanbul requests through the relay on Görkem's Mac (infra/ibb-relay.mjs); without one it tries
+      # İBB directly.
+      - name: Join the tailnet (İBB relay)
+        if: env.TS_AUTHKEY != ''
+        uses: tailscale/github-action@v3
+        with:
+          authkey: ${{ secrets.TS_AUTHKEY }}
+          hostname: gitgel-etl
+          version: latest
+      - name: Find the İBB relay
+        if: env.TS_AUTHKEY != ''
+        run: |
+          ip=$( (tailscale ip -4 mac-macbook-pro || sudo tailscale ip -4 mac-macbook-pro) 2>/dev/null | head -n1 || true)
+          if [ -n "$ip" ] && curl -fsS -m 10 "http://$ip:8888/health" > /dev/null; then
+            echo "IBB_BASE=http://$ip:8888" >> "$GITHUB_ENV"
+            echo "İBB relay reachable"
+          else
+            echo "::warning::İBB relay not reachable; trying İBB directly"
+          fi
       - name: Metro İstanbul
         run: python -m rail.build
       - name: Marmaray, M11, ferries
