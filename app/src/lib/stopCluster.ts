@@ -1,7 +1,7 @@
 import { distanceM } from './geo'
 import { liveStop, stopCode } from './city'
 
-// "Buradaki otobüs durakları": the bus stops under one cluster bubble on the map, grouped by name
+// "Otobüs Durakları": the bus stops under one cluster bubble on the map, grouped by name
 // (Kızılay x 3, Meşrutiyet Caddesi x 2), nearest group to the bubble first.
 
 export type ClusterStop = { id: string; name: string; lat: number; lon: number; lines: string[] }

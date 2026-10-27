@@ -25,7 +25,7 @@ type Props = {
 }
 
 /**
- * "Buradaki otobüs durakları": the stops under a map cluster. One card per stop name; in it a row per
+ * "Otobüs Durakları": the stops under a map cluster. One card per stop name; in it a row per
  * stop: its number (what is written at the stop) and walk on top, every line through it as chips below.
  */
 export function StopCluster({ stops, at, position, onStation, onClose }: Props) {
