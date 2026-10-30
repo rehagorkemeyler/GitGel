@@ -71,17 +71,6 @@ const loadAnkaraVehicles = (line: string) => () =>
     return v
   })
 const etaAudit = new EtaAudit()
-// EGO's ETA runs about 13% short all day (etaAudit.ts); stretch it by what the audit measured.
-let etaFactors: ReturnType<EtaAudit['factors']> = { all: null, lines: {} }
-const correctEta = (b: AnkaraStopBoard): AnkaraStopBoard =>
-  process.env.ETA_CORRECT === '0'
-    ? b
-    : {
-        ...b,
-        arrivals: b.arrivals
-          .map((a) => ({ ...a, etaSeconds: Math.round(a.etaSeconds * (etaFactors.lines[a.line] ?? etaFactors.all ?? 1)) }))
-          .sort((x, y) => x.etaSeconds - y.etaSeconds),
-      }
 const ankaraArrivals = new Cache<AnkaraStopBoard>(10_000, 2 * 60_000)
 const istanbulArrivals = new Cache<AnkaraStopBoard>(20_000, 2 * 60_000)
 const bursaVehicles = new Cache<BursaVehicle[]>(10_000, 2 * 60_000)
@@ -180,7 +169,7 @@ export async function handle(req: IncomingMessage, res: ServerResponse) {
     if (path === '/live/ankara/arrivals') {
       const stop = (url.searchParams.get('stop') ?? '').trim()
       if (!/^[0-9]{3,6}$/.test(stop)) return send(res, 400, { error: 'stop' })
-      const c = await ankaraArrivals.get(stop, () => getStopBoard(stop).then(correctEta))
+      const c = await ankaraArrivals.get(stop, () => getStopBoard(stop))
       return send(res, 200, { stop, ...c.value, fetchedAt: new Date(c.fetchedAt).toISOString(), stale: c.stale }, 5)
     }
     if (path === '/live/istanbul/arrivals') {
@@ -258,7 +247,7 @@ export async function handle(req: IncomingMessage, res: ServerResponse) {
     }
     if (path === '/live/ankara/eta-audit') {
       const body = url.searchParams.get('raw') === '1' ? { records: etaAudit.records } : etaAudit.summary()
-      return send(res, 200, { generatedAt: new Date().toISOString(), lines: ETA_AUDIT_LINES, factors: etaFactors, ...body }, 60)
+      return send(res, 200, { generatedAt: new Date().toISOString(), lines: ETA_AUDIT_LINES, ...body }, 60)
     }
     return send(res, 404, { error: 'not found' })
   } catch (e) {
@@ -329,11 +318,6 @@ function startCalibration() {
 function startEtaAudit() {
   if (!ETA_AUDIT_LINES.length) return
   etaAudit.load(ETA_AUDIT_FILE)
-  const learn = () => {
-    etaFactors = etaAudit.factors()
-  }
-  learn()
-  setInterval(learn, 3600_000)
   let targets: { line: string; stop: string }[] = []
   const refresh = async () => {
     const next: typeof targets = []

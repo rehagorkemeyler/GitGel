@@ -106,28 +106,6 @@ export class EtaAudit {
     return { records: this.records.length, rows }
   }
 
-  /**
-   * How much longer buses really take than EGO says (real / EGO ETA), per audited line
-   * and over all of them, from the last week. On the first day this cut the typical error
-   * from 3.4 to 2.3 minutes. Too few records: no factor.
-   */
-  factors(now = Date.now()): { all: number | null; lines: Record<string, number> } {
-    const since = now / 1000 - 7 * 86400
-    const by = new Map<string, number[]>()
-    const all: number[] = []
-    for (const r of this.records) {
-      if (r[0] < since || r[4] < 60) continue
-      const k = r[5] / r[4]
-      all.push(k)
-      by.set(r[1], [...(by.get(r[1]) ?? []), k])
-    }
-    const median = (a: number[]) => [...a].sort((x, y) => x - y)[Math.floor(a.length / 2)]
-    const clamp = (k: number) => Math.round(Math.min(1.4, Math.max(1, k)) * 100) / 100
-    const lines: Record<string, number> = {}
-    for (const [l, a] of by) if (a.length >= 200) lines[l] = clamp(median(a))
-    return { all: all.length >= 500 ? clamp(median(all)) : null, lines }
-  }
-
   save(file: string) {
     mkdirSync(dirname(file), { recursive: true })
     writeFileSync(file + '.tmp', JSON.stringify(this.records))
